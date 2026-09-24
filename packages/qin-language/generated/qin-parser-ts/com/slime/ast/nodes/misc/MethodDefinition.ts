@@ -15,14 +15,14 @@ class com_slime_ast_nodes_misc_MethodDefinition {
   __qin_field_key: com_slime_ast_AstNode | null = null as any;
   __qin_field_value: com_slime_ast_nodes_expressions_FunctionExpression | null = null as any;
   __qin_field_kind: string | null = null as any;
-  __qin_field_computed: boolean | null = null as any;
-  __qin_field_isStatic: boolean | null = null as any;
-  __qin_field_decorators: any = null as any;
+  __qin_field_computed: boolean | null = false as any;
+  __qin_field_isStatic: boolean | null = false as any;
+  __qin_field_decorators: __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator> | null = null as any;
   __qin_field_accessibility: string | null = null as any;
-  __qin_field_override: boolean | null = null as any;
+  __qin_field_override: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 9 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_FunctionExpression) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_FunctionExpression.__qinJavaRecordClass) && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_args[5] instanceof __QinJavaUtilArrayList || __qin_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[6] === null || typeof __qin_args[6] === "string") && typeof __qin_args[7] === "boolean" && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_slime_ast_SourceLocation) || __qin_args[8].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 9 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_FunctionExpression)) && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || typeof __qin_args[6] === "string") && typeof __qin_args[7] === "boolean" && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_slime_ast_SourceLocation))) {
       const key: any = __qin_args[0];
       const value: any = __qin_args[1];
       const kind: any = __qin_args[2];
@@ -37,15 +37,15 @@ class com_slime_ast_nodes_misc_MethodDefinition {
     }
     throw new Error("Unsupported Java constructor overload: MethodDefinition/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_misc_MethodDefinition_9_0(key: com_slime_ast_AstNode, value: com_slime_ast_nodes_expressions_FunctionExpression, kind: string, computed: boolean, isStatic: boolean, decorators: any, accessibility: string, override: boolean, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_misc_MethodDefinition_9_0(key: com_slime_ast_AstNode, value: com_slime_ast_nodes_expressions_FunctionExpression, kind: string, computed: boolean, isStatic: boolean, decorators: __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator>, accessibility: string, override: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_key = null;
     this.__qin_field_value = null;
     this.__qin_field_kind = null;
-    this.__qin_field_computed = null;
-    this.__qin_field_isStatic = null;
+    this.__qin_field_computed = false;
+    this.__qin_field_isStatic = false;
     this.__qin_field_decorators = null;
     this.__qin_field_accessibility = null;
-    this.__qin_field_override = null;
+    this.__qin_field_override = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_key = key;
@@ -60,50 +60,51 @@ class com_slime_ast_nodes_misc_MethodDefinition {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_METHOD_DEFINITION;
   }
-  key(): any {
+  key(): com_slime_ast_AstNode {
     return this.__qin_field_key;
   }
-  value(): any {
+  value(): com_slime_ast_nodes_expressions_FunctionExpression {
     return this.__qin_field_value;
   }
-  kind(): any {
+  kind(): string {
     return this.__qin_field_kind;
   }
-  computed(): any {
+  computed(): boolean {
     return this.__qin_field_computed;
   }
-  isStatic(): any {
+  isStatic(): boolean {
     return this.__qin_field_isStatic;
   }
-  decorators(): any {
+  decorators(): __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator> {
     return this.__qin_field_decorators;
   }
-  accessibility(): any {
+  accessibility(): string {
     return this.__qin_field_accessibility;
   }
-  override(): any {
+  override(): boolean {
     return this.__qin_field_override;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_MethodDefinition)) return false;
-    return __qin_java_values_equal__(this.__qin_field_key, other.__qin_field_key)
-      && __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_kind, other.__qin_field_kind)
-      && __qin_java_values_equal__(this.__qin_field_computed, other.__qin_field_computed)
-      && __qin_java_values_equal__(this.__qin_field_isStatic, other.__qin_field_isStatic)
-      && __qin_java_values_equal__(this.__qin_field_decorators, other.__qin_field_decorators)
-      && __qin_java_values_equal__(this.__qin_field_accessibility, other.__qin_field_accessibility)
-      && __qin_java_values_equal__(this.__qin_field_override, other.__qin_field_override)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_MethodDefinition = other;
+    return __qin_java_values_equal__(this.__qin_field_key, __qin_record_other.__qin_field_key)
+      && __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_kind, __qin_record_other.__qin_field_kind)
+      && __qin_java_values_equal__(this.__qin_field_computed, __qin_record_other.__qin_field_computed)
+      && __qin_java_values_equal__(this.__qin_field_isStatic, __qin_record_other.__qin_field_isStatic)
+      && __qin_java_values_equal__(this.__qin_field_decorators, __qin_record_other.__qin_field_decorators)
+      && __qin_java_values_equal__(this.__qin_field_accessibility, __qin_record_other.__qin_field_accessibility)
+      && __qin_java_values_equal__(this.__qin_field_override, __qin_record_other.__qin_field_override)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_key);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
@@ -116,7 +117,7 @@ class com_slime_ast_nodes_misc_MethodDefinition {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["MethodDefinition[", "key=", this.__qin_field_key, ", ", "value=", this.__qin_field_value, ", ", "kind=", this.__qin_field_kind, ", ", "computed=", this.__qin_field_computed, ", ", "isStatic=", this.__qin_field_isStatic, ", ", "decorators=", this.__qin_field_decorators, ", ", "accessibility=", this.__qin_field_accessibility, ", ", "override=", this.__qin_field_override, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

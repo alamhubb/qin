@@ -11,6 +11,13 @@ engineering model is a target-aware, ESM-style language toolchain whose dev
 loop is fast because the compiler understands stable source identities, target
 zones, dependency fingerprints, and JVM `.class` output boundaries.
 
+Qin's product direction is Kotlin-like in the engineering-experience sense:
+compiler-first, static-semantics-first, JVM `.class` capable, fullstack-aware,
+tooling-oriented, and incrementally compiled. Qin is not implemented in Kotlin
+and is not a Kotlin syntax clone; it keeps its Qin/TS/JS/ESM-style authoring
+surface only where that surface can lower through Qin's supported
+compiler/runtime model.
+
 The best current design is to combine proven ideas from modern toolchains:
 
 - Bazel-style hermeticity: cache keys must describe real declared inputs, not
@@ -583,6 +590,10 @@ route as the main Qin parser benchmark path. Those
 routes are historical or diagnostic references only, and any performance fix
 must be proven on the static enhanced `.class` wrapper and its `cst(false)`
 recognizer mode when parser-only timing is required.
+Bridge code that lowers generated functional wrappers must preserve nested
+callable metadata on wrapper fields such as `method` and `value`. If the inner
+callable loses its rule identity or original function metadata after lowering,
+that is a bridge defect, not an acceptable dynamic repair path.
 
 Decorator handling follows the canonical Qin JS compatibility rule in
 `packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`: Qin-owned decorators

@@ -15,7 +15,21 @@ public record QinIrClassDeclaration(
         List<QinIrFieldDeclaration> fields,
         List<QinIrMethodDeclaration> methods,
         List<QinIrExpression> staticInitializers,
-        boolean recordClass) {
+        boolean recordClass,
+        boolean interfaceClass) {
+    public QinIrClassDeclaration(
+            String packageName,
+            String simpleName,
+            QinIrTypeRef superType,
+            List<QinIrTypeRef> implementsTypes,
+            List<QinIrAnnotation> annotations,
+            List<QinIrFieldDeclaration> fields,
+            List<QinIrMethodDeclaration> methods,
+            List<QinIrExpression> staticInitializers,
+            boolean recordClass) {
+        this(packageName, simpleName, superType, implementsTypes, annotations, fields, methods, staticInitializers, recordClass, false);
+    }
+
     public QinIrClassDeclaration(
             String packageName,
             String simpleName,

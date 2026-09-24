@@ -28,14 +28,14 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     }
   }
   static createTSInterfaceDeclarationAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst);
-    let id: any = null;
-    let typeParameters: any = null;
-    let extendsClause: any = new __QinJavaUtilArrayList();
-    let body: any = null;
-    let isDeclare: any = false;
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst);
+    let id: com_slime_ast_nodes_expressions_Identifier = null;
+    let typeParameters: com_slime_ast_AstNode = null;
+    let extendsClause: __QinJavaUtilList<com_slime_ast_nodes_typescript_TSInterfaceHeritage> = new __QinJavaUtilArrayList();
+    let body: com_slime_ast_nodes_typescript_TSInterfaceBody = null;
+    let isDeclare: boolean = false;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Declare", name) || __QinJavaLangString.equals("declare", child.getValue()))) {
         isDeclare = true;
       } else {
@@ -43,7 +43,7 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
           id = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.createIdentifierAst(child);
         } else {
           if (__QinJavaLangString.equals("TSTypeParameterDeclaration", name)) {
-            typeParameters = (com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeParameterDeclarationAst(child));
+            typeParameters = (com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeParameterDeclarationAst(child) as com_slime_ast_AstNode);
           } else {
             if (__QinJavaLangString.equals("TSInterfaceExtends", name)) {
               extendsClause = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.createTSInterfaceExtendsAst(child);
@@ -65,13 +65,13 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     return new com_slime_ast_nodes_typescript_TSInterfaceDeclaration(id, typeParameters, extendsClause, body, isDeclare, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
   static createTSTypeAliasDeclarationAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst);
-    let id: any = null;
-    let typeParameters: any = null;
-    let typeAnnotation: any = null;
-    let isDeclare: any = false;
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst);
+    let id: com_slime_ast_nodes_expressions_Identifier = null;
+    let typeParameters: com_slime_ast_AstNode = null;
+    let typeAnnotation: com_slime_ast_AstNode = null;
+    let isDeclare: boolean = false;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Declare", name) || __QinJavaLangString.equals("declare", child.getValue()))) {
         isDeclare = true;
       } else {
@@ -79,7 +79,7 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
           id = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.createIdentifierAst(child);
         } else {
           if (__QinJavaLangString.equals("TSTypeParameterDeclaration", name)) {
-            typeParameters = (com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeParameterDeclarationAst(child));
+            typeParameters = (com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeParameterDeclarationAst(child) as com_slime_ast_AstNode);
           } else {
             if (__QinJavaLangString.equals("TSType", name)) {
               typeAnnotation = com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeAst(child);
@@ -97,13 +97,13 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     return new com_slime_ast_nodes_typescript_TSTypeAliasDeclaration(id, typeParameters, typeAnnotation, isDeclare, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
   static createTSEnumDeclarationAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst);
-    let id: any = null;
-    let members: any = new __QinJavaUtilArrayList();
-    let isDeclare: any = false;
-    let constEnum: any = false;
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst);
+    let id: com_slime_ast_nodes_expressions_Identifier = null;
+    let members: __QinJavaUtilList<com_slime_ast_nodes_typescript_TSEnumMember> = new __QinJavaUtilArrayList();
+    let isDeclare: boolean = false;
+    let constEnum: boolean = false;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Declare", name) || __QinJavaLangString.equals("declare", child.getValue()))) {
         isDeclare = true;
       } else {
@@ -127,19 +127,19 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     }
     return new com_slime_ast_nodes_typescript_TSEnumDeclaration(id, members, constEnum, isDeclare, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
-  static createTSInterfaceExtendsAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let result: any = new __QinJavaUtilArrayList();
+  static createTSInterfaceExtendsAst(cst: com_subhuti_struct_SubhutiCst): __QinJavaUtilList<com_slime_ast_nodes_typescript_TSInterfaceHeritage> {
+    let result: __QinJavaUtilList<com_slime_ast_nodes_typescript_TSInterfaceHeritage> = new __QinJavaUtilArrayList();
     com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.collectInterfaceHeritage(cst, result);
     return result;
   }
-  static createTSInterfaceBodyAst(cst: com_subhuti_struct_SubhutiCst): any {
+  static createTSInterfaceBodyAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_typescript_TSInterfaceBody {
     return new com_slime_ast_nodes_typescript_TSInterfaceBody(__QinJavaUtilList.of(), com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
-  static createTSEnumMemberAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let id: any = null;
-    let initializer: any = null;
+  static createTSEnumMemberAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_typescript_TSEnumMember {
+    let id: com_slime_ast_AstNode = null;
+    let initializer: com_slime_ast_AstNode = null;
     for (const child of com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst)) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Identifier", name) || __QinJavaLangString.equals("IdentifierName", name))) {
         id = com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.createIdentifierAst(child);
       } else {
@@ -157,7 +157,7 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     }
     return new com_slime_ast_nodes_typescript_TSEnumMember(id, initializer, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
-  static collectInterfaceHeritage(cst: com_subhuti_struct_SubhutiCst, out: any): any {
+  static collectInterfaceHeritage(cst: com_subhuti_struct_SubhutiCst, out: __QinJavaUtilList<com_slime_ast_nodes_typescript_TSInterfaceHeritage>): void {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
@@ -170,11 +170,11 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     }
     return null;
   }
-  static createTSInterfaceHeritageAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let expression: any = null;
-    let typeParameters: any = null;
+  static createTSInterfaceHeritageAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_typescript_TSInterfaceHeritage {
+    let expression: com_slime_ast_AstNode = null;
+    let typeParameters: com_slime_ast_AstNode = null;
     for (const child of com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst.safeChildren(cst)) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if (__QinJavaLangString.equals("TSTypeName", name)) {
         expression = com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeAst(child);
       } else {
@@ -194,10 +194,10 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDeclarationCstToAst {
     }
     return new com_slime_ast_nodes_typescript_TSInterfaceHeritage(expression, typeParameters, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
-  static createIdentifierAst(cst: com_subhuti_struct_SubhutiCst): any {
+  static createIdentifierAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_expressions_Identifier {
     return com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst.createIdentifierAst(cst);
   }
-  static safeChildren(cst: com_subhuti_struct_SubhutiCst): any {
+  static safeChildren(cst: com_subhuti_struct_SubhutiCst): __QinJavaUtilList<com_subhuti_struct_SubhutiCst> {
     return (__qin_binary__("==", (__qin_binary__("==", cst, null) ? null : cst.getChildren()), null) ? __QinJavaUtilList.of() : (__qin_binary__("==", cst, null) ? null : cst.getChildren()));
   }
 }

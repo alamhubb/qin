@@ -131,6 +131,7 @@ public record QinCfaProgram(
             FunctionLiteral,
             IdentifierReference,
             JavaClassLiteralExpression,
+            JavaInstanceMethodCallExpression,
             JavaNewExpression,
             LetExpression,
             MemberAccessExpression,
@@ -138,6 +139,8 @@ public record QinCfaProgram(
             NumberLiteral,
             ObjectLiteral,
             SequenceExpression,
+            SpreadArgumentExpression,
+            StaticMethodCallExpression,
             StringLiteral {
     }
 
@@ -248,9 +251,15 @@ public record QinCfaProgram(
         }
     }
 
-    public record FunctionLiteral(Expression returnExpression) implements Expression {
+    public record FunctionLiteral(List<String> parameterNames, Expression returnExpression) implements Expression {
+        public FunctionLiteral(Expression returnExpression) {
+            this(List.of(), returnExpression);
+        }
+
         public FunctionLiteral {
+            Objects.requireNonNull(parameterNames, "parameterNames cannot be null");
             Objects.requireNonNull(returnExpression, "returnExpression cannot be null");
+            parameterNames = List.copyOf(parameterNames);
         }
     }
 
@@ -283,6 +292,34 @@ public record QinCfaProgram(
         public JavaNewExpression {
             Objects.requireNonNull(classLocalName, "classLocalName cannot be null");
             Objects.requireNonNull(ownerBinaryName, "ownerBinaryName cannot be null");
+            Objects.requireNonNull(arguments, "arguments cannot be null");
+            arguments = List.copyOf(arguments);
+        }
+    }
+
+    public record JavaInstanceMethodCallExpression(
+            Expression receiver,
+            String ownerBinaryName,
+            String methodName,
+            List<Expression> arguments) implements Expression {
+        public JavaInstanceMethodCallExpression {
+            Objects.requireNonNull(receiver, "receiver cannot be null");
+            Objects.requireNonNull(ownerBinaryName, "ownerBinaryName cannot be null");
+            Objects.requireNonNull(methodName, "methodName cannot be null");
+            Objects.requireNonNull(arguments, "arguments cannot be null");
+            arguments = List.copyOf(arguments);
+        }
+    }
+
+    public record StaticMethodCallExpression(
+            String classLocalName,
+            String ownerBinaryName,
+            String methodName,
+            List<Expression> arguments) implements Expression {
+        public StaticMethodCallExpression {
+            Objects.requireNonNull(classLocalName, "classLocalName cannot be null");
+            Objects.requireNonNull(ownerBinaryName, "ownerBinaryName cannot be null");
+            Objects.requireNonNull(methodName, "methodName cannot be null");
             Objects.requireNonNull(arguments, "arguments cannot be null");
             arguments = List.copyOf(arguments);
         }
@@ -347,6 +384,12 @@ public record QinCfaProgram(
             if (leadingExpressions.isEmpty()) {
                 throw new IllegalArgumentException("leadingExpressions cannot be empty");
             }
+        }
+    }
+
+    public record SpreadArgumentExpression(Expression expression) implements Expression {
+        public SpreadArgumentExpression {
+            Objects.requireNonNull(expression, "expression cannot be null");
         }
     }
 

@@ -9,10 +9,10 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_ast_nodes_misc_ClassBody {
-  __qin_field_body: any = null as any;
+  __qin_field_body: __QinJavaUtilList<com_slime_ast_AstNode> | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SourceLocation) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SourceLocation))) {
       const body: any = __qin_args[0];
       const location: any = __qin_args[1];
       this.__qin_constructor_com_slime_ast_nodes_misc_ClassBody_2_0(body, location);
@@ -20,7 +20,7 @@ class com_slime_ast_nodes_misc_ClassBody {
     }
     throw new Error("Unsupported Java constructor overload: ClassBody/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_misc_ClassBody_2_0(body: any, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_misc_ClassBody_2_0(body: __QinJavaUtilList<com_slime_ast_AstNode>, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_body = null;
     this.__qin_field_location = null;
     (() => {
@@ -29,28 +29,29 @@ class com_slime_ast_nodes_misc_ClassBody {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_CLASS_BODY;
   }
-  body(): any {
+  body(): __QinJavaUtilList<com_slime_ast_AstNode> {
     return this.__qin_field_body;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_ClassBody)) return false;
-    return __qin_java_values_equal__(this.__qin_field_body, other.__qin_field_body)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_ClassBody = other;
+    return __qin_java_values_equal__(this.__qin_field_body, __qin_record_other.__qin_field_body)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_body);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ClassBody[", "body=", this.__qin_field_body, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

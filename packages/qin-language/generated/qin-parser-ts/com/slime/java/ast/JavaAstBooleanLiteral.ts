@@ -6,7 +6,7 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_java_ast_JavaAstBooleanLiteral {
-  __qin_field_value: boolean | null = null as any;
+  __qin_field_value: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 1 && typeof __qin_args[0] === "boolean") {
       const value: any = __qin_args[0];
@@ -16,26 +16,27 @@ class com_slime_java_ast_JavaAstBooleanLiteral {
     throw new Error("Unsupported Java constructor overload: JavaAstBooleanLiteral/" + __qin_args.length);
   }
   __qin_constructor_com_slime_java_ast_JavaAstBooleanLiteral_1_0(value: boolean): void {
-    this.__qin_field_value = null;
+    this.__qin_field_value = false;
     (() => {
       this.__qin_field_value = value;
       return null;
     })();
   }
-  value(): any {
+  value(): boolean {
     return this.__qin_field_value;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstBooleanLiteral)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value);
+    const __qin_record_other: com_slime_java_ast_JavaAstBooleanLiteral = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstBooleanLiteral[", "value=", this.__qin_field_value, "]"].join("");
   }
 }

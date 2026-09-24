@@ -24,6 +24,7 @@ public final class QinJvmClassDeclarationCorpusSmokeTestMain {
         QinJvmParsedLocalInheritanceSmokeTestMain.main(args);
         QinJvmParsedFieldsConstructorSmokeTestMain.main(args);
         QinJvmParsedSelfMethodCallSmokeTestMain.main(args);
+        QinJvmClassReferenceSmokeTestMain.main(args);
         QinJvmParsedTryCatchMethodBodySmokeTestMain.main(args);
         QinJvmParsedWhileMethodBodySmokeTestMain.main(args);
         QinJvmParsedWhileMutableLocalSmokeTestMain.main(args);
@@ -32,7 +33,9 @@ public final class QinJvmClassDeclarationCorpusSmokeTestMain {
         QinJvmParsedForOfSmokeTestMain.main(args);
         QinJvmParsedSwitchSmokeTestMain.main(args);
         QinJvmSequenceConsoleReturnSmokeTestMain.main(args);
+        QinJvmClassReferenceStaticFieldSmokeTestMain.main(args);
+        QinJvmJavaLangStringCharNumericArgumentSmokeTestMain.main(args);
 
-        System.out.println("Qin JVM class declaration corpus smoke passed: 24 cases");
+        System.out.println("Qin JVM class declaration corpus smoke passed: 26 cases");
     }
 }

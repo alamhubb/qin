@@ -4,7 +4,8 @@ export default {
     "description":  "JavaScript backend for Qin language",
     "entry":  "src/java/com/qin/lang/backend/js/QinJsBackend.java",
     "dependencies":  {
-                         "com.qin:qin-lang-ir":  "0.1.0"
+                         "com.qin:qin-lang-ir":  "0.1.0",
+                         "com.qin:qin-lang-frontend-adapter":  "0.1.0"
                      },
     "java":  {
                  "version":  "21",

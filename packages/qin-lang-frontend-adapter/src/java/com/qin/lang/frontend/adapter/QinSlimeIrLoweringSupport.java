@@ -8,4 +8,5 @@ abstract class QinSlimeIrLoweringSupport {
     protected final QinLoweringContext loweringContext = new QinLoweringContext();
     protected int functionModelBudgetRemaining = 0;
     protected int currentSourceLength = 0;
+    protected String currentSourceText = "";
 }

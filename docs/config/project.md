@@ -90,6 +90,8 @@ export default defineConfig({
 
 Java 源码目录。
 
+如果 Java 后端不在默认的 `src/main/java`，请显式设置 `java.sourceDir`；否则 Qin 可能回落到默认 Maven 布局并报 “No Java files found”。
+
 ## scripts
 
 自定义脚本命令。

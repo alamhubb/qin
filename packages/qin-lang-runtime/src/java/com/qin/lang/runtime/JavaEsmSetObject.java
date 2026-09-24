@@ -1,13 +1,14 @@
 package com.qin.lang.runtime;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
  * Java-backed Set builtin object for Qin.
  */
-public final class JavaEsmSetObject {
+public final class JavaEsmSetObject implements Iterable<Object> {
     public int size;
 
     private final LinkedHashSet<JavaEsmIdentityKey> values = new LinkedHashSet<>();
@@ -33,6 +34,10 @@ public final class JavaEsmSetObject {
         }
         throw new IllegalArgumentException("Set constructor expects iterable value, got: "
                 + initialValues.getClass().getName());
+    }
+
+    public int getSize() {
+        return size;
     }
 
     public JavaEsmSetObject add(Object value) {
@@ -69,5 +74,10 @@ public final class JavaEsmSetObject {
             result.add(value.value());
         }
         return result;
+    }
+
+    @Override
+    public Iterator<Object> iterator() {
+        return values().iterator();
     }
 }

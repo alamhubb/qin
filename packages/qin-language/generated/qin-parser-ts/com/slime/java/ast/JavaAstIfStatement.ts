@@ -10,67 +10,56 @@ function __qin_structural_object__(value) {
 const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstIfStatement {
   __qin_field_test: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_consequentStatements: any = null as any;
-  __qin_field_alternateStatements: any = null as any;
+  __qin_field_consequentStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
+  __qin_field_alternateStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstIfStatement_0_0();
-      return;
-    }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
       const test: any = __qin_args[0];
       const consequentStatements: any = __qin_args[1];
       const alternateStatements: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstIfStatement_3_1(test, consequentStatements, alternateStatements);
+      this.__qin_constructor_com_slime_java_ast_JavaAstIfStatement_3_0(test, consequentStatements, alternateStatements);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstIfStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstIfStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstIfStatement_3_0(test: com_slime_java_ast_JavaAstExpression, consequentStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>, alternateStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_test = null;
     this.__qin_field_consequentStatements = null;
     this.__qin_field_alternateStatements = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_test, "test cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_consequentStatements, "consequentStatements cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_alternateStatements, "alternateStatements cannot be null");
-    this.__qin_field_consequentStatements = __QinJavaUtilList.copyOf(this.__qin_field_consequentStatements);
-    this.__qin_field_alternateStatements = __QinJavaUtilList.copyOf(this.__qin_field_alternateStatements);
+    __QinJavaUtilObjects.requireNonNull(test, "test cannot be null");
+    __QinJavaUtilObjects.requireNonNull(consequentStatements, "consequentStatements cannot be null");
+    __QinJavaUtilObjects.requireNonNull(alternateStatements, "alternateStatements cannot be null");
+    consequentStatements = __QinJavaUtilList.copyOf(consequentStatements);
+    alternateStatements = __QinJavaUtilList.copyOf(alternateStatements);
+    this.__qin_field_test = test;
+    this.__qin_field_consequentStatements = consequentStatements;
+    this.__qin_field_alternateStatements = alternateStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstIfStatement_3_1(test: com_slime_java_ast_JavaAstExpression, consequentStatements: any, alternateStatements: any): void {
-    this.__qin_field_test = null;
-    this.__qin_field_consequentStatements = null;
-    this.__qin_field_alternateStatements = null;
-    (() => {
-      this.__qin_field_test = test;
-      this.__qin_field_consequentStatements = consequentStatements;
-      this.__qin_field_alternateStatements = alternateStatements;
-      return null;
-    })();
-  }
-  test(): any {
+  test(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_test;
   }
-  consequentStatements(): any {
+  consequentStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_consequentStatements;
   }
-  alternateStatements(): any {
+  alternateStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_alternateStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstIfStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test)
-      && __qin_java_values_equal__(this.__qin_field_consequentStatements, other.__qin_field_consequentStatements)
-      && __qin_java_values_equal__(this.__qin_field_alternateStatements, other.__qin_field_alternateStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstIfStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test)
+      && __qin_java_values_equal__(this.__qin_field_consequentStatements, __qin_record_other.__qin_field_consequentStatements)
+      && __qin_java_values_equal__(this.__qin_field_alternateStatements, __qin_record_other.__qin_field_alternateStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_consequentStatements);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_alternateStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstIfStatement[", "test=", this.__qin_field_test, ", ", "consequentStatements=", this.__qin_field_consequentStatements, ", ", "alternateStatements=", this.__qin_field_alternateStatements, "]"].join("");
   }
 }

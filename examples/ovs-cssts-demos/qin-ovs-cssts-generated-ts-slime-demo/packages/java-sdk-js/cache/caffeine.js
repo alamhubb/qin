@@ -1,64 +1,112 @@
-import { __qin_java_hash_key__, __qin_java_hash_key_equals__ } from "../util/hash.js";
+import { __qin_java_hash_key__, __qin_java_hash_key_equals__, __qin_java_values_equal__ } from "../util/hash.js";
+import { __qin_array_append__, __qin_array_remove_at__, __qin_array_slice__ } from "../core/runtime.js";
 
-export const __QinCaffeineRemovalCause = {
-  SIZE: {
-    wasEvicted() {
-      return true;
-    }
-  },
-  EXPLICIT: {
-    wasEvicted() {
-      return false;
-    }
+class __QinCaffeineRemovalCauseValue {
+  constructor(evicted) {
+    this.__evicted = evicted;
   }
-};
+  wasEvicted() {
+    return this.__evicted;
+  }
+}
+export class __QinCaffeineRemovalCause {
+  static SIZE(): __QinCaffeineRemovalCauseValue {
+    return new __QinCaffeineRemovalCauseValue(true);
+  }
+  static EXPLICIT(): __QinCaffeineRemovalCauseValue {
+    return new __QinCaffeineRemovalCauseValue(false);
+  }
+}
+class __QinCaffeineCacheEntry {
+  constructor(key, value) {
+    this.key = key;
+    this.value = value;
+  }
+}
+class __QinCaffeineCacheFoundEntry {
+  constructor(bucket: any[], index: number, entry: __QinCaffeineCacheEntry) {
+    this.bucket = bucket;
+    this.index = index;
+    this.entry = entry;
+  }
+}
 export class __QinCaffeineCache {
-  __maximumSize = null;
-  __removalListener = null;
-  __buckets = null;
-  __order = null;
-  __size = null;
-  constructor(maximumSize, removalListener) {
-    this.__maximumSize = maximumSize == null ? Infinity : maximumSize;
+  constructor(maximumSize: number, removalListener) {
+    this.__maximumSize = maximumSize;
     this.__removalListener = removalListener;
-    this.__buckets = new Map();
+    this.__bucketHashes = [];
+    this.__bucketValues = [];
     this.__order = [];
     this.__size = 0;
   }
-  __bucket(key, create) {
-    const hash = __qin_java_hash_key__(key);
-    let bucket = this.__buckets.get(hash);
-    if (bucket == null && create) {
-      bucket = [];
-      this.__buckets.set(hash, bucket);
+  __bucketIndexByHash(hash: string): number {
+    for (let index = 0; index < this.__bucketHashes.length; index++) {
+      if (__qin_java_values_equal__(this.__bucketHashes[index], hash)) {
+        return index;
+      }
     }
-    return bucket;
+    return -1;
   }
-  __findEntry(key) {
+  __bucket(key, create: boolean): any[] {
+    const hash = __qin_java_hash_key__(key);
+    const bucketIndex = this.__bucketIndexByHash(hash);
+    if (bucketIndex >= 0) {
+      return this.__bucketValues[bucketIndex];
+    }
+    if (create) {
+      this.__bucketHashes = __qin_array_append__(this.__bucketHashes, hash);
+      this.__bucketValues = __qin_array_append__(this.__bucketValues, []);
+      return [];
+    }
+    return null;
+  }
+  __setBucketByHash(hash: string, bucket): void {
+    const bucketIndex = this.__bucketIndexByHash(hash);
+    if (bucketIndex < 0) {
+      this.__bucketHashes = __qin_array_append__(this.__bucketHashes, hash);
+      this.__bucketValues = __qin_array_append__(this.__bucketValues, bucket);
+      return;
+    }
+    let nextBuckets = [];
+    for (let index = 0; index < this.__bucketValues.length; index++) {
+      nextBuckets = __qin_array_append__(nextBuckets, index === bucketIndex ? bucket : this.__bucketValues[index]);
+    }
+    this.__bucketValues = nextBuckets;
+  }
+  __findEntry(key): __QinCaffeineCacheFoundEntry {
     const bucket = this.__bucket(key, false);
     if (bucket == null) {
       return null;
     }
     for (let index = 0; index < bucket.length; index++) {
-      const entry = bucket[index];
+      const entry: __QinCaffeineCacheEntry = bucket[index];
       if (__qin_java_hash_key_equals__(entry.key, key)) {
-        return { bucket, index, entry };
+        return new __QinCaffeineCacheFoundEntry(bucket, index, entry);
       }
     }
     return null;
   }
-  __touch(entry) {
-    const index = this.__order.indexOf(entry);
-    if (index >= 0) {
-      this.__order.splice(index, 1);
+  __findOrderIndex(entry: __QinCaffeineCacheEntry): number {
+    for (let index = 0; index < this.__order.length; index++) {
+      const ordered: __QinCaffeineCacheEntry = this.__order[index];
+      if (__qin_java_hash_key_equals__(ordered.key, entry.key)) {
+        return index;
+      }
     }
-    this.__order.push(entry);
+    return -1;
   }
-  __removeEntry(bucket, index, entry, cause) {
-    bucket.splice(index, 1);
-    const orderIndex = this.__order.indexOf(entry);
+  __touch(entry: __QinCaffeineCacheEntry): void {
+    const index = this.__findOrderIndex(entry);
+    if (index >= 0) {
+      this.__order = __qin_array_remove_at__(this.__order, index);
+    }
+    this.__order = __qin_array_append__(this.__order, entry);
+  }
+  __removeEntry(bucket: any[], index: number, entry: __QinCaffeineCacheEntry, cause): void {
+    this.__setBucketByHash(__qin_java_hash_key__(entry.key), __qin_array_remove_at__(bucket, index));
+    const orderIndex = this.__findOrderIndex(entry);
     if (orderIndex >= 0) {
-      this.__order.splice(orderIndex, 1);
+      this.__order = __qin_array_remove_at__(this.__order, orderIndex);
     }
     this.__size--;
     if (this.__removalListener != null) {
@@ -79,18 +127,19 @@ export class __QinCaffeineCache {
       found.entry.value = value;
       this.__touch(found.entry);
     } else {
-      const entry = { key, value };
-      this.__bucket(key, true).push(entry);
-      this.__order.push(entry);
+      const entry = new __QinCaffeineCacheEntry(key, value);
+      const bucket = this.__bucket(key, true);
+      this.__setBucketByHash(__qin_java_hash_key__(key), __qin_array_append__(bucket, entry));
+      this.__order = __qin_array_append__(this.__order, entry);
       this.__size++;
     }
     while (this.__size > this.__maximumSize) {
-      const oldest = this.__order[0];
+      const oldest: __QinCaffeineCacheEntry = this.__order[0];
       const oldestFound = this.__findEntry(oldest.key);
       if (oldestFound == null) {
-        this.__order.shift();
+        this.__order = __qin_array_remove_at__(this.__order, 0);
       } else {
-        this.__removeEntry(oldestFound.bucket, oldestFound.index, oldestFound.entry, __QinCaffeineRemovalCause.SIZE);
+        this.__removeEntry(oldestFound.bucket, oldestFound.index, oldestFound.entry, __QinCaffeineRemovalCause.SIZE());
       }
     }
   }
@@ -99,15 +148,18 @@ export class __QinCaffeineCache {
     if (found == null) {
       return;
     }
-    this.__removeEntry(found.bucket, found.index, found.entry, __QinCaffeineRemovalCause.EXPLICIT);
+    this.__removeEntry(found.bucket, found.index, found.entry, __QinCaffeineRemovalCause.EXPLICIT());
   }
   invalidateAll() {
-    for (const entry of Array.from(this.__order)) {
+    const entries: any[] = __qin_array_slice__(this.__order, 0, this.__order.length);
+    for (let index = 0; index < entries.length; index++) {
+      const entry: __QinCaffeineCacheEntry = entries[index];
       if (this.__removalListener != null) {
-        this.__removalListener(entry.key, entry.value, __QinCaffeineRemovalCause.EXPLICIT);
+        this.__removalListener(entry.key, entry.value, __QinCaffeineRemovalCause.EXPLICIT());
       }
     }
-    this.__buckets.clear();
+    this.__bucketHashes = [];
+    this.__bucketValues = [];
     this.__order = [];
     this.__size = 0;
   }
@@ -119,30 +171,28 @@ export class __QinCaffeineCache {
   }
 }
 export class __QinCaffeineBuilder {
-  __maximumSize = null;
-  __removalListener = null;
   constructor() {
-    this.__maximumSize = Infinity;
+    this.__maximumSize = 9007199254740991;
     this.__removalListener = null;
   }
-  maximumSize(value) {
+  maximumSize(value: number): __QinCaffeineBuilder {
     this.__maximumSize = value;
     return this;
   }
-  expireAfterAccess() {
+  expireAfterAccess(): __QinCaffeineBuilder {
     return this;
   }
-  expireAfterWrite() {
+  expireAfterWrite(): __QinCaffeineBuilder {
     return this;
   }
-  removalListener(listener) {
+  removalListener(listener): __QinCaffeineBuilder {
     this.__removalListener = listener;
     return this;
   }
-  recordStats() {
+  recordStats(): __QinCaffeineBuilder {
     return this;
   }
-  build() {
+  build(): __QinCaffeineCache {
     return new __QinCaffeineCache(this.__maximumSize, this.__removalListener);
   }
 }

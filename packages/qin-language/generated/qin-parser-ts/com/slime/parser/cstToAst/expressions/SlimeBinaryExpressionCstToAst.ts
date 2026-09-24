@@ -15,7 +15,7 @@ class com_slime_parser_cstToAst_expressions_SlimeBinaryExpressionCstToAst {
       throw new Error("Unsupported Java constructor arity: SlimeBinaryExpressionCstToAst/" + __qin_args.length);
     }
   }
-  static createBinaryExpressionAst(left: com_slime_ast_Expression, operator: string, right: com_slime_ast_Expression, cst: com_subhuti_struct_SubhutiCst): any {
+  static createBinaryExpressionAst(left: com_slime_ast_Expression, operator: string, right: com_slime_ast_Expression, cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Expression {
     let location: any = com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst);
     if ((__QinJavaLangString.equals("&&", operator) || __QinJavaLangString.equals("||", operator) || __QinJavaLangString.equals("??", operator))) {
       return com_slime_parser_cstToAst_SlimeAstCreateUtils.createLogicalExpression(operator, left, right, location);
@@ -24,7 +24,7 @@ class com_slime_parser_cstToAst_expressions_SlimeBinaryExpressionCstToAst {
     }
     return null;
   }
-  static extractOperator(cst: com_subhuti_struct_SubhutiCst): any {
+  static extractOperator(cst: com_subhuti_struct_SubhutiCst): string {
     if (__qin_binary__("!=", cst.getValue(), null)) {
       return cst.getValue();
     }

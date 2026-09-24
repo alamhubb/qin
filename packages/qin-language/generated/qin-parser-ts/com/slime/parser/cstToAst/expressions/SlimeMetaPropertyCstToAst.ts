@@ -22,10 +22,10 @@ class com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst {
   __qin_constructor_com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst_0_0(): void {
     null;
   }
-  static createMetaPropertyAst(cst: com_subhuti_struct_SubhutiCst): any {
+  static createMetaPropertyAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_expressions_MetaProperty {
     return new com_slime_ast_nodes_expressions_MetaProperty(com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier((com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst.hasNameOrValue(cst, "Import", "import") ? "import" : "new"), com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst)), com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier((__QinJavaLangString.equals("import", (com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst.hasNameOrValue(cst, "Import", "import") ? "import" : "new")) ? "meta" : "target"), com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst)), com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
-  static hasNameOrValue(cst: com_subhuti_struct_SubhutiCst, name: string, value: string): any {
+  static hasNameOrValue(cst: com_subhuti_struct_SubhutiCst, name: string, value: string): boolean {
     if (__qin_binary__("==", cst, null)) {
       return false;
     }
@@ -39,7 +39,7 @@ class com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst {
     }
     return false;
   }
-  static safeChildren(cst: com_subhuti_struct_SubhutiCst): any {
+  static safeChildren(cst: com_subhuti_struct_SubhutiCst): __QinJavaUtilList<com_subhuti_struct_SubhutiCst> {
     return (__qin_binary__("==", (__qin_binary__("==", cst, null) ? null : cst.getChildren()), null) ? __QinJavaUtilList.of() : (__qin_binary__("==", cst, null) ? null : cst.getChildren()));
   }
 }

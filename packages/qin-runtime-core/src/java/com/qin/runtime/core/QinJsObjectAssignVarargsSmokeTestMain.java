@@ -14,8 +14,10 @@ public final class QinJsObjectAssignVarargsSmokeTestMain {
         Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-object-assign-varargs\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const target = { a: 1 };
-                const result = Object.assign(target, { b: 2 }, { c: 3 });
-                ({ same: result === target, a: target.a, b: target.b, c: target.c });
+                const options = { b: 2 };
+                const result = Object.assign(target, options, { c: 3 });
+                const clone = Object.assign({}, options, { d: 4 });
+                ({ same: result === target, a: target.a, b: target.b, c: target.c, cloneB: clone.b, cloneD: clone.d });
                 """;
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "js_object_assign_varargs");
         if (!(result instanceof Map<?, ?> map)) {
@@ -25,6 +27,8 @@ public final class QinJsObjectAssignVarargsSmokeTestMain {
         assertNumber(map.get("a"), 1d, "a");
         assertNumber(map.get("b"), 2d, "b");
         assertNumber(map.get("c"), 3d, "c");
+        assertNumber(map.get("cloneB"), 2d, "cloneB");
+        assertNumber(map.get("cloneD"), 4d, "cloneD");
         System.out.println("QinJsObjectAssignVarargsSmokeTestMain OK");
     }
 

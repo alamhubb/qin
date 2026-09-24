@@ -14,7 +14,7 @@ class com_slime_ast_nodes_typescript_TSEnumMember {
   __qin_field_initializer: com_slime_ast_AstNode | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const id: any = __qin_args[0];
       const initializer: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -34,33 +34,34 @@ class com_slime_ast_nodes_typescript_TSEnumMember {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_TS_ENUM_MEMBER;
   }
-  id(): any {
+  id(): com_slime_ast_AstNode {
     return this.__qin_field_id;
   }
-  initializer(): any {
+  initializer(): com_slime_ast_AstNode {
     return this.__qin_field_initializer;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_typescript_TSEnumMember)) return false;
-    return __qin_java_values_equal__(this.__qin_field_id, other.__qin_field_id)
-      && __qin_java_values_equal__(this.__qin_field_initializer, other.__qin_field_initializer)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_typescript_TSEnumMember = other;
+    return __qin_java_values_equal__(this.__qin_field_id, __qin_record_other.__qin_field_id)
+      && __qin_java_values_equal__(this.__qin_field_initializer, __qin_record_other.__qin_field_initializer)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_id);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_initializer);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TSEnumMember[", "id=", this.__qin_field_id, ", ", "initializer=", this.__qin_field_initializer, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

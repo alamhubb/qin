@@ -32,30 +32,31 @@ class com_slime_java_ast_JavaAstConditionalExpression {
       return null;
     })();
   }
-  condition(): any {
+  condition(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_condition;
   }
-  consequent(): any {
+  consequent(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_consequent;
   }
-  alternate(): any {
+  alternate(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_alternate;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstConditionalExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_condition, other.__qin_field_condition)
-      && __qin_java_values_equal__(this.__qin_field_consequent, other.__qin_field_consequent)
-      && __qin_java_values_equal__(this.__qin_field_alternate, other.__qin_field_alternate);
+    const __qin_record_other: com_slime_java_ast_JavaAstConditionalExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_condition, __qin_record_other.__qin_field_condition)
+      && __qin_java_values_equal__(this.__qin_field_consequent, __qin_record_other.__qin_field_consequent)
+      && __qin_java_values_equal__(this.__qin_field_alternate, __qin_record_other.__qin_field_alternate);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_condition);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_consequent);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_alternate);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstConditionalExpression[", "condition=", this.__qin_field_condition, ", ", "consequent=", this.__qin_field_consequent, ", ", "alternate=", this.__qin_field_alternate, "]"].join("");
   }
 }

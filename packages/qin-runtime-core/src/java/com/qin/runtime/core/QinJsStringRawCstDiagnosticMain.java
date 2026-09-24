@@ -1,23 +1,40 @@
 package com.qin.runtime.core;
 
-import com.slime.parser.SlimeParserStaticEnhanced;
+import com.slime.parser.SlimeJavascriptParser;
 import com.subhuti.struct.SubhutiCst;
+
+import java.lang.reflect.Method;
 
 public final class QinJsStringRawCstDiagnosticMain {
     private QinJsStringRawCstDiagnosticMain() {
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String source = """
                 const raw = String.raw`[\\p{ID_Start}$_]|\\\\u[0-9a-fA-F]{4}`;
                 raw;
                 """;
-        SlimeParserStaticEnhanced parser = SlimeParserStaticEnhanced.create(source.trim());
-        SubhutiCst cst = parser.Program(SlimeParserStaticEnhanced.SourceType.MODULE);
+        Object parser = createStaticEnhancedParser(source.trim());
+        Method program = parser.getClass().getMethod("Program", SlimeJavascriptParser.SourceType.class);
+        SubhutiCst cst = (SubhutiCst) program.invoke(parser, SlimeJavascriptParser.SourceType.MODULE);
         if (cst == null) {
-            cst = parser.getCst();
+            Method getCst = parser.getClass().getMethod("getCst");
+            cst = (SubhutiCst) getCst.invoke(parser);
         }
         printTemplateNodes(cst, 0);
+    }
+
+    private static Object createStaticEnhancedParser(String source) {
+        try {
+            Class<?> parserClass = Class.forName("com.slime.parser.SlimeParserStaticEnhanced");
+            Method create = parserClass.getMethod("create", String.class);
+            return create.invoke(null, source);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(
+                    "SlimeParserStaticEnhanced is a generated build artifact. "
+                            + "Run slime-parser/compile.bat before this diagnostic main.",
+                    e);
+        }
     }
 
     private static void printTemplateNodes(SubhutiCst cst, int depth) {

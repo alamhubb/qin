@@ -6,9 +6,9 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_subhuti_struct_SubhutiPosition {
-  __qin_field_line: number | null = null as any;
-  __qin_field_column: number | null = null as any;
-  __qin_field_index: number | null = null as any;
+  __qin_field_line: number | null = 0 as any;
+  __qin_field_column: number | null = 0 as any;
+  __qin_field_index: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 3 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number") {
       const line: any = __qin_args[0];
@@ -26,9 +26,9 @@ class com_subhuti_struct_SubhutiPosition {
     throw new Error("Unsupported Java constructor overload: SubhutiPosition/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_struct_SubhutiPosition_3_0(line: number, column: number, index: number): void {
-    this.__qin_field_line = null;
-    this.__qin_field_column = null;
-    this.__qin_field_index = null;
+    this.__qin_field_line = 0;
+    this.__qin_field_column = 0;
+    this.__qin_field_index = 0;
     this.__qin_field_line = line;
     this.__qin_field_column = column;
     this.__qin_field_index = index;
@@ -36,46 +36,46 @@ class com_subhuti_struct_SubhutiPosition {
   __qin_constructor_com_subhuti_struct_SubhutiPosition_2_1(line: number, column: number): void {
     ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 3 && typeof __qin_delegate_args[0] === "number" && typeof __qin_delegate_args[1] === "number" && typeof __qin_delegate_args[2] === "number") { return this.__qin_constructor_com_subhuti_struct_SubhutiPosition_3_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiPosition/" + __qin_delegate_args.length); })(line, column, 0.0);
   }
-  getLine(): any {
+  getLine(): number {
     return this.__qin_field_line;
   }
-  getColumn(): any {
+  getColumn(): number {
     return this.__qin_field_column;
   }
-  getIndex(): any {
+  getIndex(): number {
     return this.__qin_field_index;
   }
-  line(): any {
+  line(): number {
     return this.__qin_field_line;
   }
-  column(): any {
+  column(): number {
     return this.__qin_field_column;
   }
-  index(): any {
+  index(): number {
     return this.__qin_field_index;
   }
-  static of(line: number, column: number, index: number): any {
+  static of(line: number, column: number, index: number): com_subhuti_struct_SubhutiPosition {
     return new com_subhuti_struct_SubhutiPosition(line, column, index);
   }
-  static start(): any {
+  static start(): com_subhuti_struct_SubhutiPosition {
     return new com_subhuti_struct_SubhutiPosition(1.0, 1.0, 0.0);
   }
-  advance(...__qin_args: any[]): any {
+  advance(...__qin_args: any[]): com_subhuti_struct_SubhutiPosition {
     if (__qin_args.length === 1 && typeof __qin_args[0] === "number") return this.__qin_overload_advance_1_0(__qin_args[0]);
     if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_advance_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: advance/" + __qin_args.length);
   }
-  __qin_overload_advance_1_0(ch: number): any {
+  __qin_overload_advance_1_0(ch: number): com_subhuti_struct_SubhutiPosition {
     if ((__qin_binary__("==", ch, "\n") || __qin_binary__("==", ch, "\r") || __qin_binary__("==", ch, " ") || __qin_binary__("==", ch, " "))) {
       return new com_subhuti_struct_SubhutiPosition(__qin_binary__("+", this.__qin_field_line, 1.0), 1.0, __qin_binary__("+", this.__qin_field_index, 1.0));
     }
     return new com_subhuti_struct_SubhutiPosition(this.__qin_field_line, __qin_binary__("+", this.__qin_field_column, 1.0), __qin_binary__("+", this.__qin_field_index, 1.0));
   }
-  __qin_overload_advance_1_1(text: string): any {
-    let pos: any = this;
-    let i: any = 0.0;
+  __qin_overload_advance_1_1(text: string): com_subhuti_struct_SubhutiPosition {
+    let pos: com_subhuti_struct_SubhutiPosition = this;
+    let i: number = 0.0;
     while (__qin_binary__("<", i, __QinJavaLangString.length(text))) {
-      let ch: any = __QinJavaLangString.charAt(text, i);
+      let ch: number = __QinJavaLangString.charAt(text, i);
       if (__qin_binary__("==", ch, "\r")) {
         pos = pos.advance("\r");
         if ((__qin_binary__("<", __qin_binary__("+", i, 1.0), __QinJavaLangString.length(text)) && __qin_binary__("==", __QinJavaLangString.charAt(text, __qin_binary__("+", i, 1.0)), "\n"))) {
@@ -93,20 +93,20 @@ class com_subhuti_struct_SubhutiPosition {
     }
     return pos;
   }
-  toString(): any {
+  toString(): string {
     return __QinJavaLangString.format("%d:%d", this.__qin_field_line, this.__qin_field_column);
   }
-  equals(obj: any): any {
+  equals(obj: any): boolean {
     if (__qin_binary__("==", this, obj)) {
       return true;
     }
     if ((__qin_binary__("==", obj, null) || __qin_binary__("!=", this.getClass(), obj.getClass()))) {
       return false;
     }
-    let that: any = (obj);
+    let that: com_subhuti_struct_SubhutiPosition = (obj as com_subhuti_struct_SubhutiPosition);
     return (__qin_binary__("==", this.__qin_field_line, that.__qin_field_line) && __qin_binary__("==", this.__qin_field_column, that.__qin_field_column) && __qin_binary__("==", this.__qin_field_index, that.__qin_field_index));
   }
-  hashCode(): any {
+  hashCode(): number {
     return __qin_binary__("+", __qin_binary__("*", 31.0, __qin_binary__("+", __qin_binary__("*", 31.0, this.__qin_field_line), this.__qin_field_column)), this.__qin_field_index);
   }
 }

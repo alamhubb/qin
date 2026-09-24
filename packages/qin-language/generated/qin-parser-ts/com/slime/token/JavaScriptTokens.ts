@@ -14,34 +14,34 @@ function __qin_structural_object__(value) {
 const ArrayList = __QinJavaUtilArrayList;
 const Pattern = __QinJavaUtilRegexPattern;
 class com_slime_token_JavaScriptTokens {
-  static __qin_field_TOKENS: any = null as any;
+  static __qin_field_TOKENS: __QinJavaUtilList<com_subhuti_struct_SubhutiCreateToken> | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length !== 0) {
       throw new Error("Unsupported Java constructor arity: JavaScriptTokens/" + __qin_args.length);
     }
   }
-  static addKeyword(keyword: string, tokenName: string): any {
+  static addKeyword(keyword: string, tokenName: string): void {
     com_slime_token_JavaScriptTokens.__qin_field_TOKENS.add(com_subhuti_lexer_TokenFactory.createKeywordToken(tokenName, keyword));
     return null;
   }
-  static addOperator(op: string, tokenName: string): any {
+  static addOperator(op: string, tokenName: string): void {
     com_slime_token_JavaScriptTokens.__qin_field_TOKENS.add(com_subhuti_struct_SubhutiCreateToken.builder().name(tokenName).pattern(__QinJavaUtilRegexPattern.quote(op)).fixedValue(op).build());
     return null;
   }
-  static addPunctuation(punct: string, tokenName: string): any {
+  static addPunctuation(punct: string, tokenName: string): void {
     com_slime_token_JavaScriptTokens.__qin_field_TOKENS.add(com_subhuti_struct_SubhutiCreateToken.builder().name(tokenName).pattern(__QinJavaUtilRegexPattern.quote(punct)).fixedValue(punct).build());
     return null;
   }
-  static buildIdentifierPattern(): any {
+  static buildIdentifierPattern(): string {
     return ("(?:[\\p{L}\\p{Nl}" + "\\u1885\\u1886\\u2118\\u212E\\u309B\\u309C" + "$_]|" + "" + "\\" + "\\" + "u[0-9a-fA-F]{4}|" + "\\" + "\\" + "u" + "\\" + "{[0-9a-fA-F]+" + "\\" + "}" + ")" + "(?:[\\p{L}\\p{Nl}\\p{Mn}\\p{Mc}\\p{Nd}\\p{Pc}" + "\\u1885\\u1886\\u2118\\u212E\\u309B\\u309C" + "\\u00B7\\u0387\\u1369-\\u1371\\u19DA" + "$\\u200C\\u200D]|" + "" + "\\" + "\\" + "u[0-9a-fA-F]{4}|" + "\\" + "\\" + "u" + "\\" + "{[0-9a-fA-F]+" + "\\" + "}" + ")" + "*");
   }
-  static buildRegExpPattern(): any {
+  static buildRegExpPattern(): string {
     return ("/(?:[^\\n\\r/\\\\\\[*]|\\\\[^\\n\\r]|\\[(?:[^\\n\\r\\]\\\\]|\\\\[^\\n\\r])*\\])" + "(?:[^\\n\\r/\\\\\\[]|\\\\[^\\n\\r]|\\[(?:[^\\n\\r\\]\\\\]|\\\\[^\\n\\r])*\\])*/[dgimsuvy]*");
   }
-  static regexLiteralDisallowedAfterTokens(): any {
+  static regexLiteralDisallowedAfterTokens(): __QinJavaUtilSet<string> {
     return __QinJavaUtilSet.of("IdentifierName", "PrivateIdentifier", "NumericLiteral", "StringLiteral", "NoSubstitutionTemplate", "TemplateTail", "RegularExpressionLiteral", "NullLiteral", "True", "False", "This", "Super", "RParen", "RBracket", "Increment", "Decrement");
   }
-  static getTokens(): any {
+  static getTokens(): __QinJavaUtilList<com_subhuti_struct_SubhutiCreateToken> {
     return new __QinJavaUtilArrayList(com_slime_token_JavaScriptTokens.__qin_field_TOKENS);
   }
 }

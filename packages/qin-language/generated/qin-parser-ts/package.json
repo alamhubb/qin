@@ -35,6 +35,11 @@
       "default": "./SlimeCstToAstBridge.ts"
     },
 
+    "./SubhutiCst": {
+      "types": "./com/subhuti/struct/SubhutiCst.ts",
+      "import": "./com/subhuti/struct/SubhutiCst.ts",
+      "default": "./com/subhuti/struct/SubhutiCst.ts"
+    },
     "./SubhutiSourceLocation": {
       "types": "./com/subhuti/struct/SubhutiSourceLocation.ts",
       "import": "./com/subhuti/struct/SubhutiSourceLocation.ts",

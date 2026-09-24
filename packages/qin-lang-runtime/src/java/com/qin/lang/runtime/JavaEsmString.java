@@ -20,6 +20,33 @@ final class JavaEsmString {
         return builder.toString();
     }
 
+    public static String fromCodePoint(Object... codes) {
+        StringBuilder builder = new StringBuilder(codes.length);
+        for (Object code : codes) {
+            int codePoint = toIndex(code);
+            if (!Character.isValidCodePoint(codePoint)) {
+                throw new IllegalArgumentException("String.fromCodePoint invalid code point: " + codePoint);
+            }
+            builder.appendCodePoint(codePoint);
+        }
+        return builder.toString();
+    }
+
+    static boolean supportsStatic(String methodName) {
+        return switch (methodName) {
+            case "fromCharCode", "fromCodePoint" -> true;
+            default -> false;
+        };
+    }
+
+    static Object invokeStatic(String methodName, Object[] args) {
+        return switch (methodName) {
+            case "fromCharCode" -> fromCharCode(args);
+            case "fromCodePoint" -> fromCodePoint(args);
+            default -> throw new IllegalArgumentException("Unsupported static String builtin: " + methodName);
+        };
+    }
+
     static Object memberGet(CharSequence text, Object property) {
         String name = String.valueOf(property);
         if ("length".equals(name)) {
@@ -37,7 +64,7 @@ final class JavaEsmString {
             case "includes", "startsWith", "endsWith", "trim", "toUpperCase",
                     "toLowerCase", "slice", "substring", "substr", "split", "charAt",
                     "charCodeAt",
-                    "padStart", "padEnd",
+                    "padStart", "padEnd", "repeat",
                     "indexOf", "lastIndexOf", "search", "match", "replace", "valueOf", "toString" -> true;
             default -> false;
         };
@@ -60,6 +87,7 @@ final class JavaEsmString {
             case "charCodeAt" -> charCodeAt(text, args);
             case "padStart" -> pad(text, args, true);
             case "padEnd" -> pad(text, args, false);
+            case "repeat" -> repeat(text, args);
             case "indexOf" -> indexOf(text, args);
             case "lastIndexOf" -> lastIndexOf(text, args);
             case "search" -> search(text, args);
@@ -241,6 +269,15 @@ final class JavaEsmString {
             padding.setLength(needed);
         }
         return start ? padding + text : text + padding;
+    }
+
+    private static Object repeat(String text, Object[] args) {
+        requireArgCount("String.repeat", args, 1);
+        int count = toIndex(args[0]);
+        if (count < 0) {
+            throw new IllegalArgumentException("String.repeat count must be non-negative");
+        }
+        return text.repeat(count);
     }
 
     private static Object indexOf(String text, Object[] args) {

@@ -14,10 +14,10 @@ class com_slime_ast_nodes_misc_ImportSpecifier {
   __qin_field_imported: com_slime_ast_nodes_expressions_Identifier | null = null as any;
   __qin_field_local: com_slime_ast_nodes_expressions_Identifier | null = null as any;
   __qin_field_asToken: com_slime_ast_SyntaxToken | null = null as any;
-  __qin_field_typeOnly: boolean | null = null as any;
+  __qin_field_typeOnly: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Identifier) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation))) {
       const imported: any = __qin_args[0];
       const local: any = __qin_args[1];
       const asToken: any = __qin_args[2];
@@ -25,14 +25,14 @@ class com_slime_ast_nodes_misc_ImportSpecifier {
       this.__qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_4_0(imported, local, asToken, location);
       return;
     }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Identifier) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const imported: any = __qin_args[0];
       const local: any = __qin_args[1];
       const location: any = __qin_args[2];
       this.__qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_3_1(imported, local, location);
       return;
     }
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Identifier) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken)) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const imported: any = __qin_args[0];
       const local: any = __qin_args[1];
       const asToken: any = __qin_args[2];
@@ -44,16 +44,16 @@ class com_slime_ast_nodes_misc_ImportSpecifier {
     throw new Error("Unsupported Java constructor overload: ImportSpecifier/" + __qin_args.length);
   }
   __qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_4_0(imported: com_slime_ast_nodes_expressions_Identifier, local: com_slime_ast_nodes_expressions_Identifier, asToken: com_slime_ast_SyntaxToken, location: com_slime_ast_SourceLocation): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 5 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_delegate_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_delegate_args[1] === null || __qin_instanceof__(__qin_delegate_args[1], com_slime_ast_nodes_expressions_Identifier) || __qin_delegate_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && typeof __qin_delegate_args[3] === "boolean" && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SourceLocation) || __qin_delegate_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_5_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportSpecifier/" + __qin_delegate_args.length); })(imported, local, asToken, false, location);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 5 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_delegate_args[1] === null || __qin_instanceof__(__qin_delegate_args[1], com_slime_ast_nodes_expressions_Identifier)) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken)) && typeof __qin_delegate_args[3] === "boolean" && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SourceLocation))) { return this.__qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_5_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportSpecifier/" + __qin_delegate_args.length); })(imported, local, asToken, false, location);
   }
   __qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_3_1(imported: com_slime_ast_nodes_expressions_Identifier, local: com_slime_ast_nodes_expressions_Identifier, location: com_slime_ast_SourceLocation): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 5 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_delegate_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_delegate_args[1] === null || __qin_instanceof__(__qin_delegate_args[1], com_slime_ast_nodes_expressions_Identifier) || __qin_delegate_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && typeof __qin_delegate_args[3] === "boolean" && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SourceLocation) || __qin_delegate_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_5_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportSpecifier/" + __qin_delegate_args.length); })(imported, local, null, false, location);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 5 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_delegate_args[1] === null || __qin_instanceof__(__qin_delegate_args[1], com_slime_ast_nodes_expressions_Identifier)) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken)) && typeof __qin_delegate_args[3] === "boolean" && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SourceLocation))) { return this.__qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_5_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportSpecifier/" + __qin_delegate_args.length); })(imported, local, null, false, location);
   }
   __qin_constructor_com_slime_ast_nodes_misc_ImportSpecifier_5_2(imported: com_slime_ast_nodes_expressions_Identifier, local: com_slime_ast_nodes_expressions_Identifier, asToken: com_slime_ast_SyntaxToken, typeOnly: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_imported = null;
     this.__qin_field_local = null;
     this.__qin_field_asToken = null;
-    this.__qin_field_typeOnly = null;
+    this.__qin_field_typeOnly = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_imported = imported;
@@ -64,34 +64,35 @@ class com_slime_ast_nodes_misc_ImportSpecifier {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_IMPORT_SPECIFIER;
   }
-  imported(): any {
+  imported(): com_slime_ast_nodes_expressions_Identifier {
     return this.__qin_field_imported;
   }
-  local(): any {
+  local(): com_slime_ast_nodes_expressions_Identifier {
     return this.__qin_field_local;
   }
-  asToken(): any {
+  asToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_asToken;
   }
-  typeOnly(): any {
+  typeOnly(): boolean {
     return this.__qin_field_typeOnly;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_ImportSpecifier)) return false;
-    return __qin_java_values_equal__(this.__qin_field_imported, other.__qin_field_imported)
-      && __qin_java_values_equal__(this.__qin_field_local, other.__qin_field_local)
-      && __qin_java_values_equal__(this.__qin_field_asToken, other.__qin_field_asToken)
-      && __qin_java_values_equal__(this.__qin_field_typeOnly, other.__qin_field_typeOnly)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_ImportSpecifier = other;
+    return __qin_java_values_equal__(this.__qin_field_imported, __qin_record_other.__qin_field_imported)
+      && __qin_java_values_equal__(this.__qin_field_local, __qin_record_other.__qin_field_local)
+      && __qin_java_values_equal__(this.__qin_field_asToken, __qin_record_other.__qin_field_asToken)
+      && __qin_java_values_equal__(this.__qin_field_typeOnly, __qin_record_other.__qin_field_typeOnly)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_imported);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_local);
@@ -100,7 +101,7 @@ class com_slime_ast_nodes_misc_ImportSpecifier {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ImportSpecifier[", "imported=", this.__qin_field_imported, ", ", "local=", this.__qin_field_local, ", ", "asToken=", this.__qin_field_asToken, ", ", "typeOnly=", this.__qin_field_typeOnly, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

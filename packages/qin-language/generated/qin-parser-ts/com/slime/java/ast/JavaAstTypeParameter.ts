@@ -10,57 +10,47 @@ class com_slime_java_ast_JavaAstTypeParameter {
   __qin_field_name: string | null = null as any;
   __qin_field_boundTypeName: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstTypeParameter_0_0();
-      return;
-    }
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) {
       const name: any = __qin_args[0];
       const boundTypeName: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstTypeParameter_2_1(name, boundTypeName);
+      this.__qin_constructor_com_slime_java_ast_JavaAstTypeParameter_2_0(name, boundTypeName);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstTypeParameter/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTypeParameter_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstTypeParameter_2_0(name: string, boundTypeName: string): void {
     this.__qin_field_name = null;
     this.__qin_field_boundTypeName = null;
-    if ((__qin_binary__("==", this.__qin_field_name, null) || __QinJavaLangString.isBlank(this.__qin_field_name))) {
+    if ((__qin_binary__("==", name, null) || __QinJavaLangString.isBlank(name))) {
       throw new __QinJavaLangIllegalArgumentException("name cannot be blank");
     }
-    this.__qin_field_name = this.__qin_field_name.trim();
-    if ((__qin_binary__("!=", this.__qin_field_boundTypeName, null) && __QinJavaLangString.isBlank(this.__qin_field_boundTypeName))) {
-      this.__qin_field_boundTypeName = null;
+    name = name.trim();
+    if ((__qin_binary__("!=", boundTypeName, null) && __QinJavaLangString.isBlank(boundTypeName))) {
+      boundTypeName = null;
     }
+    this.__qin_field_name = name;
+    this.__qin_field_boundTypeName = boundTypeName;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTypeParameter_2_1(name: string, boundTypeName: string): void {
-    this.__qin_field_name = null;
-    this.__qin_field_boundTypeName = null;
-    (() => {
-      this.__qin_field_name = name;
-      this.__qin_field_boundTypeName = boundTypeName;
-      return null;
-    })();
-  }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  boundTypeName(): any {
+  boundTypeName(): string {
     return this.__qin_field_boundTypeName;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstTypeParameter)) return false;
-    return __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_boundTypeName, other.__qin_field_boundTypeName);
+    const __qin_record_other: com_slime_java_ast_JavaAstTypeParameter = other;
+    return __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_boundTypeName, __qin_record_other.__qin_field_boundTypeName);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_boundTypeName);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstTypeParameter[", "name=", this.__qin_field_name, ", ", "boundTypeName=", this.__qin_field_boundTypeName, "]"].join("");
   }
 }

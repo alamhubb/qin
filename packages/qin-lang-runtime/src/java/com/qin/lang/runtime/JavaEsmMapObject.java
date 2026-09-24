@@ -20,6 +20,10 @@ public final class JavaEsmMapObject {
         return this;
     }
 
+    public int getSize() {
+        return size;
+    }
+
     public Object get(Object key) {
         return entries.get(JavaEsmIdentityKey.of(key));
     }

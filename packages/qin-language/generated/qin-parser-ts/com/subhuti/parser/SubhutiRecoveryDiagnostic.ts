@@ -40,40 +40,41 @@ class com_subhuti_parser_SubhutiRecoveryDiagnostic {
       return null;
     })();
   }
-  line(): any {
+  line(): number {
     return (__qin_binary__("!=", this.__qin_field_start, null) ? this.__qin_field_start.line() : 1.0);
   }
-  column(): any {
+  column(): number {
     return (__qin_binary__("!=", this.__qin_field_start, null) ? this.__qin_field_start.column() : 1.0);
   }
-  offset(): any {
+  offset(): number {
     return (__qin_binary__("!=", this.__qin_field_start, null) ? this.__qin_field_start.index() : 0.0);
   }
-  message(): any {
+  message(): string {
     return this.__qin_field_message;
   }
-  start(): any {
+  start(): com_subhuti_struct_SubhutiPosition {
     return this.__qin_field_start;
   }
-  end(): any {
+  end(): com_subhuti_struct_SubhutiPosition {
     return this.__qin_field_end;
   }
-  tokenName(): any {
+  tokenName(): string {
     return this.__qin_field_tokenName;
   }
-  tokenValue(): any {
+  tokenValue(): string {
     return this.__qin_field_tokenValue;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_subhuti_parser_SubhutiRecoveryDiagnostic)) return false;
-    return __qin_java_values_equal__(this.__qin_field_message, other.__qin_field_message)
-      && __qin_java_values_equal__(this.__qin_field_start, other.__qin_field_start)
-      && __qin_java_values_equal__(this.__qin_field_end, other.__qin_field_end)
-      && __qin_java_values_equal__(this.__qin_field_tokenName, other.__qin_field_tokenName)
-      && __qin_java_values_equal__(this.__qin_field_tokenValue, other.__qin_field_tokenValue);
+    const __qin_record_other: com_subhuti_parser_SubhutiRecoveryDiagnostic = other;
+    return __qin_java_values_equal__(this.__qin_field_message, __qin_record_other.__qin_field_message)
+      && __qin_java_values_equal__(this.__qin_field_start, __qin_record_other.__qin_field_start)
+      && __qin_java_values_equal__(this.__qin_field_end, __qin_record_other.__qin_field_end)
+      && __qin_java_values_equal__(this.__qin_field_tokenName, __qin_record_other.__qin_field_tokenName)
+      && __qin_java_values_equal__(this.__qin_field_tokenValue, __qin_record_other.__qin_field_tokenValue);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_message);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_start);
@@ -82,7 +83,7 @@ class com_subhuti_parser_SubhutiRecoveryDiagnostic {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_tokenValue);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["SubhutiRecoveryDiagnostic[", "message=", this.__qin_field_message, ", ", "start=", this.__qin_field_start, ", ", "end=", this.__qin_field_end, ", ", "tokenName=", this.__qin_field_tokenName, ", ", "tokenValue=", this.__qin_field_tokenValue, "]"].join("");
   }
 }

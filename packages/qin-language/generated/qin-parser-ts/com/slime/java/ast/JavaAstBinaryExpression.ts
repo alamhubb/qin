@@ -13,62 +13,51 @@ class com_slime_java_ast_JavaAstBinaryExpression {
   __qin_field_left: com_slime_java_ast_JavaAstExpression | null = null as any;
   __qin_field_right: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstBinaryExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression"))) {
       const operator: any = __qin_args[0];
       const left: any = __qin_args[1];
       const right: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstBinaryExpression_3_1(operator, left, right);
+      this.__qin_constructor_com_slime_java_ast_JavaAstBinaryExpression_3_0(operator, left, right);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstBinaryExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstBinaryExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstBinaryExpression_3_0(operator: string, left: com_slime_java_ast_JavaAstExpression, right: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_operator = null;
     this.__qin_field_left = null;
     this.__qin_field_right = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_operator, "operator cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_left, "left cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_right, "right cannot be null");
+    __QinJavaUtilObjects.requireNonNull(operator, "operator cannot be null");
+    __QinJavaUtilObjects.requireNonNull(left, "left cannot be null");
+    __QinJavaUtilObjects.requireNonNull(right, "right cannot be null");
+    this.__qin_field_operator = operator;
+    this.__qin_field_left = left;
+    this.__qin_field_right = right;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstBinaryExpression_3_1(operator: string, left: com_slime_java_ast_JavaAstExpression, right: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_operator = null;
-    this.__qin_field_left = null;
-    this.__qin_field_right = null;
-    (() => {
-      this.__qin_field_operator = operator;
-      this.__qin_field_left = left;
-      this.__qin_field_right = right;
-      return null;
-    })();
-  }
-  operator(): any {
+  operator(): string {
     return this.__qin_field_operator;
   }
-  left(): any {
+  left(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_left;
   }
-  right(): any {
+  right(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_right;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstBinaryExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_operator, other.__qin_field_operator)
-      && __qin_java_values_equal__(this.__qin_field_left, other.__qin_field_left)
-      && __qin_java_values_equal__(this.__qin_field_right, other.__qin_field_right);
+    const __qin_record_other: com_slime_java_ast_JavaAstBinaryExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_operator, __qin_record_other.__qin_field_operator)
+      && __qin_java_values_equal__(this.__qin_field_left, __qin_record_other.__qin_field_left)
+      && __qin_java_values_equal__(this.__qin_field_right, __qin_record_other.__qin_field_right);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_operator);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_left);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_right);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstBinaryExpression[", "operator=", this.__qin_field_operator, ", ", "left=", this.__qin_field_left, ", ", "right=", this.__qin_field_right, "]"].join("");
   }
 }

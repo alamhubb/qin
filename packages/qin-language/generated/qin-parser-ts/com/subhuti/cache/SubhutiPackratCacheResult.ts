@@ -8,17 +8,17 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_subhuti_cache_SubhutiPackratCacheResult {
-  __qin_field_endTokenIndex: number | null = null as any;
+  __qin_field_endTokenIndex: number | null = 0 as any;
   __qin_field_cst: any = null as any;
-  __qin_field_parseSuccess: boolean | null = null as any;
+  __qin_field_parseSuccess: boolean | null = false as any;
   __qin_field_recordNode: com_subhuti_parser_ParseRecordNode | null = null as any;
-  __qin_field_parsedTokens: any = null as any;
-  __qin_field_endCodeIndex: number | null = null as any;
-  __qin_field_endLine: number | null = null as any;
-  __qin_field_endColumn: number | null = null as any;
+  __qin_field_parsedTokens: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken> | null = null as any;
+  __qin_field_endCodeIndex: number | null = 0 as any;
+  __qin_field_endLine: number | null = 0 as any;
+  __qin_field_endColumn: number | null = 0 as any;
   __qin_field_lastTokenName: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && typeof __qin_args[0] === "number" && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_parser_ParseRecordNode)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 5 && typeof __qin_args[0] === "number" && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_parser_ParseRecordNode)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList))) {
       const endTokenIndex: any = __qin_args[0];
       const cst: any = __qin_args[1];
       const parseSuccess: any = __qin_args[2];
@@ -27,7 +27,7 @@ class com_subhuti_cache_SubhutiPackratCacheResult {
       this.__qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_5_0(endTokenIndex, cst, parseSuccess, recordNode, parsedTokens);
       return;
     }
-    if (__qin_args.length === 9 && typeof __qin_args[0] === "number" && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_parser_ParseRecordNode)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_args[5] === "number" && typeof __qin_args[6] === "number" && typeof __qin_args[7] === "number" && (__qin_args[8] === null || typeof __qin_args[8] === "string")) {
+    if (__qin_args.length === 9 && typeof __qin_args[0] === "number" && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_parser_ParseRecordNode)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList)) && typeof __qin_args[5] === "number" && typeof __qin_args[6] === "number" && typeof __qin_args[7] === "number" && (__qin_args[8] === null || typeof __qin_args[8] === "string")) {
       const endTokenIndex: any = __qin_args[0];
       const cst: any = __qin_args[1];
       const parseSuccess: any = __qin_args[2];
@@ -42,18 +42,18 @@ class com_subhuti_cache_SubhutiPackratCacheResult {
     }
     throw new Error("Unsupported Java constructor overload: SubhutiPackratCacheResult/" + __qin_args.length);
   }
-  __qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_5_0(endTokenIndex: number, cst: any, parseSuccess: boolean, recordNode: com_subhuti_parser_ParseRecordNode, parsedTokens: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 9 && typeof __qin_delegate_args[0] === "number" && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] !== "undefined") && typeof __qin_delegate_args[2] === "boolean" && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_subhuti_parser_ParseRecordNode)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[5] === "number" && typeof __qin_delegate_args[6] === "number" && typeof __qin_delegate_args[7] === "number" && (__qin_delegate_args[8] === null || typeof __qin_delegate_args[8] === "string")) { return this.__qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_9_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiPackratCacheResult/" + __qin_delegate_args.length); })(endTokenIndex, cst, parseSuccess, recordNode, parsedTokens, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), null);
+  __qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_5_0(endTokenIndex: number, cst: any, parseSuccess: boolean, recordNode: com_subhuti_parser_ParseRecordNode, parsedTokens: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 9 && typeof __qin_delegate_args[0] === "number" && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] !== "undefined") && typeof __qin_delegate_args[2] === "boolean" && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_subhuti_parser_ParseRecordNode)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[5] === "number" && typeof __qin_delegate_args[6] === "number" && typeof __qin_delegate_args[7] === "number" && (__qin_delegate_args[8] === null || typeof __qin_delegate_args[8] === "string")) { return this.__qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_9_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiPackratCacheResult/" + __qin_delegate_args.length); })(endTokenIndex, cst, parseSuccess, recordNode, parsedTokens, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), null);
   }
-  __qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_9_1(endTokenIndex: number, cst: any, parseSuccess: boolean, recordNode: com_subhuti_parser_ParseRecordNode, parsedTokens: any, endCodeIndex: number, endLine: number, endColumn: number, lastTokenName: string): void {
-    this.__qin_field_endTokenIndex = null;
+  __qin_constructor_com_subhuti_cache_SubhutiPackratCacheResult_9_1(endTokenIndex: number, cst: any, parseSuccess: boolean, recordNode: com_subhuti_parser_ParseRecordNode, parsedTokens: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken>, endCodeIndex: number, endLine: number, endColumn: number, lastTokenName: string): void {
+    this.__qin_field_endTokenIndex = 0;
     this.__qin_field_cst = null;
-    this.__qin_field_parseSuccess = null;
+    this.__qin_field_parseSuccess = false;
     this.__qin_field_recordNode = null;
     this.__qin_field_parsedTokens = null;
-    this.__qin_field_endCodeIndex = null;
-    this.__qin_field_endLine = null;
-    this.__qin_field_endColumn = null;
+    this.__qin_field_endCodeIndex = 0;
+    this.__qin_field_endLine = 0;
+    this.__qin_field_endColumn = 0;
     this.__qin_field_lastTokenName = null;
     this.__qin_field_endTokenIndex = endTokenIndex;
     this.__qin_field_cst = cst;
@@ -65,31 +65,31 @@ class com_subhuti_cache_SubhutiPackratCacheResult {
     this.__qin_field_endColumn = endColumn;
     this.__qin_field_lastTokenName = lastTokenName;
   }
-  getEndTokenIndex(): any {
+  getEndTokenIndex(): number {
     return this.__qin_field_endTokenIndex;
   }
   getCst(): any {
     return this.__qin_field_cst;
   }
-  isParseSuccess(): any {
+  isParseSuccess(): boolean {
     return this.__qin_field_parseSuccess;
   }
-  getRecordNode(): any {
+  getRecordNode(): com_subhuti_parser_ParseRecordNode {
     return this.__qin_field_recordNode;
   }
-  getParsedTokens(): any {
+  getParsedTokens(): __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken> {
     return this.__qin_field_parsedTokens;
   }
-  getEndCodeIndex(): any {
+  getEndCodeIndex(): number {
     return this.__qin_field_endCodeIndex;
   }
-  getEndLine(): any {
+  getEndLine(): number {
     return this.__qin_field_endLine;
   }
-  getEndColumn(): any {
+  getEndColumn(): number {
     return this.__qin_field_endColumn;
   }
-  getLastTokenName(): any {
+  getLastTokenName(): string {
     return this.__qin_field_lastTokenName;
   }
 }

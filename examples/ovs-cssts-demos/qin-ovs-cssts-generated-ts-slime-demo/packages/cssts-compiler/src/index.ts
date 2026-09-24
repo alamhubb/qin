@@ -1,5 +1,6 @@
 // Parser
 export { CssTsParser, CssTsTokenConsumer, cssTsTokens, CssTsContextualKeywordTypes } from './parser'
+export { CssTsParserOptions } from './parser/CssTsParser.ts'
 export { normalizeGeneratedAst, normalizeGeneratedCst, normalizeGeneratedToken, normalizeGeneratedTokens } from './parser/generated-runtime-adapter.ts'
 
 // 统一初始化
@@ -9,7 +10,7 @@ export { CsstsInit, type RuntimeAtomData } from './init/CsstsInit'
 export { RuntimeStore } from './store/RuntimeStore'
 
 // AST Transformer
-export { CssTsCstToAstUtils, CssTsCstToAst } from './factory'
+export { CssTsCstToAstUtils, CssTsCstToAst, registerCssTsCstToAst } from './factory'
 
 // Transform（核心转换功能）
 export {

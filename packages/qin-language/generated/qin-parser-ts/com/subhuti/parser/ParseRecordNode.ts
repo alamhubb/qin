@@ -9,9 +9,9 @@ function __qin_structural_object__(value) {
 }
 class com_subhuti_parser_ParseRecordNode {
   __qin_field_name: string | null = null as any;
-  __qin_field_children: any = null as any;
-  __qin_field_startTokenIndex: number | null = null as any;
-  __qin_field_endTokenIndex: number | null = null as any;
+  __qin_field_children: __QinJavaUtilList<com_subhuti_parser_ParseRecordNode> | null = null as any;
+  __qin_field_startTokenIndex: number | null = 0 as any;
+  __qin_field_endTokenIndex: number | null = 0 as any;
   __qin_field_token: com_subhuti_struct_SubhutiMatchToken | null = null as any;
   __qin_field_value: string | null = null as any;
   constructor(...__qin_args: any[]) {
@@ -29,8 +29,8 @@ class com_subhuti_parser_ParseRecordNode {
   __qin_constructor_com_subhuti_parser_ParseRecordNode_0_0(): void {
     this.__qin_field_name = null;
     this.__qin_field_children = null;
-    this.__qin_field_startTokenIndex = null;
-    this.__qin_field_endTokenIndex = null;
+    this.__qin_field_startTokenIndex = 0;
+    this.__qin_field_endTokenIndex = 0;
     this.__qin_field_token = null;
     this.__qin_field_value = null;
     this.__qin_field_children = new __QinJavaUtilArrayList();
@@ -38,52 +38,52 @@ class com_subhuti_parser_ParseRecordNode {
   __qin_constructor_com_subhuti_parser_ParseRecordNode_1_1(name: string): void {
     this.__qin_field_name = null;
     this.__qin_field_children = null;
-    this.__qin_field_startTokenIndex = null;
-    this.__qin_field_endTokenIndex = null;
+    this.__qin_field_startTokenIndex = 0;
+    this.__qin_field_endTokenIndex = 0;
     this.__qin_field_token = null;
     this.__qin_field_value = null;
     this.__qin_field_name = name;
     this.__qin_field_children = new __QinJavaUtilArrayList();
   }
-  getName(): any {
+  getName(): string {
     return this.__qin_field_name;
   }
-  setName(name: string): any {
+  setName(name: string): void {
     this.__qin_field_name = name;
     return null;
   }
-  getChildren(): any {
+  getChildren(): __QinJavaUtilList<com_subhuti_parser_ParseRecordNode> {
     return this.__qin_field_children;
   }
-  setChildren(children: any): any {
+  setChildren(children: __QinJavaUtilList<com_subhuti_parser_ParseRecordNode>): void {
     this.__qin_field_children = children;
     return null;
   }
-  getStartTokenIndex(): any {
+  getStartTokenIndex(): number {
     return this.__qin_field_startTokenIndex;
   }
-  setStartTokenIndex(startTokenIndex: number): any {
+  setStartTokenIndex(startTokenIndex: number): void {
     this.__qin_field_startTokenIndex = startTokenIndex;
     return null;
   }
-  getEndTokenIndex(): any {
+  getEndTokenIndex(): number {
     return this.__qin_field_endTokenIndex;
   }
-  setEndTokenIndex(endTokenIndex: number): any {
+  setEndTokenIndex(endTokenIndex: number): void {
     this.__qin_field_endTokenIndex = endTokenIndex;
     return null;
   }
-  getToken(): any {
+  getToken(): com_subhuti_struct_SubhutiMatchToken {
     return this.__qin_field_token;
   }
-  setToken(token: com_subhuti_struct_SubhutiMatchToken): any {
+  setToken(token: com_subhuti_struct_SubhutiMatchToken): void {
     this.__qin_field_token = token;
     return null;
   }
-  getValue(): any {
+  getValue(): string {
     return this.__qin_field_value;
   }
-  setValue(value: string): any {
+  setValue(value: string): void {
     this.__qin_field_value = value;
     return null;
   }

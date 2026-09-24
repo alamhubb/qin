@@ -38,12 +38,12 @@ class com_slime_java_identifier_JavaIdentifierParser extends com_slime_java_base
   __qin_constructor_com_slime_java_identifier_JavaIdentifierParser_1_0(sourceCode: string): void {
     null;
   }
-  identifier(): any {
+  identifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_identifier();
+      return /* @qin-static-admission member=call owner=com.slime.java.identifier.JavaIdentifierParser method=__qin_subhuti_raw_identifier receiver=this arity=0 */ com_slime_java_identifier_JavaIdentifierParser.prototype.__qin_subhuti_raw_identifier.call(this);
     }), "identifier", "JavaIdentifierParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_identifier(): any {
+  __qin_subhuti_raw_identifier(): void {
     SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.IDENTIFIER();
     }), __qin_java_functional(() => {
@@ -81,12 +81,12 @@ class com_slime_java_identifier_JavaIdentifierParser extends com_slime_java_base
     }));
     return null;
   }
-  typeIdentifier(): any {
+  typeIdentifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_typeIdentifier();
+      return /* @qin-static-admission member=call owner=com.slime.java.identifier.JavaIdentifierParser method=__qin_subhuti_raw_typeIdentifier receiver=this arity=0 */ com_slime_java_identifier_JavaIdentifierParser.prototype.__qin_subhuti_raw_typeIdentifier.call(this);
     }), "typeIdentifier", "JavaIdentifierParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_typeIdentifier(): any {
+  __qin_subhuti_raw_typeIdentifier(): void {
     SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.IDENTIFIER();
     }), __qin_java_functional(() => {
@@ -118,30 +118,48 @@ class com_slime_java_identifier_JavaIdentifierParser extends com_slime_java_base
     }));
     return null;
   }
-  qualifiedName(): any {
+  qualifiedName(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_qualifiedName();
+      return /* @qin-static-admission member=call owner=com.slime.java.identifier.JavaIdentifierParser method=__qin_subhuti_raw_qualifiedName receiver=this arity=0 */ com_slime_java_identifier_JavaIdentifierParser.prototype.__qin_subhuti_raw_qualifiedName.call(this);
     }), "qualifiedName", "JavaIdentifierParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_qualifiedName(): any {
-    this.identifier();
+  __qin_subhuti_raw_qualifiedName(): void {
+    {
+      const __qin_typed_receiver_3323: com_slime_java_identifier_JavaIdentifierParser = this;
+      __qin_typed_receiver_3323.identifier();
+    }
     SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
-      this.__qin_field_tokenConsumer.DOT();
-      this.identifier();
+      {
+        const __qin_typed_receiver_3324: com_slime_java_JavaTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_3324.DOT();
+      }
+      {
+        const __qin_typed_receiver_3325: com_slime_java_identifier_JavaIdentifierParser = this;
+        __qin_typed_receiver_3325.identifier();
+      }
       return null;
     }));
     return null;
   }
-  qualifiedNameList(): any {
+  qualifiedNameList(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_qualifiedNameList();
+      return /* @qin-static-admission member=call owner=com.slime.java.identifier.JavaIdentifierParser method=__qin_subhuti_raw_qualifiedNameList receiver=this arity=0 */ com_slime_java_identifier_JavaIdentifierParser.prototype.__qin_subhuti_raw_qualifiedNameList.call(this);
     }), "qualifiedNameList", "JavaIdentifierParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_qualifiedNameList(): any {
-    this.qualifiedName();
+  __qin_subhuti_raw_qualifiedNameList(): void {
+    {
+      const __qin_typed_receiver_3326: com_slime_java_identifier_JavaIdentifierParser = this;
+      __qin_typed_receiver_3326.qualifiedName();
+    }
     SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
-      this.__qin_field_tokenConsumer.COMMA();
-      this.qualifiedName();
+      {
+        const __qin_typed_receiver_3327: com_slime_java_JavaTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_3327.COMMA();
+      }
+      {
+        const __qin_typed_receiver_3328: com_slime_java_identifier_JavaIdentifierParser = this;
+        __qin_typed_receiver_3328.qualifiedName();
+      }
       return null;
     }));
     return null;

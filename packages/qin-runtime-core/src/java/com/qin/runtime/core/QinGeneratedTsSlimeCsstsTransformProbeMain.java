@@ -24,7 +24,16 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
             case "import" -> "import { ref } from 'vue'\n";
             case "const" -> "const count = ref(0)\n";
             case "constDirect" -> "const count = ref(0)\n";
+            case "constStringDirect" -> "const title = 'Rendered from Vue lang=cssts'\n";
             case "twoConst" -> """
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    """;
+            case "twoConstDirect" -> """
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    """;
+            case "twoConstParseOnly" -> """
                     const count = ref(0)
                     const title = 'Rendered from Vue lang=cssts'
                     """;
@@ -34,7 +43,24 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
 
                     const count = ref(0)
                     """;
+            case "importConstStringDirect" -> """
+                    import { ref } from 'vue'
+
+                    const title = 'Rendered from Vue lang=cssts'
+                    """;
             case "importTwoConst" -> """
+                    import { ref } from 'vue'
+
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    """;
+            case "importTwoConstDirect" -> """
+                    import { ref } from 'vue'
+
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    """;
+            case "importTwoConstParseOnly" -> """
                     import { ref } from 'vue'
 
                     const count = ref(0)
@@ -45,7 +71,31 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
 
                     const panelStyle = css { displayFlex, colorBlue }
                     """;
+            case "threeConstDirect" -> """
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    const subtitle = 'Static Qin'
+                    """;
+            case "importThreeConstDirect" -> """
+                    import { ref } from 'vue'
+
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    const subtitle = 'Static Qin'
+                    """;
+            case "twoConstCssDirect" -> """
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    const panelStyle = css { displayFlex, colorBlue }
+                    """;
             case "noFunction" -> """
+                    import { ref } from 'vue'
+
+                    const count = ref(0)
+                    const title = 'Rendered from Vue lang=cssts'
+                    const panelStyle = css { displayFlex, colorBlue }
+                    """;
+            case "noFunctionDirect" -> """
                     import { ref } from 'vue'
 
                     const count = ref(0)
@@ -79,6 +129,7 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                 import { CssTsCstToAst, CssTsCstToAstUtils } from "cssts-compiler/src/factory/index.js";
                 import { parseStyleName, transformCssTs } from "cssts-compiler";
                 import { parseStyleName as directParseStyleName, transformCssTs as directTransformCssTs } from "cssts-compiler/src/transform/index.ts";
+                import { CsstsInit } from "cssts-compiler/src/init/CsstsInit.ts";
                 import { RuntimeStore } from "cssts-compiler/src/store/RuntimeStore.ts";
                 import { ensureRuntimeAtomData } from "cssts-compiler/src/utils/cssClassName.ts";
                 import { SlimeGenerator } from "slime-generator";
@@ -87,6 +138,7 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                 const source = %s;
                 const probeRevision = "module-item-diag-20260730-1521";
                 const includeDirectDiagnostics = %s.endsWith("Direct");
+                const parseOnly = %s.endsWith("ParseOnly");
                 function childrenSummary(node, depth = 0) {
                   if (!node || depth > 3) return '';
                   const name = node.name || (node.getName ? node.getName() : null);
@@ -172,11 +224,21 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                 }
                 function astTypeName(node) {
                   if (!node) return null;
-                  const type = astField(node, 'type');
-                  if (typeof type === 'string') return type;
-                  if (type && typeof type.name === 'function') return type.name();
-                  if (type && type.__qinEnumName) return type.__qinEnumName;
-                  return type == null ? null : String(type);
+                  return node.constructor && node.constructor.name ? node.constructor.name : null;
+                }
+                function astRuntimeFacts(node) {
+                  if (!node) return null;
+                  const fieldType = astField(node, 'type');
+                  const body = astField(node, 'body');
+                  return {
+                    className: node.constructor && node.constructor.name ? node.constructor.name : null,
+                    directType: node.type === undefined ? null : String(node.type),
+                    fieldType: fieldType === undefined || fieldType === null ? null : String(fieldType),
+                    fieldTypeEnum: fieldType && fieldType.__qinEnumName ? String(fieldType.__qinEnumName) : null,
+                    bodyIsArray: Array.isArray(body),
+                    bodySize: javaArray(body).length,
+                    keys: Object.keys(node).join(',')
+                  };
                 }
                 function callTransform(fn, text) {
                   const result = { value: null, error: null };
@@ -270,11 +332,28 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                 function parserFailValue(parser) {
                   return parser && parser.isParserFail ? parser.isParserFail() : parser.parserFail;
                 }
+                function parserParseSuccessValue(parser) {
+                  if (!parser) return null;
+                  if (parser.isParserFail) return !parser.isParserFail();
+                  if (parser._parseSuccess !== undefined) return parser._parseSuccess;
+                  if (parser.__qin_field_parseSuccess !== undefined) return parser.__qin_field_parseSuccess;
+                  if (parser.__qin_field__parseSuccess !== undefined) return parser.__qin_field__parseSuccess;
+                  return null;
+                }
                 function parserIndexValue(parser) {
                   if (!parser) return null;
                   if (parser.getCurrentIndex) return parser.getCurrentIndex();
                   if (parser.currentTokenIndex) return parser.currentTokenIndex();
+                  if (parser.__qin_field_currentIndex !== undefined) return parser.__qin_field_currentIndex;
                   return parser.currentIndex || null;
+                }
+                function parserNextTokenValue(parser) {
+                  if (!parser) return null;
+                  const token = parser.LA ? parser.LA(1) : parser.nextToken;
+                  if (!token) return null;
+                  const name = token.tokenName ? token.tokenName() : token.tokenName;
+                  const value = token.value ? token.value() : (token.tokenValue ? token.tokenValue() : token.tokenValue);
+                  return name ? name + (value ? ':' + value : '') : null;
                 }
                 function tokenAt(parser, offset) {
                   if (!parser || !parser.tokenNameAt) return null;
@@ -283,6 +362,42 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                   const token = parser.LA ? parser.LA(offset) : null;
                   const value = token && token.value ? token.value() : (token && token.tokenValue ? token.tokenValue : null);
                   return value ? name + ':' + value : name;
+                }
+                function tokenDetail(parser, offset) {
+                  if (!parser) return null;
+                  const token = parser.LA ? parser.LA(offset) : null;
+                  if (!token) return null;
+                  function safeValue(fn) {
+                    try {
+                      return fn();
+                    } catch (err) {
+                      return 'error:' + String(err).split('\\n')[0];
+                    }
+                  }
+                  return {
+                    name: token.tokenName ? token.tokenName() : token.tokenName,
+                    value: token.value ? token.value() : (token.tokenValue ? token.tokenValue() : token.tokenValue),
+                    lineBreakBefore: token.hasLineBreakBefore ? safeValue(() => token.hasLineBreakBefore()) : null,
+                    rawLineBreakBefore: token.__qin_field_hasLineBreakBefore === undefined ? null : token.__qin_field_hasLineBreakBefore,
+                    getterLineBreakBefore: token.getHasLineBreakBefore ? safeValue(() => token.getHasLineBreakBefore()) : null,
+                    rowNum: token.rowNum ? safeValue(() => token.rowNum()) : (token.getRowNum ? safeValue(() => token.getRowNum()) : null),
+                    columnStartNum: token.columnStartNum ? safeValue(() => token.columnStartNum()) : (token.getColumnStartNum ? safeValue(() => token.getColumnStartNum()) : null),
+                    index: token.index ? safeValue(() => token.index()) : (token.getIndex ? safeValue(() => token.getIndex()) : null),
+                    startLine: token.start ? safeValue(() => token.start().line()) : null,
+                    startColumn: token.start ? safeValue(() => token.start().column()) : null,
+                    endLine: token.end ? safeValue(() => token.end().line()) : null,
+                    endColumn: token.end ? safeValue(() => token.end().column()) : null
+                  };
+                }
+                function tokenDetails(parser, count) {
+                  const details = [];
+                  for (let offset = 1; offset <= count; offset++) {
+                    const detail = tokenDetail(parser, offset);
+                    if (!detail) break;
+                    details.push(detail);
+                    if (detail.name === 'EOF') break;
+                  }
+                  return details;
                 }
                 function directRuleProbe(label, text, invoke) {
                   const parser = new CssTsParser(text);
@@ -303,9 +418,357 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                     token1: tokenAt(parser, 1),
                     token2: tokenAt(parser, 2),
                     token3: tokenAt(parser, 3),
+                    token1Detail: tokenDetail(parser, 1),
                     resultName: result && (result.name || (result.getName ? result.getName() : null)),
                     cstName: cst && (cst.name || (cst.getName ? cst.getName() : null)),
                     cstSummary: childrenSummary(cst)
+                  };
+                }
+                function moduleStartFacts(parser) {
+                  function safeBool(label, fn) {
+                    try {
+                      return fn();
+                    } catch (err) {
+                      return 'error:' + String(err).split('\\n')[0];
+                    }
+                  }
+                  return {
+                    index: parserIndexValue(parser),
+                    parserFail: parserFailValue(parser),
+                    parseSuccess: parserParseSuccessValue(parser),
+                    token1: tokenAt(parser, 1),
+                    token2: tokenAt(parser, 2),
+                    token3: tokenAt(parser, 3),
+                    canStartModuleItem1: safeBool('canStartModuleItem1', () => parser.canStartModuleItem(1)),
+                    canStartModuleStatementListItem1: safeBool('canStartModuleStatementListItem1', () => parser.canStartStatementListItemAt(1, parser.moduleStatementListItemParams())),
+                    canStartDeclaration1: safeBool('canStartDeclaration1', () => parser.canStartDeclarationAt(1)),
+                    activeStaticRule: safeBool('hasActiveStaticRuleExecution', () => parser.hasActiveStaticRuleExecution()),
+                    interpretedDepth: parser.__qin_field_interpretedStaticRuleDepth,
+                    activeDepth: parser.__qin_field_activeStaticRuleDepth
+                  };
+                }
+                function manualTwoRawModuleItemsProbe(text) {
+                  const parser = new CssTsParser(text);
+                  const steps = [];
+                  function invoke(label, fn) {
+                    const before = moduleStartFacts(parser);
+                    let error = null;
+                    let result = null;
+                    try {
+                      result = fn();
+                    } catch (err) {
+                      error = err && err.stack ? String(err.stack).split('\\n').slice(0, 5).join('\\n') : String(err);
+                    }
+                    const after = moduleStartFacts(parser);
+                    const cst = parser.getCurCst ? parser.getCurCst() : null;
+                    steps.push({
+                      label,
+                      before,
+                      after,
+                      consumed: before.index === null || after.index === null ? null : after.index - before.index,
+                      error,
+                      resultName: result && (result.name || (result.getName ? result.getName() : null)),
+                      cstName: cst && (cst.name || (cst.getName ? cst.getName() : null)),
+                      cstSummary: childrenSummary(cst)
+                    });
+                  }
+                  invoke('raw.ModuleItem.first', () => parser.__qin_subhuti_raw_ModuleItem());
+                  invoke('raw.ModuleItem.second', () => parser.__qin_subhuti_raw_ModuleItem());
+                  return {
+                    steps,
+                    final: moduleStartFacts(parser),
+                    firstStaticFailure: parser.getFirstStaticFailureReport ? parser.getFirstStaticFailureReport() : null,
+                    furthestStaticFailure: parser.getFurthestStaticFailureReport ? parser.getFurthestStaticFailureReport() : null,
+                    lastStaticNoMatch: parser.getLastStaticNoMatchReport ? parser.getLastStaticNoMatchReport() : null
+                  };
+                }
+                function interpretedSingleRuleProbe(text) {
+                  function runCase(label, invoke) {
+                    const parser = new CssTsParser(text);
+                    const beforeEnter = moduleStartFacts(parser);
+                    let duringEnter = null;
+                    let error = null;
+                    try {
+                      parser.enterInterpretedStaticRule();
+                      duringEnter = moduleStartFacts(parser);
+                      invoke(parser);
+                    } catch (err) {
+                      error = err && err.stack ? String(err.stack).split('\\n').slice(0, 5).join('\\n') : String(err);
+                    } finally {
+                      try {
+                        if (parser.__qin_field_interpretedStaticRuleDepth > 0) {
+                          parser.leaveInterpretedStaticRule();
+                        }
+                      } catch (leaveErr) {
+                        error = (error ? error + '\\n' : '') + 'leave: ' + String(leaveErr);
+                      }
+                    }
+                    return {
+                      label,
+                      beforeEnter,
+                      duringEnter,
+                      after: moduleStartFacts(parser),
+                      error,
+                      firstStaticFailure: parser.getFirstStaticFailureReport ? parser.getFirstStaticFailureReport() : null,
+                      furthestStaticFailure: parser.getFurthestStaticFailureReport ? parser.getFurthestStaticFailureReport() : null,
+                      lastStaticNoMatch: parser.getLastStaticNoMatchReport ? parser.getLastStaticNoMatchReport() : null
+                    };
+                  }
+                  const statementParams = parser => parser.moduleStatementListItemParams();
+                  const declarationParams = () => new DeclarationParams(false, true, false);
+                  const expressionParams = new ExpressionParams(false, false, true);
+                  return [
+                    runCase('StatementListItem.interpreted', parser => parser.StatementListItem(statementParams(parser))),
+                    runCase('Declaration.interpreted', parser => parser.Declaration(declarationParams())),
+                    runCase('LexicalDeclaration.interpreted', parser => parser.LexicalDeclaration(expressionParams)),
+                    runCase('raw.LexicalDeclaration.interpreted', parser => parser.__qin_subhuti_raw_LexicalDeclaration(expressionParams)),
+                    runCase('SemicolonASI.afterFirstConst.interpreted', parser => {
+                      parser.__qin_subhuti_raw_LetOrConst();
+                      parser.BindingList(expressionParams);
+                      parser.SemicolonASI();
+                    })
+                  ];
+                }
+                function lexicalAsiPartsProbe(text) {
+                  const parser = new CssTsParser(text);
+                  const expressionParams = new ExpressionParams(false, false, true);
+                  const steps = [];
+                  function snap(label) {
+                    let autoInsert = null;
+                    try {
+                      autoInsert = parser.canAutoInsertSemicolon();
+                    } catch (err) {
+                      autoInsert = 'error:' + String(err).split('\\n')[0];
+                    }
+                    steps.push({
+                      label,
+                      facts: moduleStartFacts(parser),
+                      canAutoInsertSemicolon: autoInsert
+                    });
+                  }
+                  let error = null;
+                  try {
+                    parser.enterInterpretedStaticRule();
+                    snap('entered');
+                    parser.__qin_subhuti_raw_LetOrConst();
+                    snap('after LetOrConst');
+                    parser.BindingList(expressionParams);
+                    snap('after BindingList before ASI');
+                    parser.SemicolonASI();
+                    snap('after SemicolonASI');
+                  } catch (err) {
+                    error = err && err.stack ? String(err.stack).split('\\n').slice(0, 5).join('\\n') : String(err);
+                  } finally {
+                    try {
+                      if (parser.__qin_field_interpretedStaticRuleDepth > 0) {
+                        parser.leaveInterpretedStaticRule();
+                      }
+                    } catch (leaveErr) {
+                      error = (error ? error + '\\n' : '') + 'leave: ' + String(leaveErr);
+                    }
+                  }
+                  return {
+                    steps,
+                    afterLeave: moduleStartFacts(parser),
+                    error
+                  };
+                }
+                function variableBindingPartsProbe(text) {
+                  const parser = new CssTsParser(text);
+                  const expressionParams = new ExpressionParams(false, false, true);
+                  const bindingParams = new ExpressionParams(true, expressionParams.yield(), expressionParams.await());
+                  const steps = [];
+                  function run(label, fn) {
+                    const before = moduleStartFacts(parser);
+                    let error = null;
+                    try {
+                      fn();
+                    } catch (err) {
+                      error = err && err.stack ? String(err.stack).split('\\n').slice(0, 5).join('\\n') : String(err);
+                    }
+                    steps.push({
+                      label,
+                      before,
+                      after: moduleStartFacts(parser),
+                      error
+                    });
+                  }
+                  let outerError = null;
+                  try {
+                    parser.enterInterpretedStaticRule();
+                    run('LetOrConst', () => parser.__qin_subhuti_raw_LetOrConst());
+                    run('BindingIdentifier', () => parser.BindingIdentifier(bindingParams));
+                    run('OptionalTSDefiniteAssignmentAssertion', () => parser.OptionalTSDefiniteAssignmentAssertion());
+                    run('OptionalTSTypeAnnotation', () => parser.OptionalTSTypeAnnotation());
+                    run('Initializer', () => parser.Initializer(expressionParams));
+                    run('SemicolonASI', () => parser.SemicolonASI());
+                  } catch (err) {
+                    outerError = err && err.stack ? String(err.stack).split('\\n').slice(0, 5).join('\\n') : String(err);
+                  } finally {
+                    try {
+                      if (parser.__qin_field_interpretedStaticRuleDepth > 0) {
+                        parser.leaveInterpretedStaticRule();
+                      }
+                    } catch (leaveErr) {
+                      outerError = (outerError ? outerError + '\\n' : '') + 'leave: ' + String(leaveErr);
+                    }
+                  }
+                  return {
+                    steps,
+                    afterLeave: moduleStartFacts(parser),
+                    outerError
+                  };
+                }
+                function expressionSingleRulesProbe() {
+                  const expressionParams = new ExpressionParams(false, false, true);
+                  const refTailText = "ref(0)\\nconst title = 'Rendered from Vue lang=cssts'\\n";
+                  const argsTailText = "(0)\\nconst title = 'Rendered from Vue lang=cssts'\\n";
+                  const argListTailText = "0)\\nconst title = 'Rendered from Vue lang=cssts'\\n";
+                  function runCase(label, sample, invoke) {
+                    const parser = new CssTsParser(sample);
+                    const before = moduleStartFacts(parser);
+                    function assignmentBranchFacts() {
+                      function safe(label, fn) {
+                        try {
+                          return fn();
+                        } catch (err) {
+                          return 'error:' + String(err).split('\\n')[0];
+                        }
+                      }
+                      return {
+                        tokens: tokenDetails(parser, 10),
+                        lineBreakCount: parser.__qin_field_lexer && parser.__qin_field_lexer.countLineBreaks
+                          ? safe('countLineBreaks', () => parser.__qin_field_lexer.countLineBreaks('\\n'))
+                          : null,
+                        canStartArrowFunctionHead: safe('canStartArrowFunctionHead', () => parser.canStartArrowFunctionHead()),
+                        canStartAsyncArrowFunctionHead: safe('canStartAsyncArrowFunctionHead', () => parser.canStartAsyncArrowFunctionHead()),
+                        canStartYieldExpression: safe('canStartYieldExpression', () => parser.canStartYieldExpression(expressionParams)),
+                        hasTopLevelAssignmentOperatorAhead: safe('hasTopLevelAssignmentOperatorAhead', () => parser.hasTopLevelAssignmentOperatorAhead()),
+                        canStartAssignmentExpression: safe('canStartAssignmentExpression', () => parser.canStartAssignmentExpression(expressionParams, 1))
+                      };
+                    }
+                    const beforeBranches = assignmentBranchFacts();
+                    let duringEnter = null;
+                    let duringBranches = null;
+                    let error = null;
+                    try {
+                      parser.enterInterpretedStaticRule();
+                      duringEnter = moduleStartFacts(parser);
+                      duringBranches = assignmentBranchFacts();
+                      invoke(parser);
+                    } catch (err) {
+                      error = err && err.stack ? String(err.stack).split('\\n').slice(0, 5).join('\\n') : String(err);
+                    } finally {
+                      try {
+                        if (parser.__qin_field_interpretedStaticRuleDepth > 0) {
+                          parser.leaveInterpretedStaticRule();
+                        }
+                      } catch (leaveErr) {
+                        error = (error ? error + '\\n' : '') + 'leave: ' + String(leaveErr);
+                      }
+                    }
+                    return {
+                      label,
+                      before,
+                      beforeBranches,
+                      duringEnter,
+                      duringBranches,
+                      after: moduleStartFacts(parser),
+                      error,
+                      firstStaticFailure: parser.getFirstStaticFailureReport ? parser.getFirstStaticFailureReport() : null,
+                      furthestStaticFailure: parser.getFurthestStaticFailureReport ? parser.getFurthestStaticFailureReport() : null,
+                      lastStaticNoMatch: parser.getLastStaticNoMatchReport ? parser.getLastStaticNoMatchReport() : null
+                    };
+                  }
+                  return [
+                    runCase('AssignmentExpression(refTail)', refTailText, parser => parser.AssignmentExpression(expressionParams)),
+                    runCase('parseAssignmentExpressionBody(refTail)', refTailText, parser => parser.parseAssignmentExpressionBody(expressionParams)),
+                    runCase('ConditionalExpression(refTail)', refTailText, parser => parser.ConditionalExpression(expressionParams)),
+                    runCase('ShortCircuitExpression(refTail)', refTailText, parser => parser.ShortCircuitExpression(expressionParams)),
+                    runCase('LeftHandSideExpression(refTail)', refTailText, parser => parser.LeftHandSideExpression(expressionParams)),
+                    runCase('CallExpression(refTail)', refTailText, parser => parser.CallExpression(expressionParams)),
+                    runCase('CoverCallExpressionAndAsyncArrowHead(refTail)', refTailText, parser => parser.CoverCallExpressionAndAsyncArrowHead(expressionParams)),
+                    runCase('MemberExpression(refTail)', refTailText, parser => parser.MemberExpression(expressionParams)),
+                    runCase('PrimaryExpression(refTail)', refTailText, parser => parser.PrimaryExpression(expressionParams)),
+                    runCase('Arguments(argsTail)', argsTailText, parser => parser.Arguments(expressionParams)),
+                    runCase('ArgumentList(argListTail)', argListTailText, parser => parser.ArgumentList(expressionParams)),
+                    runCase('ArgumentListItem(argListTail)', argListTailText, parser => parser.ArgumentListItem(expressionParams))
+                  ];
+                }
+                function sequentialModuleItemProbe(text) {
+                  const parser = new CssTsParser(text);
+                  const rawParser = new CssTsParser(text);
+                  function safeCall(fn) {
+                    try {
+                      return fn();
+                    } catch (err) {
+                      return null;
+                    }
+                  }
+                  function rawStep(label, invoke) {
+                    let error = null;
+                    let result = null;
+                    try {
+                      result = invoke(rawParser);
+                    } catch (err) {
+                      error = err && err.stack ? String(err.stack).split('\\n').slice(0, 4).join('\\n') : String(err);
+                    }
+                    return {
+                      label,
+                      error,
+                      parserFail: parserFailValue(rawParser),
+                      parseSuccess: rawParser._parseSuccess,
+                      currentIndex: parserIndexValue(rawParser),
+                      activeDepth: rawParser.__qin_field_activeStaticRuleDepth,
+                      activeRuleScope: safeCall(() => rawParser.activeStaticRuleScopeName ? rawParser.activeStaticRuleScopeName() : null),
+                      activeRuleId: safeCall(() => rawParser.activeStaticRuleId ? rawParser.activeStaticRuleId() : null),
+                      activeVariantId: safeCall(() => rawParser.activeStaticVariantId ? rawParser.activeStaticVariantId() : null),
+                      token1: tokenAt(rawParser, 1),
+                      token2: tokenAt(rawParser, 2),
+                      token3: tokenAt(rawParser, 3),
+                      resultName: result && (result.name || (result.getName ? result.getName() : null)),
+                      cstName: rawParser.getCurCst ? (rawParser.getCurCst() && (rawParser.getCurCst().name || (rawParser.getCurCst().getName ? rawParser.getCurCst().getName() : null))) : null
+                    };
+                  }
+                  function step(label, invoke) {
+                    let error = null;
+                    let result = null;
+                    try {
+                      result = invoke(parser);
+                    } catch (err) {
+                      error = err && err.stack ? String(err.stack).split('\\n').slice(0, 4).join('\\n') : String(err);
+                    }
+                    return {
+                      label,
+                      error,
+                      parserFail: parserFailValue(parser),
+                      parseSuccess: parser._parseSuccess,
+                      currentIndex: parserIndexValue(parser),
+                      activeDepth: parser.__qin_field_activeStaticRuleDepth,
+                      activeRuleScope: safeCall(() => parser.activeStaticRuleScopeName ? parser.activeStaticRuleScopeName() : null),
+                      activeRuleId: safeCall(() => parser.activeStaticRuleId ? parser.activeStaticRuleId() : null),
+                      activeVariantId: safeCall(() => parser.activeStaticVariantId ? parser.activeStaticVariantId() : null),
+                      token1: tokenAt(parser, 1),
+                      token2: tokenAt(parser, 2),
+                      token3: tokenAt(parser, 3),
+                      resultName: result && (result.name || (result.getName ? result.getName() : null)),
+                      cstName: parser.getCurCst ? (parser.getCurCst() && (parser.getCurCst().name || (parser.getCurCst().getName ? parser.getCurCst().getName() : null))) : null
+                    };
+                  }
+                  const importStep = step("ImportDeclaration", parser => parser.ImportDeclaration());
+                  const moduleItemStep = step("ModuleItem", parser => parser.ModuleItem());
+                  const statementItemStep = step("ModuleStatementListItem", parser => parser.ModuleStatementListItem());
+                  const rawImportStep = rawStep("rawImportDeclaration", parser => parser.ImportDeclaration());
+                  const rawModuleItemListStep = rawStep("raw.ModuleItemList", parser => parser.__qin_subhuti_raw_ModuleItemList());
+                  return {
+                    token1: tokenAt(parser, 1),
+                    token2: tokenAt(parser, 2),
+                    token3: tokenAt(parser, 3),
+                    importStep,
+                    moduleItemStep,
+                    statementItemStep,
+                    rawImportStep,
+                    rawModuleItemListStep
                   };
                 }
                 function directParserDiagnostics(text) {
@@ -478,6 +941,7 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                     canStartDeclarationAt: factsParser.canStartDeclarationAt ? factsParser.canStartDeclarationAt(1) : null,
                     canStartVariableDeclarationAt2: factsParser.canStartVariableDeclarationAt ? factsParser.canStartVariableDeclarationAt(2, expressionParams) : null,
                     prototypeChain: prototypeChainFacts(factsParser),
+                    sequentialImportModuleItem: source.startsWith("import") ? sequentialModuleItemProbe(text) : null,
                     branchFacts: {
                       num: expressionBranchFacts("0" + '\\n'),
                       refCall: expressionBranchFacts(refCallText)
@@ -487,8 +951,12 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                       refCall: primaryStaticStepFacts(refCallText)
                     },
                     directRules: [
+                      directRuleProbe('ModuleItemList', text, parser => parser.ModuleItemList()),
+                      directRuleProbe('raw.ModuleItemList', text, parser => parser.__qin_subhuti_raw_ModuleItemList()),
                       directRuleProbe('ModuleItem', text, parser => parser.ModuleItem()),
+                      directRuleProbe('raw.ModuleItem', text, parser => parser.__qin_subhuti_raw_ModuleItem()),
                       directRuleProbe('ModuleStatementListItem', text, parser => parser.ModuleStatementListItem()),
+                      directRuleProbe('raw.ModuleStatementListItem', text, parser => parser.__qin_subhuti_raw_ModuleStatementListItem()),
                       directRuleProbe('StatementListItem', text, parser => parser.StatementListItem(parser.moduleStatementListItemParams())),
                       directRuleProbe('Declaration', text, parser => parser.Declaration(new DeclarationParams(false, true, false))),
                       directRuleProbe('StandardDeclaration', text, parser => parser.StandardDeclaration(new DeclarationParams(false, true, false))),
@@ -530,16 +998,21 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                   if (parser.parserFail || !cst) {
                     return {
                       label,
-                      parserFail: parser.parserFail,
-                      parseSuccess: parser._parseSuccess,
+                      parserFail: parserFailValue(parser),
+                      parseSuccess: parserParseSuccessValue(parser),
                       cstName: cst && (cst.name || (cst.getName ? cst.getName() : null)),
-                      currentIndex: parser.currentTokenIndex,
-                      nextToken: parser.nextToken ? parser.nextToken.tokenName + ':' + parser.nextToken.tokenValue : null,
+                      currentIndex: parserIndexValue(parser),
+                      nextToken: parserNextTokenValue(parser),
                       tokenCount: tokens && tokens.length,
                       firstStaticFailure: parser.getFirstStaticFailureReport ? parser.getFirstStaticFailureReport() : null,
                       furthestStaticFailure: parser.getFurthestStaticFailureReport ? parser.getFurthestStaticFailureReport() : null,
                       lastStaticNoMatch: parser.getLastStaticNoMatchReport ? parser.getLastStaticNoMatchReport() : null,
                       directDiagnostics,
+                      manualTwoRawModuleItems: manualTwoRawModuleItemsProbe(text),
+                      interpretedSingleRules: interpretedSingleRuleProbe(text),
+                      lexicalAsiParts: lexicalAsiPartsProbe(text),
+                      variableBindingParts: variableBindingPartsProbe(text),
+                      expressionSingleRules: expressionSingleRulesProbe(),
                       cstSummary: childrenSummary(cst),
                       astType: null,
                       astBodyLength: null,
@@ -554,38 +1027,46 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                   const statementItemCst = findCst(cst, 'ModuleItem') || findCst(cst, 'StatementListItem') || findCst(cst, 'LexicalDeclaration') || findCst(cst, 'FunctionDeclaration');
                   const directStatementAst = statementItemCst ? transformer.createStatementListItemAst(statementItemCst) : null;
                   const rawProgram = transformer.toProgram(cst);
-                  const rawBody = rawProgram && rawProgram.body ? rawProgram.body() : null;
+                  const rawBody = javaArray(astField(rawProgram, 'body'));
                   const ast = transformer.toFileAst(cst);
                   const generated = SlimeGenerator.generator(ast, tokens);
-                  const astFirst = ast && ast.body && ast.body.length ? ast.body[0] : null;
+                  const astBody = javaArray(astField(ast, 'body'));
+                  const astFirst = astBody.length ? astBody[0] : null;
                   return {
                     label,
-                    parserFail: parser.parserFail,
-                    parseSuccess: parser._parseSuccess,
+                    parserFail: parserFailValue(parser),
+                    parseSuccess: parserParseSuccessValue(parser),
                     cstName: cst && (cst.name || (cst.getName ? cst.getName() : null)),
-                    currentIndex: parser.currentTokenIndex,
-                    nextToken: parser.nextToken ? parser.nextToken.tokenName + ':' + parser.nextToken.tokenValue : null,
+                    currentIndex: parserIndexValue(parser),
+                    nextToken: parserNextTokenValue(parser),
                     tokenCount: tokens && tokens.length,
                     firstStaticFailure: parser.getFirstStaticFailureReport ? parser.getFirstStaticFailureReport() : null,
                     furthestStaticFailure: parser.getFurthestStaticFailureReport ? parser.getFurthestStaticFailureReport() : null,
                     lastStaticNoMatch: parser.getLastStaticNoMatchReport ? parser.getLastStaticNoMatchReport() : null,
                     directDiagnostics,
+                    manualTwoRawModuleItems: manualTwoRawModuleItemsProbe(text),
+                    interpretedSingleRules: interpretedSingleRuleProbe(text),
+                    lexicalAsiParts: lexicalAsiPartsProbe(text),
+                    variableBindingParts: variableBindingPartsProbe(text),
+                    expressionSingleRules: expressionSingleRulesProbe(),
                     cstSummary: childrenSummary(cst),
                     directModuleItemFacts: directModuleItemFacts(cst),
                     rawProgramClass: rawProgram && rawProgram.constructor ? rawProgram.constructor.name : null,
                     rawBodySize: javaSize(rawBody),
-                    rawBodyTypes: javaArray(rawBody).map(item => item && (item.type ? (typeof item.type === 'function' ? item.type() : item.type) : null)).join(','),
+    rawBodyTypes: javaArray(rawBody).map(item => astTypeName(item)).join(','),
                     directImportAstClass: directImportAst && directImportAst.constructor ? directImportAst.constructor.name : null,
                     directImportAstInterfaces: directImportAst && directImportAst.constructor ? String(directImportAst.constructor.__qin_java_interfaces) : null,
-                    directImportAstType: directImportAst && directImportAst.type ? (typeof directImportAst.type === 'function' ? directImportAst.type() : directImportAst.type) : null,
+    directImportAstType: astTypeName(directImportAst),
                     directStatementAstClass: directStatementAst && directStatementAst.constructor ? directStatementAst.constructor.name : null,
                     directStatementAstInterfaces: directStatementAst && directStatementAst.constructor ? String(directStatementAst.constructor.__qin_java_interfaces) : null,
-                    directStatementAstType: directStatementAst && directStatementAst.type ? (typeof directStatementAst.type === 'function' ? directStatementAst.type() : directStatementAst.type) : null,
+    directStatementAstType: astTypeName(directStatementAst),
                     directVariableFacts: variableDeclarationFacts(directStatementAst),
                     directFunctionFacts: functionDeclarationFacts(directStatementAst),
-                    astType: ast && ast.type,
-                    astBodyLength: ast && ast.body && ast.body.length,
-                    astBodyTypes: ast && ast.body ? ast.body.map(item => item && item.type).join(',') : null,
+    astType: astTypeName(ast),
+                    astRuntimeFacts: astRuntimeFacts(ast),
+                    astBodyLength: astBody.length,
+    astBodyTypes: astBody.map(item => astTypeName(item)).join(','),
+                    astBodyRuntimeFacts: astBody.map(item => astRuntimeFacts(item)),
                     astFirstVariableFacts: variableDeclarationFacts(astFirst),
                     astFirstFunctionFacts: functionDeclarationFacts(astFirst),
                     generatorCodeLength: generated && generated.code ? generated.code.length : 0,
@@ -600,6 +1081,10 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                 if (primaryExpressionNum && primaryExpressionNum.parserFail) {
                   throw new Error('PrimaryExpression(num) regression: ' + JSON.stringify(primaryExpressionNum));
                 }
+                const finalResult = parseOnly ? ({
+                    probeRevision,
+                    summary
+                  }) : (() => {
                 let transformed = null;
                 let transformedError = null;
                 let directTransformed = null;
@@ -608,6 +1093,9 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                 const directParse = callTransform(directParseStyleName, "displayFlex");
                 const packageFirst = callTransform(transformCssTs, source);
                 const directFirst = callTransform(directTransformCssTs, source);
+                CsstsInit.init({ dts: false });
+                const packageAfterInit = callTransform(transformCssTs, source);
+                const directAfterInit = callTransform(directTransformCssTs, source);
                 const localReturn = callTransform(localObjectReturnProbe, "local-ok");
                 const localTransform = callTransform(localTransformClone, source);
                 if (!summary.parserFail) {
@@ -619,7 +1107,7 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                   directTransformedError = directCall.error;
                 }
 
-                ({
+                return ({
                   probeRevision,
                   summary,
                   transformType: typeof transformed,
@@ -640,10 +1128,18 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                   packageFirstError: packageFirst.error,
                   packageFirstCodeLength: packageFirst.value && packageFirst.value.code ? packageFirst.value.code.length : 0,
                   packageFirstCode: packageFirst.value && packageFirst.value.code,
+                  packageAfterInitType: typeof packageAfterInit.value,
+                  packageAfterInitError: packageAfterInit.error,
+                  packageAfterInitCodeLength: packageAfterInit.value && packageAfterInit.value.code ? packageAfterInit.value.code.length : 0,
+                  packageAfterInitCode: packageAfterInit.value && packageAfterInit.value.code,
                   directFirstType: typeof directFirst.value,
                   directFirstError: directFirst.error,
                   directFirstCodeLength: directFirst.value && directFirst.value.code ? directFirst.value.code.length : 0,
                   directFirstCode: directFirst.value && directFirst.value.code,
+                  directAfterInitType: typeof directAfterInit.value,
+                  directAfterInitError: directAfterInit.error,
+                  directAfterInitCodeLength: directAfterInit.value && directAfterInit.value.code ? directAfterInit.value.code.length : 0,
+                  directAfterInitCode: directAfterInit.value && directAfterInit.value.code,
                   directTransformType: typeof directTransformed,
                   directTransformError: directTransformedError,
                   directTransformKeys: directTransformed ? Object.keys(directTransformed).join(',') : null,
@@ -669,8 +1165,11 @@ public final class QinGeneratedTsSlimeCsstsTransformProbeMain {
                   localTransformCode: localTransform.value && localTransform.value.code,
                   localTransformError: localTransform.error
                 });
+                })();
+                finalResult;
                 """.formatted(
                 QinJsPackageRunner.renderJsLiteral(source),
+                QinJsPackageRunner.renderJsLiteral(label),
                 QinJsPackageRunner.renderJsLiteral(label),
                 QinJsPackageRunner.renderJsLiteral(label));
 

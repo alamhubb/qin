@@ -12,10 +12,10 @@ function __qin_structural_object__(value) {
 class com_slime_ast_nodes_expressions_UpdateExpression {
   __qin_field_operator: string | null = null as any;
   __qin_field_argument: com_slime_ast_Expression | null = null as any;
-  __qin_field_prefix: boolean | null = null as any;
+  __qin_field_prefix: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation))) {
       const operator: any = __qin_args[0];
       const argument: any = __qin_args[1];
       const prefix: any = __qin_args[2];
@@ -28,7 +28,7 @@ class com_slime_ast_nodes_expressions_UpdateExpression {
   __qin_constructor_com_slime_ast_nodes_expressions_UpdateExpression_4_0(operator: string, argument: com_slime_ast_Expression, prefix: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_operator = null;
     this.__qin_field_argument = null;
-    this.__qin_field_prefix = null;
+    this.__qin_field_prefix = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_operator = operator;
@@ -38,30 +38,31 @@ class com_slime_ast_nodes_expressions_UpdateExpression {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_UPDATE_EXPRESSION;
   }
-  operator(): any {
+  operator(): string {
     return this.__qin_field_operator;
   }
-  argument(): any {
+  argument(): com_slime_ast_Expression {
     return this.__qin_field_argument;
   }
-  prefix(): any {
+  prefix(): boolean {
     return this.__qin_field_prefix;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_expressions_UpdateExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_operator, other.__qin_field_operator)
-      && __qin_java_values_equal__(this.__qin_field_argument, other.__qin_field_argument)
-      && __qin_java_values_equal__(this.__qin_field_prefix, other.__qin_field_prefix)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_expressions_UpdateExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_operator, __qin_record_other.__qin_field_operator)
+      && __qin_java_values_equal__(this.__qin_field_argument, __qin_record_other.__qin_field_argument)
+      && __qin_java_values_equal__(this.__qin_field_prefix, __qin_record_other.__qin_field_prefix)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_operator);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_argument);
@@ -69,7 +70,7 @@ class com_slime_ast_nodes_expressions_UpdateExpression {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["UpdateExpression[", "operator=", this.__qin_field_operator, ", ", "argument=", this.__qin_field_argument, ", ", "prefix=", this.__qin_field_prefix, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

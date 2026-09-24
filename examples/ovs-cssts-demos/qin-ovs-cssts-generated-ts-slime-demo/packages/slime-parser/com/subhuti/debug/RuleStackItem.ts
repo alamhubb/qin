@@ -63,6 +63,28 @@ class com_subhuti_debug_RuleStackItem {
     item.__qin_field_shouldBreakLine = true;
     return item;
   }
+  static forOrEntry(parentRuleName: string, tokenIndex: number, orIndex: number): any {
+    let item: any = new com_subhuti_debug_RuleStackItem();
+    item.__qin_field_ruleName = __qin_binary__("+", parentRuleName, "(Or)");
+    item.__qin_field_tokenIndex = tokenIndex;
+    item.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
+    item.__qin_field_orBranchInfo.__qin_field_orIndex = orIndex;
+    item.__qin_field_orBranchInfo.__qin_field_isOrEntry = true;
+    item.__qin_field_childs = new __QinJavaUtilArrayList();
+    return item;
+  }
+  static forOrBranch(branchIndex: number, totalBranches: number, parentRuleName: string, tokenIndex: number, orIndex: number): any {
+    let item: any = new com_subhuti_debug_RuleStackItem();
+    item.__qin_field_ruleName = __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[Branch #", branchIndex), "]("), parentRuleName), ")");
+    item.__qin_field_tokenIndex = tokenIndex;
+    item.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
+    item.__qin_field_orBranchInfo.__qin_field_orIndex = orIndex;
+    item.__qin_field_orBranchInfo.__qin_field_branchIndex = branchIndex;
+    item.__qin_field_orBranchInfo.__qin_field_totalBranches = totalBranches;
+    item.__qin_field_orBranchInfo.__qin_field_isOrBranch = true;
+    item.__qin_field_childs = new __QinJavaUtilArrayList();
+    return item;
+  }
   deepClone(): any {
     let clone: any = new com_subhuti_debug_RuleStackItem();
     clone.__qin_field_ruleName = this.__qin_field_ruleName;

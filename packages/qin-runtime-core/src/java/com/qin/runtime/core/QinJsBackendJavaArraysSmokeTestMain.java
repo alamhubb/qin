@@ -33,6 +33,13 @@ public final class QinJsBackendJavaArraysSmokeTestMain {
                                         "Arrays",
                                         "java.util.Arrays",
                                         "deepToString",
+                                        List.of(new QinIrIdentifierReference("list")))),
+                        new QinIrConstDeclaration(
+                                "count",
+                                new QinIrStaticMethodCallExpression(
+                                        "Arrays",
+                                        "java.util.Arrays",
+                                        "stream",
                                         List.of(new QinIrIdentifierReference("list"))))),
                 List.of(),
                 List.of(),
@@ -53,15 +60,16 @@ public final class QinJsBackendJavaArraysSmokeTestMain {
         require(generated.contains("const Arrays = __QinJavaUtilArrays;"), "Arrays alias");
         require(generated.contains("Arrays.asList(\"a\", \"b\")"), "Arrays.asList call");
         require(generated.contains("Arrays.deepToString(list)"), "Arrays.deepToString call");
+        require(generated.contains("Arrays.stream(list)"), "Arrays.stream call");
 
         Path root = Files.createTempDirectory("qin-js-backend-arrays-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-js-backend-arrays\" };\n",
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\n[list.size(), list.get(0), text].join(\":\");\n",
+                generated + "\n[list.size(), list.get(0), text, count.count()].join(\":\");\n",
                 "js_backend_arrays");
-        if (!"2:a:[a, b]".equals(result)) {
+        if (!"2:a:[a, b]:2".equals(result)) {
             throw new IllegalStateException("Expected generated Arrays result, got: " + result);
         }
         System.out.println("QinJsBackendJavaArraysSmokeTestMain OK");

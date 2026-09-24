@@ -11,10 +11,10 @@ function __qin_structural_object__(value) {
 }
 class com_slime_ast_nodes_declarations_VariableDeclaration {
   __qin_field_kind: string | null = null as any;
-  __qin_field_declarations: any = null as any;
+  __qin_field_declarations: __QinJavaUtilList<com_slime_ast_nodes_misc_VariableDeclarator> | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const kind: any = __qin_args[0];
       const declarations: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -23,7 +23,7 @@ class com_slime_ast_nodes_declarations_VariableDeclaration {
     }
     throw new Error("Unsupported Java constructor overload: VariableDeclaration/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_declarations_VariableDeclaration_3_0(kind: string, declarations: any, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_declarations_VariableDeclaration_3_0(kind: string, declarations: __QinJavaUtilList<com_slime_ast_nodes_misc_VariableDeclarator>, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_kind = null;
     this.__qin_field_declarations = null;
     this.__qin_field_location = null;
@@ -34,33 +34,34 @@ class com_slime_ast_nodes_declarations_VariableDeclaration {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_VARIABLE_DECLARATION;
   }
-  kind(): any {
+  kind(): string {
     return this.__qin_field_kind;
   }
-  declarations(): any {
+  declarations(): __QinJavaUtilList<com_slime_ast_nodes_misc_VariableDeclarator> {
     return this.__qin_field_declarations;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_declarations_VariableDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_kind, other.__qin_field_kind)
-      && __qin_java_values_equal__(this.__qin_field_declarations, other.__qin_field_declarations)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_declarations_VariableDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_kind, __qin_record_other.__qin_field_kind)
+      && __qin_java_values_equal__(this.__qin_field_declarations, __qin_record_other.__qin_field_declarations)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_kind);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_declarations);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["VariableDeclaration[", "kind=", this.__qin_field_kind, ", ", "declarations=", this.__qin_field_declarations, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

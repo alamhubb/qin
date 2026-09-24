@@ -67,6 +67,44 @@ public final class QinJsPackageRunnerModuleClassDiskCacheSmokeTestMain {
         if (!log.contains("module-class disk cache hit")) {
             throw new IllegalStateException("Expected cross-runner module-class disk cache hit, got:\n" + log);
         }
+
+        String strictSource = """
+                String(42)
+                """;
+        String strictNameHint = "module_class_dynamic_policy_cache_smoke_" + Long.toUnsignedString(System.nanoTime());
+        Object strictWarnResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                strictSource,
+                strictNameHint);
+        if (!"42".equals(String.valueOf(strictWarnResult))) {
+            throw new IllegalStateException("Unexpected warn-mode strict source result: " + strictWarnResult);
+        }
+
+        captured.reset();
+        Object strictResult;
+        try (PrintStream capture = new PrintStream(captured, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            System.setProperty("qin.dynamicSemanticMode", "error");
+            strictResult = new QinJsPackageRunner().runModuleSource(
+                    root,
+                    strictSource,
+                    strictNameHint);
+        } finally {
+            System.clearProperty("qin.dynamicSemanticMode");
+            System.setOut(originalOut);
+        }
+        if (!"42".equals(String.valueOf(strictResult))) {
+            throw new IllegalStateException("Unexpected strict-mode source result: " + strictResult);
+        }
+        log = captured.toString(StandardCharsets.UTF_8);
+        if (!log.contains("module-class compile start")) {
+            throw new IllegalStateException("Strict dynamic policy must have a distinct module-class cache key, got:\n"
+                    + log);
+        }
+        if (log.contains("module-class compile cache hit") || log.contains("module-class disk cache hit")) {
+            throw new IllegalStateException("Strict dynamic policy must not reuse warn-mode module-class cache, got:\n"
+                    + log);
+        }
         System.out.println("QinJsPackageRunnerModuleClassDiskCacheSmokeTestMain OK");
     }
 
@@ -81,4 +119,5 @@ public final class QinJsPackageRunnerModuleClassDiskCacheSmokeTestMain {
         method.setAccessible(true);
         return (Path) method.invoke(runner, projectRoot);
     }
+
 }

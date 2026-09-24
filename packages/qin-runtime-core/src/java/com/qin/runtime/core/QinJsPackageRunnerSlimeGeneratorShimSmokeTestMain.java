@@ -18,6 +18,14 @@ public final class QinJsPackageRunnerSlimeGeneratorShimSmokeTestMain {
         if (!"\"ok\";".equals(String.valueOf(result))) {
             throw new IllegalStateException("Unexpected slime-generator shim result: " + result);
         }
+        Object importConstResult = new QinJsPackageRunner().invokeNamedExport(
+                projectRoot,
+                "slime-generator",
+                "__qin_smoke_generate_import_const",
+                List.of());
+        if (!"import { ref } from \"vue\";\nconst count = ref(0);".equals(String.valueOf(importConstResult))) {
+            throw new IllegalStateException("Unexpected slime-generator import const result: " + importConstResult);
+        }
         Object javaStyleResult = new QinJsPackageRunner().invokeNamedExport(
                 projectRoot,
                 "slime-generator",

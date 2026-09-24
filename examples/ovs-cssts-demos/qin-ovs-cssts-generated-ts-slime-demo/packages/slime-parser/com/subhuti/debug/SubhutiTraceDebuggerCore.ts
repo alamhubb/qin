@@ -133,13 +133,7 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
   }
   onOrEnter(parentRuleName: string, tokenIndex: number): any {
     this.__qin_field_orCounter = __qin_binary__("+", this.__qin_field_orCounter, 1.0);
-    let orItem: any = new com_subhuti_debug_RuleStackItem();
-    orItem.__qin_field_ruleName = __qin_binary__("+", parentRuleName, "(Or)");
-    orItem.__qin_field_tokenIndex = tokenIndex;
-    orItem.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
-    orItem.__qin_field_orBranchInfo.__qin_field_orIndex = this.__qin_field_orCounter;
-    orItem.__qin_field_orBranchInfo.__qin_field_isOrEntry = true;
-    orItem.__qin_field_childs = new __QinJavaUtilArrayList();
+    let orItem: any = com_subhuti_debug_RuleStackItem.forOrEntry(parentRuleName, tokenIndex, this.__qin_field_orCounter);
     this.__qin_field_ruleStack.add(orItem);
     this.printOrEnter(orItem);
     return null;
@@ -161,14 +155,7 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
     return null;
   }
   onOrBranch(branchIndex: number, totalBranches: number, parentRuleName: string): any {
-    let branchItem: any = new com_subhuti_debug_RuleStackItem();
-    branchItem.__qin_field_ruleName = __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[Branch #", branchIndex), "]("), parentRuleName), ")");
-    branchItem.__qin_field_tokenIndex = this.getCurrentTokenIndex();
-    branchItem.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
-    branchItem.__qin_field_orBranchInfo.__qin_field_branchIndex = branchIndex;
-    branchItem.__qin_field_orBranchInfo.__qin_field_totalBranches = totalBranches;
-    branchItem.__qin_field_orBranchInfo.__qin_field_isOrBranch = true;
-    branchItem.__qin_field_childs = new __QinJavaUtilArrayList();
+    let branchItem: any = com_subhuti_debug_RuleStackItem.forOrBranch(branchIndex, totalBranches, parentRuleName, this.getCurrentTokenIndex(), this.__qin_field_orCounter);
     this.__qin_field_ruleStack.add(branchItem);
     this.printOrBranch(branchItem);
     return null;
@@ -199,7 +186,8 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
   }
   getCurrentDisplayDepth(): any {
     let depth: any = 0.0;
-    for (const item of this.__qin_field_ruleStack) {
+    for (let i: any = 0.0; __qin_binary__("<", i, this.__qin_field_ruleStack.size()); i = __qin_binary__("+", i, 1.0)) {
+      let item: com_subhuti_debug_RuleStackItem = this.__qin_field_ruleStack.get(i);
       if (item.__qin_field_shouldBreakLine) {
         depth = __qin_binary__("+", depth, 1.0);
       }

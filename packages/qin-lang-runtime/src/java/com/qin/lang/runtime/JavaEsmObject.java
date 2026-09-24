@@ -2,6 +2,7 @@ package com.qin.lang.runtime;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,17 +190,36 @@ public final class JavaEsmObject {
     }
 
     static Object resolveStoredPropertyValue(Object value, Object receiver) {
-        if (!isAccessorDescriptor(value)) {
-            return value;
+        Object current = value;
+        IdentityHashMap<Object, Boolean> seen = new IdentityHashMap<>();
+        for (int depth = 0; depth < 32; depth++) {
+            if (!isAccessorDescriptor(current)) {
+                return current;
+            }
+            if (seen.put(current, Boolean.TRUE) != null) {
+                return current;
+            }
+            Map<String, Object> descriptor = castMap(current);
+            Object storedValue = descriptor.containsKey("value") ? descriptor.get("value") : null;
+            if (storedValue != null && !isDescriptorText(storedValue)) {
+                return storedValue;
+            }
+            Object getter = descriptor.get("get");
+            if (getter == null) {
+                return storedValue;
+            }
+            Object callable = receiver == null
+                    ? getter
+                    : JavaEsmGlobal.bindRuntimeCallableThis(getter, receiver);
+            Object next = JavaEsmGlobal.callRuntimeCallable(callable);
+            if (next == null || next == current || isAccessorDescriptor(next) || isDescriptorText(next)) {
+                if (descriptor.containsKey("value")) {
+                    next = storedValue;
+                }
+            }
+            current = next;
         }
-        Object getter = castMap(value).get("get");
-        if (getter == null) {
-            return null;
-        }
-        Object callable = receiver == null
-                ? getter
-                : JavaEsmGlobal.bindRuntimeCallableThis(getter, receiver);
-        return JavaEsmGlobal.callRuntimeCallable(callable);
+        return current;
     }
 
     static boolean writeStoredPropertyValue(Object existing, Object receiver, Object value) {
@@ -240,6 +260,10 @@ public final class JavaEsmObject {
 
     static boolean isAccessorDescriptor(Object value) {
         return value instanceof Map<?, ?> map && Boolean.TRUE.equals(map.get(ACCESSOR_DESCRIPTOR_MARKER));
+    }
+
+    private static boolean isDescriptorText(Object value) {
+        return value instanceof String text && text.startsWith("{__qin_accessor_descriptor=");
     }
 
     @SuppressWarnings("unchecked")

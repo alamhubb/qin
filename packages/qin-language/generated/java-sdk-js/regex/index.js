@@ -1,154 +1,93 @@
-import { __qin_java_pattern_regexp__ } from "../core/runtime.js";
+import {
+  __qin_java_regex_pattern_compile__,
+  __qin_java_regex_matcher__,
+  __qin_java_regex_matcher_region__,
+  __qin_java_regex_matcher_reset__,
+  __qin_java_regex_matcher_looking_at__,
+  __qin_java_regex_matcher_matches__,
+  __qin_java_regex_matcher_find__,
+  __qin_java_regex_matcher_group__,
+  __qin_java_regex_matcher_group_count__,
+  __qin_java_regex_matcher_start__,
+  __qin_java_regex_matcher_end__,
+  __qin_java_regex_matcher_replace_all__,
+  __qin_java_regex_matcher_append_replacement__,
+  __qin_java_regex_matcher_append_tail__
+} from "../core/runtime.js";
+import { __QinJavaLangStringBuilder } from "../lang/string-builder.js";
+
+const __QIN_REGEX_CASE_INSENSITIVE: number = 2;
+const __QIN_REGEX_MULTILINE: number = 8;
+const __QIN_REGEX_DOTALL: number = 32;
 
 export class __QinJavaUtilRegexPattern {
-  constructor(source, flags) {
+  constructor(source: string, flags: number) {
     this.__source = String(source);
-    this.__flags = flags == null ? 0 : (flags | 0);
+    this.__flags = flags;
+    this.__nativePattern = __qin_java_regex_pattern_compile__(this.__source, this.__flags);
   }
-  static compile(source, flags = 0) {
+  static compile(source: string, flags: number): __QinJavaUtilRegexPattern {
     return new __QinJavaUtilRegexPattern(source, flags);
   }
-  static quote(literal) {
+  static quote(literal: string): string {
     const text = String(literal);
     return "\\Q" + text.replace(/\\E/g, "\\E\\\\E\\Q") + "\\E";
   }
-  matcher(input) {
+  matcher(input: string): __QinJavaUtilRegexMatcher {
     return new __QinJavaUtilRegexMatcher(this, String(input));
   }
-  pattern() {
+  __nativePatternValue() {
+    return this.__nativePattern;
+  }
+  pattern(): string {
     return this.__source;
   }
-  flags() {
+  flags(): number {
     return this.__flags;
   }
-  __jsFlags(extraFlags = "") {
-    let flags = "";
-    if ((this.__flags & __QinJavaUtilRegexPattern.CASE_INSENSITIVE) !== 0) flags += "i";
-    if ((this.__flags & __QinJavaUtilRegexPattern.MULTILINE) !== 0) flags += "m";
-    if ((this.__flags & __QinJavaUtilRegexPattern.DOTALL) !== 0) flags += "s";
-    for (const ch of String(extraFlags)) {
-      if (flags.indexOf(ch) < 0) flags += ch;
-    }
-    return flags;
-  }
-  __regexp(extraFlags = "") {
-    return __qin_java_pattern_regexp__(this.__source, this.__jsFlags(extraFlags));
-  }
 }
-__QinJavaUtilRegexPattern.UNIX_LINES = 1;
-__QinJavaUtilRegexPattern.CASE_INSENSITIVE = 2;
-__QinJavaUtilRegexPattern.COMMENTS = 4;
-__QinJavaUtilRegexPattern.MULTILINE = 8;
-__QinJavaUtilRegexPattern.LITERAL = 16;
-__QinJavaUtilRegexPattern.DOTALL = 32;
-__QinJavaUtilRegexPattern.UNICODE_CASE = 64;
-__QinJavaUtilRegexPattern.CANON_EQ = 128;
-__QinJavaUtilRegexPattern.UNICODE_CHARACTER_CLASS = 256;
 export class __QinJavaUtilRegexMatcher {
-  constructor(pattern, input) {
+  constructor(pattern: __QinJavaUtilRegexPattern, input: string) {
     this.__pattern = pattern;
-    this.__input = String(input);
-    this.__regionStart = 0;
-    this.__regionEnd = this.__input.length;
-    this.__searchIndex = 0;
-    this.__lastMatch = null;
-    this.__appendPosition = 0;
+    this.__nativeMatcher = __qin_java_regex_matcher__(pattern.__nativePatternValue(), input);
   }
-  static quoteReplacement(text) {
-    return String(text).replace(/\\/g, "\\\\").replace(/\$/g, "\\\$");
-  }
-  region(start, end) {
-    this.__regionStart = Math.max(0, start | 0);
-    this.__regionEnd = Math.min(this.__input.length, Math.max(this.__regionStart, end | 0));
-    this.__searchIndex = this.__regionStart;
-    this.__lastMatch = null;
+  region(start: number, end: number): __QinJavaUtilRegexMatcher {
+    __qin_java_regex_matcher_region__(this.__nativeMatcher, start, end);
     return this;
   }
-  lookingAt() {
-    return this.__matchAtRegionStart(false);
-  }
-  matches() {
-    return this.__matchAtRegionStart(true);
-  }
-  find(start) {
-    const from = arguments.length > 0 ? Math.max(this.__regionStart, start | 0) : this.__searchIndex;
-    const boundedFrom = Math.min(Math.max(from, this.__regionStart), this.__regionEnd);
-    const re = this.__pattern.__regexp();
-    const text = this.__input.slice(boundedFrom, this.__regionEnd);
-    const match = re.exec(text);
-    if (match == null) {
-      this.__lastMatch = null;
-      this.__searchIndex = this.__regionEnd;
-      return false;
-    }
-    this.__storeMatch(match, boundedFrom + (match.index == null ? 0 : match.index));
-    this.__searchIndex = this.__lastMatch.end === this.__lastMatch.start
-      ? Math.min(this.__lastMatch.end + 1, this.__regionEnd)
-      : this.__lastMatch.end;
-    return true;
-  }
-  group(index = 0) {
-    if (this.__lastMatch == null) {
-      throw new Error("No match available");
-    }
-    const value = this.__lastMatch.groups[index | 0];
-    return value == null ? null : value;
-  }
-  groupCount() {
-    return this.__lastMatch == null ? 0 : Math.max(0, this.__lastMatch.groups.length - 1);
-  }
-  start() {
-    if (this.__lastMatch == null) throw new Error("No match available");
-    return this.__lastMatch.start;
-  }
-  end() {
-    if (this.__lastMatch == null) throw new Error("No match available");
-    return this.__lastMatch.end;
-  }
-  replaceAll(replacement) {
-    return this.__input.replace(this.__pattern.__regexp("g"), String(replacement));
-  }
-  appendReplacement(buffer, replacement) {
-    if (this.__lastMatch == null) {
-      throw new Error("No match available");
-    }
-    const text = this.__input.slice(this.__appendPosition, this.__lastMatch.start) + String(replacement);
-    this.__append(buffer, text);
-    this.__appendPosition = this.__lastMatch.end;
+  reset(input: string): __QinJavaUtilRegexMatcher {
+    __qin_java_regex_matcher_reset__(this.__nativeMatcher, input);
     return this;
   }
-  appendTail(buffer) {
-    this.__append(buffer, this.__input.slice(this.__appendPosition));
-    this.__appendPosition = this.__input.length;
-    return buffer;
+  lookingAt(): boolean {
+    return __qin_java_regex_matcher_looking_at__(this.__nativeMatcher);
   }
-  __matchAtRegionStart(requireFullRegion) {
-    const re = this.__pattern.__regexp("y");
-    const text = this.__input.slice(this.__regionStart, this.__regionEnd);
-    const match = re.exec(text);
-    if (match == null) {
-      this.__lastMatch = null;
-      return false;
-    }
-    this.__storeMatch(match, this.__regionStart);
-    return !requireFullRegion || this.__lastMatch.end === this.__regionEnd;
+  matches(): boolean {
+    return __qin_java_regex_matcher_matches__(this.__nativeMatcher);
   }
-  __storeMatch(match, absoluteStart) {
-    const groups = [];
-    for (let index = 0; index < match.length; index++) {
-      groups.push(match[index] == null ? null : match[index]);
-    }
-    this.__lastMatch = {
-      groups,
-      start: absoluteStart,
-      end: absoluteStart + String(match[0] == null ? "" : match[0]).length
-    };
+  find(start: number): boolean {
+    return __qin_java_regex_matcher_find__(this.__nativeMatcher, start);
   }
-  __append(buffer, text) {
-    if (buffer != null && typeof buffer.append === "function") {
-      buffer.append(text);
-      return;
-    }
-    throw new TypeError("Matcher append target must support append(value)");
+  group(index: number) {
+    return __qin_java_regex_matcher_group__(this.__nativeMatcher, index);
+  }
+  groupCount(): number {
+    return __qin_java_regex_matcher_group_count__(this.__nativeMatcher);
+  }
+  start(): number {
+    return __qin_java_regex_matcher_start__(this.__nativeMatcher);
+  }
+  end(): number {
+    return __qin_java_regex_matcher_end__(this.__nativeMatcher);
+  }
+  replaceAll(replacement: string): string {
+    return __qin_java_regex_matcher_replace_all__(this.__nativeMatcher, replacement);
+  }
+  appendReplacement(buffer: __QinJavaLangStringBuilder, replacement: string): __QinJavaUtilRegexMatcher {
+    __qin_java_regex_matcher_append_replacement__(this.__nativeMatcher, buffer, replacement);
+    return this;
+  }
+  appendTail(buffer: __QinJavaLangStringBuilder): __QinJavaLangStringBuilder {
+    return __qin_java_regex_matcher_append_tail__(this.__nativeMatcher, buffer);
   }
 }

@@ -17,13 +17,13 @@ class com_slime_ast_nodes_modules_ExportDefaultDeclaration {
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   __qin_field_semicolonToken: com_slime_ast_SyntaxToken | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SourceLocation) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SourceLocation))) {
       const declaration: any = __qin_args[0];
       const location: any = __qin_args[1];
       this.__qin_constructor_com_slime_ast_nodes_modules_ExportDefaultDeclaration_2_0(declaration, location);
       return;
     }
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SyntaxToken) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SyntaxToken)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation)) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken))) {
       const declaration: any = __qin_args[0];
       const exportToken: any = __qin_args[1];
       const defaultToken: any = __qin_args[2];
@@ -35,7 +35,7 @@ class com_slime_ast_nodes_modules_ExportDefaultDeclaration {
     throw new Error("Unsupported Java constructor overload: ExportDefaultDeclaration/" + __qin_args.length);
   }
   __qin_constructor_com_slime_ast_nodes_modules_ExportDefaultDeclaration_2_0(declaration: com_slime_ast_AstNode, location: com_slime_ast_SourceLocation): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 5 && (__qin_delegate_args[0] === null || __qin_java_implements(__qin_delegate_args[0], "com.slime.ast.AstNode")) && (__qin_delegate_args[1] === null || __qin_instanceof__(__qin_delegate_args[1], com_slime_ast_SyntaxToken) || __qin_delegate_args[1].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SourceLocation) || __qin_delegate_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken) || __qin_delegate_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_nodes_modules_ExportDefaultDeclaration_5_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ExportDefaultDeclaration/" + __qin_delegate_args.length); })(declaration, null, null, location, null);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 5 && (__qin_delegate_args[0] === null || __qin_java_implements(__qin_delegate_args[0], "com.slime.ast.AstNode")) && (__qin_delegate_args[1] === null || __qin_instanceof__(__qin_delegate_args[1], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SourceLocation)) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken))) { return this.__qin_constructor_com_slime_ast_nodes_modules_ExportDefaultDeclaration_5_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ExportDefaultDeclaration/" + __qin_delegate_args.length); })(declaration, null, null, location, null);
   }
   __qin_constructor_com_slime_ast_nodes_modules_ExportDefaultDeclaration_5_1(declaration: com_slime_ast_AstNode, exportToken: com_slime_ast_SyntaxToken, defaultToken: com_slime_ast_SyntaxToken, location: com_slime_ast_SourceLocation, semicolonToken: com_slime_ast_SyntaxToken): void {
     this.__qin_field_declaration = null;
@@ -52,34 +52,35 @@ class com_slime_ast_nodes_modules_ExportDefaultDeclaration {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_EXPORT_DEFAULT_DECLARATION;
   }
-  declaration(): any {
+  declaration(): com_slime_ast_AstNode {
     return this.__qin_field_declaration;
   }
-  exportToken(): any {
+  exportToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_exportToken;
   }
-  defaultToken(): any {
+  defaultToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_defaultToken;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  semicolonToken(): any {
+  semicolonToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_semicolonToken;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_modules_ExportDefaultDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_declaration, other.__qin_field_declaration)
-      && __qin_java_values_equal__(this.__qin_field_exportToken, other.__qin_field_exportToken)
-      && __qin_java_values_equal__(this.__qin_field_defaultToken, other.__qin_field_defaultToken)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location)
-      && __qin_java_values_equal__(this.__qin_field_semicolonToken, other.__qin_field_semicolonToken);
+    const __qin_record_other: com_slime_ast_nodes_modules_ExportDefaultDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_declaration, __qin_record_other.__qin_field_declaration)
+      && __qin_java_values_equal__(this.__qin_field_exportToken, __qin_record_other.__qin_field_exportToken)
+      && __qin_java_values_equal__(this.__qin_field_defaultToken, __qin_record_other.__qin_field_defaultToken)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location)
+      && __qin_java_values_equal__(this.__qin_field_semicolonToken, __qin_record_other.__qin_field_semicolonToken);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_declaration);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_exportToken);
@@ -88,7 +89,7 @@ class com_slime_ast_nodes_modules_ExportDefaultDeclaration {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_semicolonToken);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ExportDefaultDeclaration[", "declaration=", this.__qin_field_declaration, ", ", "exportToken=", this.__qin_field_exportToken, ", ", "defaultToken=", this.__qin_field_defaultToken, ", ", "location=", this.__qin_field_location, ", ", "semicolonToken=", this.__qin_field_semicolonToken, "]"].join("");
   }
 }

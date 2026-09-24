@@ -14,7 +14,7 @@ class com_slime_ast_nodes_typescript_TSKeywordType {
   __qin_field_keyword: string | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_AstNodeType)) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_AstNodeType)) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const keywordType: any = __qin_args[0];
       const keyword: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -34,33 +34,34 @@ class com_slime_ast_nodes_typescript_TSKeywordType {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return this.__qin_field_keywordType;
   }
-  keywordType(): any {
+  keywordType(): com_slime_ast_AstNodeType {
     return this.__qin_field_keywordType;
   }
-  keyword(): any {
+  keyword(): string {
     return this.__qin_field_keyword;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_typescript_TSKeywordType)) return false;
-    return __qin_java_values_equal__(this.__qin_field_keywordType, other.__qin_field_keywordType)
-      && __qin_java_values_equal__(this.__qin_field_keyword, other.__qin_field_keyword)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_typescript_TSKeywordType = other;
+    return __qin_java_values_equal__(this.__qin_field_keywordType, __qin_record_other.__qin_field_keywordType)
+      && __qin_java_values_equal__(this.__qin_field_keyword, __qin_record_other.__qin_field_keyword)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_keywordType);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_keyword);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TSKeywordType[", "keywordType=", this.__qin_field_keywordType, ", ", "keyword=", this.__qin_field_keyword, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

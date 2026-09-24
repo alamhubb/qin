@@ -22,20 +22,21 @@ class com_slime_java_ast_JavaAstContinueStatement {
       return null;
     })();
   }
-  label(): any {
+  label(): string {
     return this.__qin_field_label;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstContinueStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_label, other.__qin_field_label);
+    const __qin_record_other: com_slime_java_ast_JavaAstContinueStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_label, __qin_record_other.__qin_field_label);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_label);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstContinueStatement[", "label=", this.__qin_field_label, "]"].join("");
   }
 }

@@ -12,6 +12,7 @@ import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
@@ -22,6 +23,8 @@ import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrSpreadArgumentExpression;
+import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.pipeline.cfa.ir.QinCfaProgram;
 
@@ -159,7 +162,9 @@ public final class QinCfaIrToQinIrAdapter {
                     toExpressions(builtinCallExpression.arguments()));
         }
         if (expression instanceof QinCfaProgram.FunctionLiteral functionLiteral) {
-            return new QinIrFunctionLiteral(toExpression(functionLiteral.returnExpression()));
+            return new QinIrFunctionLiteral(
+                    functionLiteral.parameterNames(),
+                    toExpression(functionLiteral.returnExpression()));
         }
         if (expression instanceof QinCfaProgram.IdentifierReference identifierReference) {
             return new QinIrIdentifierReference(identifierReference.name());
@@ -169,6 +174,20 @@ public final class QinCfaIrToQinIrAdapter {
                     javaNewExpression.classLocalName(),
                     javaNewExpression.ownerBinaryName(),
                     toExpressions(javaNewExpression.arguments()));
+        }
+        if (expression instanceof QinCfaProgram.JavaInstanceMethodCallExpression instanceMethodCallExpression) {
+            return new QinIrInstanceMethodCallExpression(
+                    toExpression(instanceMethodCallExpression.receiver()),
+                    instanceMethodCallExpression.ownerBinaryName(),
+                    instanceMethodCallExpression.methodName(),
+                    toExpressions(instanceMethodCallExpression.arguments()));
+        }
+        if (expression instanceof QinCfaProgram.StaticMethodCallExpression staticMethodCallExpression) {
+            return new QinIrStaticMethodCallExpression(
+                    staticMethodCallExpression.classLocalName(),
+                    staticMethodCallExpression.ownerBinaryName(),
+                    staticMethodCallExpression.methodName(),
+                    toExpressions(staticMethodCallExpression.arguments()));
         }
         if (expression instanceof QinCfaProgram.MemberAccessExpression memberAccessExpression) {
             return new QinIrMemberAccessExpression(
@@ -183,6 +202,9 @@ public final class QinCfaIrToQinIrAdapter {
         }
         if (expression instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
             return new QinIrObjectLiteral(toProperties(objectLiteral.properties()));
+        }
+        if (expression instanceof QinCfaProgram.SpreadArgumentExpression spreadArgumentExpression) {
+            return new QinIrSpreadArgumentExpression(toExpression(spreadArgumentExpression.expression()));
         }
         if (expression instanceof QinCfaProgram.StringLiteral stringLiteral) {
             return new QinIrStringLiteral(stringLiteral.value());

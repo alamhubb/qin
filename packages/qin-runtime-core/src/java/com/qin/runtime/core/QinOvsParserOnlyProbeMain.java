@@ -2,6 +2,7 @@ package com.qin.runtime.core;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 
 public final class QinOvsParserOnlyProbeMain {
     private QinOvsParserOnlyProbeMain() {
@@ -18,6 +19,13 @@ public final class QinOvsParserOnlyProbeMain {
                   span { "ok" }
                 }
                 """;
+        for (int i = 0; i < args.length; i++) {
+            if ("--file".equals(args[i]) && i + 1 < args.length) {
+                source = Files.readString(Path.of(args[++i]), StandardCharsets.UTF_8);
+            } else if ("--source".equals(args[i]) && i + 1 < args.length) {
+                source = args[++i];
+            }
+        }
         Object result = new QinJsPackageRunner().runModuleSource(root, """
                 import OvsParser from "ovs-compiler/src/parser/OvsParser.ts";
 
@@ -31,6 +39,7 @@ public final class QinOvsParserOnlyProbeMain {
                     firstName: first == null ? "EOF" : first.tokenName(),
                     firstValue: first == null ? "" : first.value(),
                     cstName: cst == null ? "" : (cst.getName ? cst.getName() : cst.name),
+                    cstTree: cst == null ? "" : (cst.toTreeString ? cst.toTreeString() : String(cst)),
                     tokenCount: parser.parsedTokens.length,
                     afterEof: parser.isEof(),
                     nextName: next == null ? "EOF" : next.tokenName(),

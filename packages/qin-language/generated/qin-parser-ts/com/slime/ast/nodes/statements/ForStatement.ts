@@ -19,7 +19,7 @@ class com_slime_ast_nodes_statements_ForStatement {
   __qin_field_body: com_slime_ast_Statement | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.Expression")) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.ast.Statement")) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.Expression")) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.ast.Statement")) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const init: any = __qin_args[0];
       const test: any = __qin_args[1];
       const update: any = __qin_args[2];
@@ -45,34 +45,35 @@ class com_slime_ast_nodes_statements_ForStatement {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_FOR_STATEMENT;
   }
-  init(): any {
+  init(): com_slime_ast_AstNode {
     return this.__qin_field_init;
   }
-  test(): any {
+  test(): com_slime_ast_Expression {
     return this.__qin_field_test;
   }
-  update(): any {
+  update(): com_slime_ast_Expression {
     return this.__qin_field_update;
   }
-  body(): any {
+  body(): com_slime_ast_Statement {
     return this.__qin_field_body;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_statements_ForStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_init, other.__qin_field_init)
-      && __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test)
-      && __qin_java_values_equal__(this.__qin_field_update, other.__qin_field_update)
-      && __qin_java_values_equal__(this.__qin_field_body, other.__qin_field_body)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_statements_ForStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_init, __qin_record_other.__qin_field_init)
+      && __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test)
+      && __qin_java_values_equal__(this.__qin_field_update, __qin_record_other.__qin_field_update)
+      && __qin_java_values_equal__(this.__qin_field_body, __qin_record_other.__qin_field_body)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_init);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
@@ -81,7 +82,7 @@ class com_slime_ast_nodes_statements_ForStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ForStatement[", "init=", this.__qin_field_init, ", ", "test=", this.__qin_field_test, ", ", "update=", this.__qin_field_update, ", ", "body=", this.__qin_field_body, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

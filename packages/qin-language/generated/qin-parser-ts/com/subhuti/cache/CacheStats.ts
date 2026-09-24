@@ -7,9 +7,9 @@ function __qin_structural_object__(value) {
 }
 const AtomicLong = __QinJavaUtilConcurrentAtomicLong;
 class com_subhuti_cache_CacheStats {
-  __qin_field_hits: number | null = null as any;
-  __qin_field_misses: number | null = null as any;
-  __qin_field_evictions: number | null = null as any;
+  __qin_field_hits: __QinJavaUtilConcurrentAtomicLong | null = null as any;
+  __qin_field_misses: __QinJavaUtilConcurrentAtomicLong | null = null as any;
+  __qin_field_evictions: __QinJavaUtilConcurrentAtomicLong | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length !== 0) {
       throw new Error("Unsupported Java constructor arity: CacheStats/" + __qin_args.length);
@@ -18,50 +18,50 @@ class com_subhuti_cache_CacheStats {
     this.__qin_field_misses = new __QinJavaUtilConcurrentAtomicLong(0.0);
     this.__qin_field_evictions = new __QinJavaUtilConcurrentAtomicLong(0.0);
   }
-  recordHit(): any {
+  recordHit(): void {
     this.__qin_field_hits.incrementAndGet();
     return null;
   }
-  recordMiss(): any {
+  recordMiss(): void {
     this.__qin_field_misses.incrementAndGet();
     return null;
   }
-  recordEviction(): any {
+  recordEviction(): void {
     this.__qin_field_evictions.incrementAndGet();
     return null;
   }
-  getHits(): any {
+  getHits(): number {
     return this.__qin_field_hits.get();
   }
-  getMisses(): any {
+  getMisses(): number {
     return this.__qin_field_misses.get();
   }
-  getEvictions(): any {
+  getEvictions(): number {
     return this.__qin_field_evictions.get();
   }
-  getRequests(): any {
+  getRequests(): number {
     return __qin_binary__("+", this.__qin_field_hits.get(), this.__qin_field_misses.get());
   }
-  getHitRate(): any {
-    let requests: any = this.getRequests();
+  getHitRate(): number {
+    let requests: number = this.getRequests();
     if (__qin_binary__("==", requests, 0.0)) {
       return 0.0;
     }
     return __qin_binary__("/", Number(this.__qin_field_hits.get()), requests);
   }
-  getMissRate(): any {
+  getMissRate(): number {
     return __qin_binary__("-", 1.0, this.getHitRate());
   }
-  reset(): any {
+  reset(): void {
     this.__qin_field_hits.set(0.0);
     this.__qin_field_misses.set(0.0);
     this.__qin_field_evictions.set(0.0);
     return null;
   }
-  getStatsReport(): any {
+  getStatsReport(): string {
     return __QinJavaLangString.format("Cache Stats: requests=%d, hits=%d, misses=%d, hit_rate=%.2f%%, evictions=%d", this.getRequests(), this.__qin_field_hits.get(), this.__qin_field_misses.get(), __qin_binary__("*", this.getHitRate(), 100.0), this.__qin_field_evictions.get());
   }
-  toString(): any {
+  toString(): string {
     return this.getStatsReport();
   }
 }

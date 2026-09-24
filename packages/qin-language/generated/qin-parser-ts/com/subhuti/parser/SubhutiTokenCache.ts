@@ -13,14 +13,14 @@ function __qin_structural_object__(value) {
 const HashMap = __QinJavaUtilHashMap;
 const Arrays = __QinJavaUtilArrays;
 class com_subhuti_parser_SubhutiTokenCache {
-  __qin_field_sourceLength: number | null = null as any;
-  __qin_field_directCanonicalModes: boolean | null = null as any;
-  __qin_field_contextualEntries: any = null as any;
+  __qin_field_sourceLength: number | null = 0 as any;
+  __qin_field_directCanonicalModes: boolean | null = false as any;
+  __qin_field_contextualEntries: __QinJavaUtilHashMap<com_subhuti_parser_SubhutiTokenCacheKey, com_subhuti_lexer_TokenCacheEntry> | null = null as any;
   __qin_field_contextualLookupKey: com_subhuti_parser_SubhutiTokenCacheLookupKey | null = null as any;
   __qin_field_defaultEntries: com_subhuti_lexer_TokenCacheEntry[] | null = null as any;
   __qin_field_templateTailEntries: com_subhuti_lexer_TokenCacheEntry[] | null = null as any;
   __qin_field_regexpEntries: com_subhuti_lexer_TokenCacheEntry[] | null = null as any;
-  __qin_field_directEntryCount: number | null = null as any;
+  __qin_field_directEntryCount: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 2 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "boolean") {
       const sourceLength: any = __qin_args[0];
@@ -31,18 +31,18 @@ class com_subhuti_parser_SubhutiTokenCache {
     throw new Error("Unsupported Java constructor overload: SubhutiTokenCache/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_parser_SubhutiTokenCache_2_0(sourceLength: number, dependsOnPreviousTokenName: boolean): void {
-    this.__qin_field_sourceLength = null;
-    this.__qin_field_directCanonicalModes = null;
+    this.__qin_field_sourceLength = 0;
+    this.__qin_field_directCanonicalModes = false;
     this.__qin_field_contextualEntries = new __QinJavaUtilHashMap();
     this.__qin_field_contextualLookupKey = new com_subhuti_parser_SubhutiTokenCacheLookupKey();
     this.__qin_field_defaultEntries = null;
     this.__qin_field_templateTailEntries = null;
     this.__qin_field_regexpEntries = null;
-    this.__qin_field_directEntryCount = null;
+    this.__qin_field_directEntryCount = 0;
     this.__qin_field_sourceLength = Math.max(0.0, sourceLength);
     this.__qin_field_directCanonicalModes = (!dependsOnPreviousTokenName);
   }
-  get(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string): any {
+  get(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string): com_subhuti_lexer_TokenCacheEntry {
     if (this.canUseDirectIndex(index)) {
       if ((__qin_binary__("==", mode, null) || com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE.equals(mode))) {
         return (__qin_binary__("==", this.__qin_field_defaultEntries, null) ? null : this.__qin_field_defaultEntries[index]);
@@ -54,7 +54,7 @@ class com_subhuti_parser_SubhutiTokenCache {
         return (__qin_binary__("==", this.__qin_field_regexpEntries, null) ? null : this.__qin_field_regexpEntries[index]);
       }
     }
-    let contextualPreviousTokenName: any = (this.__qin_field_directCanonicalModes ? null : previousTokenName);
+    let contextualPreviousTokenName: string = (this.__qin_field_directCanonicalModes ? null : previousTokenName);
     return this.__qin_field_contextualEntries.get(this.__qin_field_contextualLookupKey.reset(index, mode, contextualPreviousTokenName));
   }
   put(...__qin_args: any[]): any {
@@ -62,7 +62,7 @@ class com_subhuti_parser_SubhutiTokenCache {
     if (__qin_args.length === 3 && true && typeof __qin_args[1] === "number" && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_lexer_TokenCacheEntry))) return this.__qin_overload_put_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: put/" + __qin_args.length);
   }
-  __qin_overload_put_4_0(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string, entry: com_subhuti_lexer_TokenCacheEntry): any {
+  __qin_overload_put_4_0(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string, entry: com_subhuti_lexer_TokenCacheEntry): void {
     if (this.canUseDirectIndex(index)) {
       if ((__qin_binary__("==", mode, null) || com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE.equals(mode))) {
         this.__qin_field_defaultEntries = this.put(this.__qin_field_defaultEntries, index, entry);
@@ -77,14 +77,14 @@ class com_subhuti_parser_SubhutiTokenCache {
         return null;
       }
     }
-    let contextualPreviousTokenName: any = (this.__qin_field_directCanonicalModes ? null : previousTokenName);
+    let contextualPreviousTokenName: string = (this.__qin_field_directCanonicalModes ? null : previousTokenName);
     this.__qin_field_contextualEntries.put(new com_subhuti_parser_SubhutiTokenCacheKey(index, mode, contextualPreviousTokenName), entry);
     return null;
   }
-  __qin_overload_put_3_1(entries: com_subhuti_lexer_TokenCacheEntry[], index: number, entry: com_subhuti_lexer_TokenCacheEntry): any {
-    let nextEntries: any = entries;
+  __qin_overload_put_3_1(entries: com_subhuti_lexer_TokenCacheEntry[], index: number, entry: com_subhuti_lexer_TokenCacheEntry): com_subhuti_lexer_TokenCacheEntry[] {
+    let nextEntries: com_subhuti_lexer_TokenCacheEntry[] = entries;
     if (__qin_binary__("==", nextEntries, null)) {
-      nextEntries = [];
+      nextEntries = Array.from({ length: __qin_binary__("+", this.__qin_field_sourceLength, 1.0) }, () => null);
     }
     if ((__qin_binary__("==", nextEntries[index], null) && __qin_binary__("!=", entry, null))) {
       this.__qin_field_directEntryCount++;
@@ -92,10 +92,10 @@ class com_subhuti_parser_SubhutiTokenCache {
     nextEntries[index] = entry;
     return nextEntries;
   }
-  isEmpty(): any {
+  isEmpty(): boolean {
     return (__qin_binary__("==", this.__qin_field_directEntryCount, 0.0) && this.__qin_field_contextualEntries.isEmpty());
   }
-  clear(): any {
+  clear(): void {
     com_subhuti_parser_SubhutiTokenCache.clear(this.__qin_field_defaultEntries);
     com_subhuti_parser_SubhutiTokenCache.clear(this.__qin_field_templateTailEntries);
     com_subhuti_parser_SubhutiTokenCache.clear(this.__qin_field_regexpEntries);
@@ -103,10 +103,10 @@ class com_subhuti_parser_SubhutiTokenCache {
     this.__qin_field_contextualEntries.clear();
     return null;
   }
-  canUseDirectIndex(index: number): any {
+  canUseDirectIndex(index: number): boolean {
     return (this.__qin_field_directCanonicalModes && __qin_binary__(">=", index, 0.0) && __qin_binary__("<=", index, this.__qin_field_sourceLength));
   }
-  static clear(entries: com_subhuti_lexer_TokenCacheEntry[]): any {
+  static clear(entries: com_subhuti_lexer_TokenCacheEntry[]): void {
     if (__qin_binary__("!=", entries, null)) {
       __QinJavaUtilArrays.fill(entries, null);
     }

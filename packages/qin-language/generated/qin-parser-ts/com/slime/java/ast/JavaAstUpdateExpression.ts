@@ -11,63 +11,52 @@ const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstUpdateExpression {
   __qin_field_target: com_slime_java_ast_JavaAstExpression | null = null as any;
   __qin_field_operator: string | null = null as any;
-  __qin_field_prefix: boolean | null = null as any;
+  __qin_field_prefix: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstUpdateExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && typeof __qin_args[2] === "boolean") {
       const target: any = __qin_args[0];
       const operator: any = __qin_args[1];
       const prefix: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstUpdateExpression_3_1(target, operator, prefix);
+      this.__qin_constructor_com_slime_java_ast_JavaAstUpdateExpression_3_0(target, operator, prefix);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstUpdateExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstUpdateExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstUpdateExpression_3_0(target: com_slime_java_ast_JavaAstExpression, operator: string, prefix: boolean): void {
     this.__qin_field_target = null;
     this.__qin_field_operator = null;
-    this.__qin_field_prefix = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_target, "target cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_operator, "operator cannot be null");
+    this.__qin_field_prefix = false;
+    __QinJavaUtilObjects.requireNonNull(target, "target cannot be null");
+    __QinJavaUtilObjects.requireNonNull(operator, "operator cannot be null");
+    this.__qin_field_target = target;
+    this.__qin_field_operator = operator;
+    this.__qin_field_prefix = prefix;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstUpdateExpression_3_1(target: com_slime_java_ast_JavaAstExpression, operator: string, prefix: boolean): void {
-    this.__qin_field_target = null;
-    this.__qin_field_operator = null;
-    this.__qin_field_prefix = null;
-    (() => {
-      this.__qin_field_target = target;
-      this.__qin_field_operator = operator;
-      this.__qin_field_prefix = prefix;
-      return null;
-    })();
-  }
-  target(): any {
+  target(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_target;
   }
-  operator(): any {
+  operator(): string {
     return this.__qin_field_operator;
   }
-  prefix(): any {
+  prefix(): boolean {
     return this.__qin_field_prefix;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstUpdateExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_target, other.__qin_field_target)
-      && __qin_java_values_equal__(this.__qin_field_operator, other.__qin_field_operator)
-      && __qin_java_values_equal__(this.__qin_field_prefix, other.__qin_field_prefix);
+    const __qin_record_other: com_slime_java_ast_JavaAstUpdateExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_target, __qin_record_other.__qin_field_target)
+      && __qin_java_values_equal__(this.__qin_field_operator, __qin_record_other.__qin_field_operator)
+      && __qin_java_values_equal__(this.__qin_field_prefix, __qin_record_other.__qin_field_prefix);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_target);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_operator);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_prefix);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstUpdateExpression[", "target=", this.__qin_field_target, ", ", "operator=", this.__qin_field_operator, ", ", "prefix=", this.__qin_field_prefix, "]"].join("");
   }
 }

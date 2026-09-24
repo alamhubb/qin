@@ -15,7 +15,7 @@ class com_slime_ast_nodes_patterns_AssignmentPattern {
   __qin_field_right: com_slime_ast_Expression | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Pattern")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Pattern")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const left: any = __qin_args[0];
       const right: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -35,33 +35,34 @@ class com_slime_ast_nodes_patterns_AssignmentPattern {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_ASSIGNMENT_PATTERN;
   }
-  left(): any {
+  left(): com_slime_ast_Pattern {
     return this.__qin_field_left;
   }
-  right(): any {
+  right(): com_slime_ast_Expression {
     return this.__qin_field_right;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_patterns_AssignmentPattern)) return false;
-    return __qin_java_values_equal__(this.__qin_field_left, other.__qin_field_left)
-      && __qin_java_values_equal__(this.__qin_field_right, other.__qin_field_right)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_patterns_AssignmentPattern = other;
+    return __qin_java_values_equal__(this.__qin_field_left, __qin_record_other.__qin_field_left)
+      && __qin_java_values_equal__(this.__qin_field_right, __qin_record_other.__qin_field_right)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_left);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_right);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["AssignmentPattern[", "left=", this.__qin_field_left, ", ", "right=", this.__qin_field_right, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

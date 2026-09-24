@@ -14,82 +14,70 @@ class com_slime_ast_SourceLocation {
   __qin_field_start: com_slime_ast_Position | null = null as any;
   __qin_field_end: com_slime_ast_Position | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_ast_SourceLocation_0_0();
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_Position)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_Position))) {
+      const type: any = __qin_args[0];
+      const value: any = __qin_args[1];
+      const start: any = __qin_args[2];
+      const end: any = __qin_args[3];
+      this.__qin_constructor_com_slime_ast_SourceLocation_4_0(type, value, start, end);
       return;
     }
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_Position) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_Position) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_Position)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_Position))) {
       const start: any = __qin_args[0];
       const end: any = __qin_args[1];
       this.__qin_constructor_com_slime_ast_SourceLocation_2_1(start, end);
       return;
     }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_Position) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_Position) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_Position)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_Position))) {
       const type: any = __qin_args[0];
       const start: any = __qin_args[1];
       const end: any = __qin_args[2];
       this.__qin_constructor_com_slime_ast_SourceLocation_3_2(type, start, end);
       return;
     }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_Position) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_Position) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass)) {
-      const type: any = __qin_args[0];
-      const value: any = __qin_args[1];
-      const start: any = __qin_args[2];
-      const end: any = __qin_args[3];
-      this.__qin_constructor_com_slime_ast_SourceLocation_4_3(type, value, start, end);
-      return;
-    }
     throw new Error("Unsupported Java constructor overload: SourceLocation/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_SourceLocation_0_0(): void {
+  __qin_constructor_com_slime_ast_SourceLocation_4_0(type: string, value: string, start: com_slime_ast_Position, end: com_slime_ast_Position): void {
     this.__qin_field_type = null;
     this.__qin_field_value = null;
     this.__qin_field_start = null;
     this.__qin_field_end = null;
-    if ((__qin_binary__("==", this.__qin_field_start, null) || __qin_binary__("==", this.__qin_field_end, null))) {
+    if ((__qin_binary__("==", start, null) || __qin_binary__("==", end, null))) {
       throw new __QinJavaLangIllegalArgumentException("start and end cannot be null");
     }
+    this.__qin_field_type = type;
+    this.__qin_field_value = value;
+    this.__qin_field_start = start;
+    this.__qin_field_end = end;
   }
   __qin_constructor_com_slime_ast_SourceLocation_2_1(start: com_slime_ast_Position, end: com_slime_ast_Position): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_Position) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_Position) || __qin_delegate_args[3].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_SourceLocation_4_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SourceLocation/" + __qin_delegate_args.length); })(null, null, start, end);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_Position)) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_Position))) { return this.__qin_constructor_com_slime_ast_SourceLocation_4_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SourceLocation/" + __qin_delegate_args.length); })(null, null, start, end);
   }
   __qin_constructor_com_slime_ast_SourceLocation_3_2(type: string, start: com_slime_ast_Position, end: com_slime_ast_Position): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_Position) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_Position) || __qin_delegate_args[3].__qinJavaRecordClass === com_slime_ast_Position.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_SourceLocation_4_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SourceLocation/" + __qin_delegate_args.length); })(type, null, start, end);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_Position)) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_Position))) { return this.__qin_constructor_com_slime_ast_SourceLocation_4_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SourceLocation/" + __qin_delegate_args.length); })(type, null, start, end);
   }
-  __qin_constructor_com_slime_ast_SourceLocation_4_3(type: string, value: string, start: com_slime_ast_Position, end: com_slime_ast_Position): void {
-    this.__qin_field_type = null;
-    this.__qin_field_value = null;
-    this.__qin_field_start = null;
-    this.__qin_field_end = null;
-    (() => {
-      this.__qin_field_type = type;
-      this.__qin_field_value = value;
-      this.__qin_field_start = start;
-      this.__qin_field_end = end;
-      return null;
-    })();
-  }
-  type(): any {
+  type(): string {
     return this.__qin_field_type;
   }
-  value(): any {
+  value(): string {
     return this.__qin_field_value;
   }
-  start(): any {
+  start(): com_slime_ast_Position {
     return this.__qin_field_start;
   }
-  end(): any {
+  end(): com_slime_ast_Position {
     return this.__qin_field_end;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_SourceLocation)) return false;
-    return __qin_java_values_equal__(this.__qin_field_type, other.__qin_field_type)
-      && __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_start, other.__qin_field_start)
-      && __qin_java_values_equal__(this.__qin_field_end, other.__qin_field_end);
+    const __qin_record_other: com_slime_ast_SourceLocation = other;
+    return __qin_java_values_equal__(this.__qin_field_type, __qin_record_other.__qin_field_type)
+      && __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_start, __qin_record_other.__qin_field_start)
+      && __qin_java_values_equal__(this.__qin_field_end, __qin_record_other.__qin_field_end);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_type);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
@@ -97,7 +85,7 @@ class com_slime_ast_SourceLocation {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_end);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["SourceLocation[", "type=", this.__qin_field_type, ", ", "value=", this.__qin_field_value, ", ", "start=", this.__qin_field_start, ", ", "end=", this.__qin_field_end, "]"].join("");
   }
 }

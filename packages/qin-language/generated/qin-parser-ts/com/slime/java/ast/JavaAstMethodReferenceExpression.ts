@@ -10,52 +10,42 @@ class com_slime_java_ast_JavaAstMethodReferenceExpression {
   __qin_field_ownerName: string | null = null as any;
   __qin_field_methodName: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstMethodReferenceExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) {
       const ownerName: any = __qin_args[0];
       const methodName: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstMethodReferenceExpression_2_1(ownerName, methodName);
+      this.__qin_constructor_com_slime_java_ast_JavaAstMethodReferenceExpression_2_0(ownerName, methodName);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstMethodReferenceExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstMethodReferenceExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstMethodReferenceExpression_2_0(ownerName: string, methodName: string): void {
     this.__qin_field_ownerName = null;
     this.__qin_field_methodName = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_ownerName, "ownerName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_methodName, "methodName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(ownerName, "ownerName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(methodName, "methodName cannot be null");
+    this.__qin_field_ownerName = ownerName;
+    this.__qin_field_methodName = methodName;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstMethodReferenceExpression_2_1(ownerName: string, methodName: string): void {
-    this.__qin_field_ownerName = null;
-    this.__qin_field_methodName = null;
-    (() => {
-      this.__qin_field_ownerName = ownerName;
-      this.__qin_field_methodName = methodName;
-      return null;
-    })();
-  }
-  ownerName(): any {
+  ownerName(): string {
     return this.__qin_field_ownerName;
   }
-  methodName(): any {
+  methodName(): string {
     return this.__qin_field_methodName;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstMethodReferenceExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_ownerName, other.__qin_field_ownerName)
-      && __qin_java_values_equal__(this.__qin_field_methodName, other.__qin_field_methodName);
+    const __qin_record_other: com_slime_java_ast_JavaAstMethodReferenceExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_ownerName, __qin_record_other.__qin_field_ownerName)
+      && __qin_java_values_equal__(this.__qin_field_methodName, __qin_record_other.__qin_field_methodName);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_ownerName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_methodName);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstMethodReferenceExpression[", "ownerName=", this.__qin_field_ownerName, ", ", "methodName=", this.__qin_field_methodName, "]"].join("");
   }
 }

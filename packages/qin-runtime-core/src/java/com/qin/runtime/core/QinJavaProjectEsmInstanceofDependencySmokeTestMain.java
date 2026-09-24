@@ -63,8 +63,10 @@ public final class QinJavaProjectEsmInstanceofDependencySmokeTestMain {
         require(utils.code().contains(
                         "import { com_slime_ast_nodes_declarations_VariableDeclaration"),
                 "SlimeCstToAstUtils imports wildcard instanceof pattern target module");
-        require(utils.code().contains("__qin_pattern_value instanceof com_slime_ast_nodes_declarations_VariableDeclaration"),
-                "instanceof pattern uses imported VariableDeclaration binding");
+        require(utils.code().contains(
+                        "__qin_instanceof__(declaration, com_slime_ast_nodes_declarations_VariableDeclaration)"
+                                + " && (variableDeclaration = declaration, true)"),
+                "instanceof pattern uses imported VariableDeclaration binding through the static helper");
 
         System.out.println("QinJavaProjectEsmInstanceofDependencySmokeTestMain OK");
     }

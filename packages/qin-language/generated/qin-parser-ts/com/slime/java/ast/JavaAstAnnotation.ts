@@ -10,46 +10,37 @@ const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 class com_slime_java_ast_JavaAstAnnotation {
   __qin_field_name: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstAnnotation_0_0();
-      return;
-    }
     if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) {
       const name: any = __qin_args[0];
-      this.__qin_constructor_com_slime_java_ast_JavaAstAnnotation_1_1(name);
+      this.__qin_constructor_com_slime_java_ast_JavaAstAnnotation_1_0(name);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstAnnotation/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstAnnotation_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstAnnotation_1_0(name: string): void {
     this.__qin_field_name = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_name, "name cannot be null");
-    if (__QinJavaLangString.isBlank(this.__qin_field_name)) {
+    __QinJavaUtilObjects.requireNonNull(name, "name cannot be null");
+    if (__QinJavaLangString.isBlank(name)) {
       throw new __QinJavaLangIllegalArgumentException("name cannot be blank");
     }
-    this.__qin_field_name = this.__qin_field_name.trim();
+    name = name.trim();
+    this.__qin_field_name = name;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstAnnotation_1_1(name: string): void {
-    this.__qin_field_name = null;
-    (() => {
-      this.__qin_field_name = name;
-      return null;
-    })();
-  }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstAnnotation)) return false;
-    return __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name);
+    const __qin_record_other: com_slime_java_ast_JavaAstAnnotation = other;
+    return __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstAnnotation[", "name=", this.__qin_field_name, "]"].join("");
   }
 }

@@ -18,8 +18,8 @@ class com_slime_parser_SlimeTSRootPrimaryStaticGrammar {
   __qin_constructor_com_slime_parser_SlimeTSRootPrimaryStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeAssertion").declareExternalRule("StandardPrimaryExpression").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("PrimaryExpression", com_subhuti_parser_SubhutiStaticGrammar.or(com_subhuti_parser_SubhutiStaticGrammar.alt(com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeAssertion")), com_subhuti_parser_SubhutiStaticGrammar.alt(com_subhuti_parser_SubhutiStaticGrammar.call("StandardPrimaryExpression"))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeAssertion").declareExternalRule("StandardPrimaryExpression").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("PrimaryExpression", com_subhuti_parser_SubhutiStaticGrammar.or(com_subhuti_parser_SubhutiStaticGrammar.alt(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeAssertion")), com_subhuti_parser_SubhutiStaticGrammar.alt(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("StandardPrimaryExpression"))))).build();
   }
 }
 const SlimeTSRootPrimaryStaticGrammar = com_slime_parser_SlimeTSRootPrimaryStaticGrammar;

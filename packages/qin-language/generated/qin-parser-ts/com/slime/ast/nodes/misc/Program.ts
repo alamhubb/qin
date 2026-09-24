@@ -10,10 +10,10 @@ function __qin_structural_object__(value) {
 }
 class com_slime_ast_nodes_misc_Program {
   __qin_field_sourceType: string | null = null as any;
-  __qin_field_body: any = null as any;
+  __qin_field_body: __QinJavaUtilList<com_slime_ast_AstNode> | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const sourceType: any = __qin_args[0];
       const body: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -22,7 +22,7 @@ class com_slime_ast_nodes_misc_Program {
     }
     throw new Error("Unsupported Java constructor overload: Program/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_misc_Program_3_0(sourceType: string, body: any, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_misc_Program_3_0(sourceType: string, body: __QinJavaUtilList<com_slime_ast_AstNode>, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_sourceType = null;
     this.__qin_field_body = null;
     this.__qin_field_location = null;
@@ -33,33 +33,34 @@ class com_slime_ast_nodes_misc_Program {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_PROGRAM;
   }
-  sourceType(): any {
+  sourceType(): string {
     return this.__qin_field_sourceType;
   }
-  body(): any {
+  body(): __QinJavaUtilList<com_slime_ast_AstNode> {
     return this.__qin_field_body;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_Program)) return false;
-    return __qin_java_values_equal__(this.__qin_field_sourceType, other.__qin_field_sourceType)
-      && __qin_java_values_equal__(this.__qin_field_body, other.__qin_field_body)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_Program = other;
+    return __qin_java_values_equal__(this.__qin_field_sourceType, __qin_record_other.__qin_field_sourceType)
+      && __qin_java_values_equal__(this.__qin_field_body, __qin_record_other.__qin_field_body)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_sourceType);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_body);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["Program[", "sourceType=", this.__qin_field_sourceType, ", ", "body=", this.__qin_field_body, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

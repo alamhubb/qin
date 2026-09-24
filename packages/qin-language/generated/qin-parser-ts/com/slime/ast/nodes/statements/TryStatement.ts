@@ -16,7 +16,7 @@ class com_slime_ast_nodes_statements_TryStatement {
   __qin_field_finalizer: com_slime_ast_nodes_statements_BlockStatement | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_statements_BlockStatement) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_statements_BlockStatement.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_misc_CatchClause) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_nodes_misc_CatchClause.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_nodes_statements_BlockStatement) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_nodes_statements_BlockStatement.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_statements_BlockStatement)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_misc_CatchClause)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_nodes_statements_BlockStatement)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation))) {
       const block: any = __qin_args[0];
       const handler: any = __qin_args[1];
       const finalizer: any = __qin_args[2];
@@ -39,30 +39,31 @@ class com_slime_ast_nodes_statements_TryStatement {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_TRY_STATEMENT;
   }
-  block(): any {
+  block(): com_slime_ast_nodes_statements_BlockStatement {
     return this.__qin_field_block;
   }
-  handler(): any {
+  handler(): com_slime_ast_nodes_misc_CatchClause {
     return this.__qin_field_handler;
   }
-  finalizer(): any {
+  finalizer(): com_slime_ast_nodes_statements_BlockStatement {
     return this.__qin_field_finalizer;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_statements_TryStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_block, other.__qin_field_block)
-      && __qin_java_values_equal__(this.__qin_field_handler, other.__qin_field_handler)
-      && __qin_java_values_equal__(this.__qin_field_finalizer, other.__qin_field_finalizer)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_statements_TryStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_block, __qin_record_other.__qin_field_block)
+      && __qin_java_values_equal__(this.__qin_field_handler, __qin_record_other.__qin_field_handler)
+      && __qin_java_values_equal__(this.__qin_field_finalizer, __qin_record_other.__qin_field_finalizer)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_block);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_handler);
@@ -70,7 +71,7 @@ class com_slime_ast_nodes_statements_TryStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TryStatement[", "block=", this.__qin_field_block, ", ", "handler=", this.__qin_field_handler, ", ", "finalizer=", this.__qin_field_finalizer, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

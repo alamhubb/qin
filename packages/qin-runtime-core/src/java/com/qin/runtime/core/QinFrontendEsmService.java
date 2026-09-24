@@ -695,13 +695,28 @@ public final class QinFrontendEsmService {
 
     private List<Path> ovsGraphFilesForOnDemandBatch(Path requestedModuleFile) {
         LinkedHashSet<Path> files = new LinkedHashSet<>();
-        for (QinModuleSource module : graph.modules()) {
-            Path file = module.file().toAbsolutePath().normalize();
-            if (isFrontendModuleFile(file) && isOvsModuleFile(file)) {
-                files.add(file);
+        List<Path> work = new ArrayList<>();
+        Path requested = requestedModuleFile.toAbsolutePath().normalize();
+        files.add(requested);
+        work.add(requested);
+        for (int i = 0; i < work.size(); i++) {
+            QinModuleSource module = moduleSourceMap.get(work.get(i));
+            if (module == null) {
+                continue;
+            }
+            for (QinResolvedImport resolvedImport : module.imports()) {
+                Path resolvedModule = resolvedImport.resolvedModule();
+                if (resolvedModule == null) {
+                    continue;
+                }
+                Path normalizedResolvedModule = resolvedModule.toAbsolutePath().normalize();
+                if (isFrontendModuleFile(normalizedResolvedModule)
+                        && isOvsModuleFile(normalizedResolvedModule)
+                        && files.add(normalizedResolvedModule)) {
+                    work.add(normalizedResolvedModule);
+                }
             }
         }
-        files.add(requestedModuleFile.toAbsolutePath().normalize());
         return new ArrayList<>(files);
     }
 

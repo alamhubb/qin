@@ -512,6 +512,7 @@ final class QinEsmStaticBindingCollector {
         boolean single = false;
         boolean dbl = false;
         boolean template = false;
+        int templateExpressionDepth = 0;
         boolean lineComment = false;
         boolean blockComment = false;
         for (int i = 0; i < source.length(); i++) {
@@ -545,6 +546,14 @@ final class QinEsmStaticBindingCollector {
                 continue;
             }
             if (template) {
+                if (ch == '$' && next == '{' && !isEscaped(source, i)) {
+                    code[i] = true;
+                    code[i + 1] = true;
+                    templateExpressionDepth = 1;
+                    template = false;
+                    i++;
+                    continue;
+                }
                 if (ch == '`' && !isEscaped(source, i)) {
                     template = false;
                 }
@@ -557,17 +566,86 @@ final class QinEsmStaticBindingCollector {
             } else if (ch == '/' && next == '*') {
                 blockComment = true;
                 i++;
+            } else if (ch == '/' && startsRegexLiteral(source, i)) {
+                i = skipRegexLiteral(source, i);
             } else if (ch == '\'') {
                 single = true;
             } else if (ch == '"') {
                 dbl = true;
             } else if (ch == '`') {
-                template = true;
+                if (templateExpressionDepth > 0) {
+                    i = skipTemplateLiteral(source, i);
+                } else {
+                    template = true;
+                }
             } else {
                 code[i] = true;
+                if (templateExpressionDepth > 0) {
+                    if (ch == '{') {
+                        templateExpressionDepth++;
+                    } else if (ch == '}') {
+                        templateExpressionDepth--;
+                        if (templateExpressionDepth == 0) {
+                            template = true;
+                        }
+                    }
+                }
             }
         }
         return code;
+    }
+
+    private boolean startsRegexLiteral(String source, int slashIndex) {
+        int previous = slashIndex - 1;
+        while (previous >= 0 && Character.isWhitespace(source.charAt(previous))) {
+            previous--;
+        }
+        if (previous < 0) {
+            return true;
+        }
+        char ch = source.charAt(previous);
+        return "([{:;,=!?&|+-*~^<>%".indexOf(ch) >= 0;
+    }
+
+    private int skipRegexLiteral(String source, int slashIndex) {
+        boolean inClass = false;
+        for (int i = slashIndex + 1; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            if (ch == '\n' || ch == '\r') {
+                return i - 1;
+            }
+            if (ch == '[' && !isEscaped(source, i)) {
+                inClass = true;
+            } else if (ch == ']' && !isEscaped(source, i)) {
+                inClass = false;
+            } else if (ch == '/' && !isEscaped(source, i) && !inClass) {
+                while (i + 1 < source.length() && Character.isLetter(source.charAt(i + 1))) {
+                    i++;
+                }
+                return i;
+            }
+        }
+        return slashIndex;
+    }
+
+    private int skipTemplateLiteral(String source, int startIndex) {
+        int expressionDepth = 0;
+        for (int i = startIndex + 1; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+            if (ch == '`' && expressionDepth == 0 && !isEscaped(source, i)) {
+                return i;
+            }
+            if (ch == '$' && next == '{' && !isEscaped(source, i)) {
+                expressionDepth++;
+                i++;
+                continue;
+            }
+            if (ch == '}' && expressionDepth > 0 && !isEscaped(source, i)) {
+                expressionDepth--;
+            }
+        }
+        return startIndex;
     }
 
     private boolean isCodePosition(boolean[] code, int index) {

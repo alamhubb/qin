@@ -6,10 +6,10 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_subhuti_lexer_LexerState {
-  __qin_field_position: number | null = null as any;
-  __qin_field_rowNum: number | null = null as any;
-  __qin_field_columnNum: number | null = null as any;
-  __qin_field_lastTokenRowNum: number | null = null as any;
+  __qin_field_position: number | null = 0 as any;
+  __qin_field_rowNum: number | null = 0 as any;
+  __qin_field_columnNum: number | null = 0 as any;
+  __qin_field_lastTokenRowNum: number | null = 0 as any;
   __qin_field_lastTokenName: string | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 5 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || typeof __qin_args[4] === "string")) {
@@ -24,10 +24,10 @@ class com_subhuti_lexer_LexerState {
     throw new Error("Unsupported Java constructor overload: LexerState/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_lexer_LexerState_5_0(position: number, rowNum: number, columnNum: number, lastTokenRowNum: number, lastTokenName: string): void {
-    this.__qin_field_position = null;
-    this.__qin_field_rowNum = null;
-    this.__qin_field_columnNum = null;
-    this.__qin_field_lastTokenRowNum = null;
+    this.__qin_field_position = 0;
+    this.__qin_field_rowNum = 0;
+    this.__qin_field_columnNum = 0;
+    this.__qin_field_lastTokenRowNum = 0;
     this.__qin_field_lastTokenName = null;
     this.__qin_field_position = position;
     this.__qin_field_rowNum = rowNum;
@@ -35,25 +35,25 @@ class com_subhuti_lexer_LexerState {
     this.__qin_field_lastTokenRowNum = lastTokenRowNum;
     this.__qin_field_lastTokenName = lastTokenName;
   }
-  static initial(): any {
+  static initial(): com_subhuti_lexer_LexerState {
     return new com_subhuti_lexer_LexerState(0.0, 1.0, 1.0, 1.0, null);
   }
-  getPosition(): any {
+  getPosition(): number {
     return this.__qin_field_position;
   }
-  getRowNum(): any {
+  getRowNum(): number {
     return this.__qin_field_rowNum;
   }
-  getColumnNum(): any {
+  getColumnNum(): number {
     return this.__qin_field_columnNum;
   }
-  getLastTokenRowNum(): any {
+  getLastTokenRowNum(): number {
     return this.__qin_field_lastTokenRowNum;
   }
-  getLastTokenName(): any {
+  getLastTokenName(): string {
     return this.__qin_field_lastTokenName;
   }
-  toString(): any {
+  toString(): string {
     return __QinJavaLangString.format("LexerState(pos=%d, line=%d, col=%d)", this.__qin_field_position, this.__qin_field_rowNum, this.__qin_field_columnNum);
   }
 }

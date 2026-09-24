@@ -30,10 +30,10 @@ class com_subhuti_error_SubhutiErrorTypes extends java_lang_Enum {
     this.__qin_field_description = null;
     this.__qin_field_description = description;
   }
-  getDescription(): any {
+  getDescription(): string {
     return this.__qin_field_description;
   }
-  toString(): any {
+  toString(): string {
     return this.__qin_field_description;
   }
 }

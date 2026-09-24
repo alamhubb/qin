@@ -1,12 +1,24 @@
 package com.qin.runtime.core;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +26,19 @@ public final class QinCsstsCompiler {
     private static final Pattern CSSTS_MERGE_PATTERN = Pattern.compile("cssts\\.merge\\(([^)]*)\\)");
     private static final Pattern CSS_CLASS_RULE_PATTERN = Pattern.compile("\\.cssts_([A-Za-z0-9_-]+)\\s*\\{\\s*([^:}]+):");
     private static final int MAX_CACHE_ENTRIES = 64;
+    private static final List<String> TRANSFORM_TOOLCHAIN_PACKAGES = List.of(
+            "cssts-compiler",
+            "@qin/generated-qin-parser-ts",
+            "slime-parser",
+            "@qin/generated-slime-parser-ts",
+            "slime-generator",
+            "slime-ast");
+    private static final Set<String> IGNORED_TOOLCHAIN_DIRS = Set.of(
+            ".git", ".idea", ".qin", "node_modules", "build", "target", "out");
+    private static final Pattern QIN_PACKAGE_OVERRIDES_BLOCK = Pattern.compile(
+            "packageOverrides\\s*:\\s*\\{([^}]*)\\}",
+            Pattern.DOTALL);
+    private static final Pattern QIN_STRING_FIELD = Pattern.compile("[\"']([^\"']+)[\"']\\s*:\\s*[\"']([^\"']*)[\"']");
 
     private final QinJsPackageRunner packageRunner = new QinJsPackageRunner();
     private final Map<CacheKey, QinCsstsCompileResult> cache = new LinkedHashMap<>() {
@@ -22,19 +47,32 @@ public final class QinCsstsCompiler {
             return size() > MAX_CACHE_ENTRIES;
         }
     };
+    private final Map<Path, DirectoryDigestCacheEntry> directoryDigestCache = new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Path, DirectoryDigestCacheEntry> eldest) {
+            return size() > MAX_CACHE_ENTRIES;
+        }
+    };
+    private int directoryDigestCacheHits;
+    private int directoryDigestContentHashes;
 
     public QinCsstsCompileResult compile(Path projectRoot, String source) throws Exception {
         Path normalizedRoot = projectRoot.toAbsolutePath().normalize();
-        CacheKey key = new CacheKey(normalizedRoot, source);
+        source = source == null ? "" : source;
+        String configSource = readConfigSource(normalizedRoot);
+        String toolchainFingerprint = transformToolchainFingerprint(normalizedRoot, configSource);
+        CacheKey key = new CacheKey(normalizedRoot, source, toolchainFingerprint);
         synchronized (cache) {
             QinCsstsCompileResult cached = cache.get(key);
             if (cached != null) {
                 return cached;
             }
         }
-        String configSource = readConfigSource(normalizedRoot);
         Path transformCacheRoot = transformCacheRoot(normalizedRoot);
-        String diskKey = QinFrontendTransformDiskCache.keyMaterial(semanticRoot(normalizedRoot), source, configSource);
+        String diskKey = QinFrontendTransformDiskCache.keyMaterial(
+                semanticRoot(normalizedRoot),
+                "toolchain=" + toolchainFingerprint + "\nsource=" + source,
+                configSource);
         QinCsstsCompileResult diskCached = QinFrontendTransformDiskCache.read(
                         transformCacheRoot,
                         normalizedRoot,
@@ -175,6 +213,192 @@ public final class QinCsstsCompiler {
             current = current.getParent();
         }
         return null;
+    }
+
+    private String transformToolchainFingerprint(Path projectRoot, String configSource) throws Exception {
+        Map<String, Path> overrides = readPackageOverrides(projectRoot, configSource);
+        Map<String, Path> workspacePackages = indexWorkspaceToolchainPackages();
+        MessageDigest digest = newSha256Digest();
+        updateClassResourceDigest(digest, QinCsstsCompiler.class);
+        updateClassResourceDigest(digest, QinJsPackageRunner.class);
+        digest.update("module-class-toolchain".getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+        digest.update(QinInMemoryJvmRunner.moduleClassToolchainFingerprintValue().getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) '\n');
+        digest.update("dynamic-semantic-policy".getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+        digest.update(QinDynamicSemanticPolicyFingerprint.current().getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) '\n');
+        for (String packageName : TRANSFORM_TOOLCHAIN_PACKAGES) {
+            digest.update(packageName.getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) '=');
+            Path packageDir = overrides.get(packageName);
+            if (packageDir == null) {
+                packageDir = workspacePackages.get(packageName);
+            }
+            if (packageDir == null) {
+                digest.update((byte) '-');
+            } else {
+                digest.update(packageDir.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
+                digest.update((byte) 0);
+                updateDirectoryDigest(digest, packageDir);
+            }
+            digest.update((byte) '\n');
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private void updateClassResourceDigest(MessageDigest digest, Class<?> type) throws Exception {
+        digest.update(("class:" + type.getName()).getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+        String resourceName = "/" + type.getName().replace('.', '/') + ".class";
+        try (InputStream input = type.getResourceAsStream(resourceName)) {
+            if (input == null) {
+                digest.update("missing".getBytes(StandardCharsets.UTF_8));
+            } else {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+        }
+        digest.update((byte) '\n');
+    }
+
+    private Map<String, Path> indexWorkspaceToolchainPackages() {
+        Path workspaceRoot = locateWorkspaceRoot();
+        if (workspaceRoot == null) {
+            return Map.of();
+        }
+        Map<String, Path> packages = new LinkedHashMap<>();
+        registerWorkspacePackage(packages, "cssts-compiler", workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler"));
+        registerWorkspacePackage(packages, "@qin/generated-qin-parser-ts", workspaceRoot.resolve("qin")
+                .resolve("packages").resolve("qin-language").resolve("generated").resolve("qin-parser-ts"));
+        registerWorkspacePackage(packages, "@qin/generated-slime-parser-ts", workspaceRoot.resolve("qin")
+                .resolve("examples").resolve("ovs-cssts-demos").resolve("qin-ovs-cssts-generated-ts-slime-demo")
+                .resolve("packages").resolve("slime-parser"));
+        registerWorkspacePackage(packages, "slime-parser", workspaceRoot.resolve("qin")
+                .resolve("examples").resolve("ovs-cssts-demos").resolve("qin-ovs-cssts-generated-ts-slime-demo")
+                .resolve("packages").resolve("slime-parser"));
+        registerWorkspacePackage(packages, "slime-generator", workspaceRoot.resolve("slime").resolve("slime-generator"));
+        registerWorkspacePackage(packages, "slime-ast", workspaceRoot.resolve("slime").resolve("slime-ast"));
+        return packages;
+    }
+
+    private void registerWorkspacePackage(Map<String, Path> packages, String packageName, Path packageDir) {
+        Path normalized = packageDir.toAbsolutePath().normalize();
+        if (Files.isRegularFile(normalized.resolve("package.json"))) {
+            packages.put(packageName, normalized);
+        }
+    }
+
+    private Map<String, Path> readPackageOverrides(Path projectRoot, String configSource) {
+        if (configSource == null || configSource.isBlank()) {
+            return Map.of();
+        }
+        Matcher blockMatcher = QIN_PACKAGE_OVERRIDES_BLOCK.matcher(configSource);
+        if (!blockMatcher.find()) {
+            return Map.of();
+        }
+
+        Map<String, Path> overrides = new LinkedHashMap<>();
+        Matcher fieldMatcher = QIN_STRING_FIELD.matcher(blockMatcher.group(1));
+        while (fieldMatcher.find()) {
+            String packageName = fieldMatcher.group(1);
+            String pathText = fieldMatcher.group(2);
+            if (packageName == null || packageName.isBlank() || pathText == null || pathText.isBlank()) {
+                continue;
+            }
+            Path overridePath = projectRoot.resolve(pathText).toAbsolutePath().normalize();
+            if (Files.isDirectory(overridePath)) {
+                overrides.put(packageName, overridePath);
+            }
+        }
+        return overrides;
+    }
+
+    private void updateDirectoryDigest(MessageDigest digest, Path root) throws Exception {
+        digest.update(directoryDigest(root).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private synchronized String directoryDigest(Path root) throws Exception {
+        root = root.toAbsolutePath().normalize();
+        DirectorySnapshot snapshot = directorySnapshot(root);
+        DirectoryDigestCacheEntry cached = directoryDigestCache.get(root);
+        if (cached != null && cached.snapshot().equals(snapshot)) {
+            directoryDigestCacheHits++;
+            return cached.digest();
+        }
+
+        String digest = hashDirectoryContent(root, snapshot);
+        directoryDigestContentHashes++;
+        directoryDigestCache.put(root, new DirectoryDigestCacheEntry(snapshot, digest));
+        return digest;
+    }
+
+    private DirectorySnapshot directorySnapshot(Path root) throws Exception {
+        List<DirectoryFileSnapshot> files = new ArrayList<>();
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                if (!dir.toAbsolutePath().normalize().equals(root.toAbsolutePath().normalize())
+                        && isIgnoredToolchainPath(root, dir)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                if (attrs.isRegularFile() && !isIgnoredToolchainPath(root, file)) {
+                    Path normalized = file.toAbsolutePath().normalize();
+                    files.add(new DirectoryFileSnapshot(
+                            root.relativize(normalized).toString().replace('\\', '/'),
+                            attrs.size(),
+                            attrs.lastModifiedTime().to(TimeUnit.NANOSECONDS),
+                            Objects.toString(attrs.fileKey(), "")));
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        files.sort(Comparator.comparing(DirectoryFileSnapshot::relativePath));
+        return new DirectorySnapshot(files);
+    }
+
+    private String hashDirectoryContent(Path root, DirectorySnapshot snapshot) throws Exception {
+        MessageDigest digest = newSha256Digest();
+        byte[] buffer = new byte[8192];
+        for (DirectoryFileSnapshot file : snapshot.files()) {
+            digest.update(file.relativePath().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            try (var input = Files.newInputStream(root.resolve(file.relativePath()).normalize())) {
+                int read;
+                while ((read = input.read(buffer)) >= 0) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+            digest.update((byte) 0);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private boolean isIgnoredToolchainPath(Path root, Path path) {
+        Path relative = root.relativize(path.toAbsolutePath().normalize());
+        for (Path part : relative) {
+            if (IGNORED_TOOLCHAIN_DIRS.contains(part.toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private MessageDigest newSha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 is not available", error);
+        }
     }
 
     private String normalizeCsstsAtomReferences(String code, Set<String> atomNames) {
@@ -358,10 +582,20 @@ public final class QinCsstsCompiler {
             String atomModule) {
     }
 
-    private record CacheKey(Path projectRoot, String source) {
+    private record CacheKey(Path projectRoot, String source, String toolchainFingerprint) {
         private CacheKey {
             Objects.requireNonNull(projectRoot, "projectRoot cannot be null");
             Objects.requireNonNull(source, "source cannot be null");
+            Objects.requireNonNull(toolchainFingerprint, "toolchainFingerprint cannot be null");
         }
+    }
+
+    private record DirectoryDigestCacheEntry(DirectorySnapshot snapshot, String digest) {
+    }
+
+    private record DirectorySnapshot(List<DirectoryFileSnapshot> files) {
+    }
+
+    private record DirectoryFileSnapshot(String relativePath, long size, long modifiedNanos, String fileKey) {
     }
 }

@@ -8,54 +8,44 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_java_ast_JavaAstDoWhileStatement {
-  __qin_field_bodyStatements: any = null as any;
+  __qin_field_bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   __qin_field_test: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstDoWhileStatement_0_0();
-      return;
-    }
-    if (__qin_args.length === 2 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression"))) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression"))) {
       const bodyStatements: any = __qin_args[0];
       const test: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstDoWhileStatement_2_1(bodyStatements, test);
+      this.__qin_constructor_com_slime_java_ast_JavaAstDoWhileStatement_2_0(bodyStatements, test);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstDoWhileStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstDoWhileStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstDoWhileStatement_2_0(bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>, test: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_bodyStatements = null;
     this.__qin_field_test = null;
-    this.__qin_field_bodyStatements = (__qin_binary__("==", this.__qin_field_bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_bodyStatements));
+    bodyStatements = (__qin_binary__("==", bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(bodyStatements));
+    this.__qin_field_bodyStatements = bodyStatements;
+    this.__qin_field_test = test;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstDoWhileStatement_2_1(bodyStatements: any, test: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_bodyStatements = null;
-    this.__qin_field_test = null;
-    (() => {
-      this.__qin_field_bodyStatements = bodyStatements;
-      this.__qin_field_test = test;
-      return null;
-    })();
-  }
-  bodyStatements(): any {
+  bodyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_bodyStatements;
   }
-  test(): any {
+  test(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_test;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstDoWhileStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_bodyStatements, other.__qin_field_bodyStatements)
-      && __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test);
+    const __qin_record_other: com_slime_java_ast_JavaAstDoWhileStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_bodyStatements, __qin_record_other.__qin_field_bodyStatements)
+      && __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_bodyStatements);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstDoWhileStatement[", "bodyStatements=", this.__qin_field_bodyStatements, ", ", "test=", this.__qin_field_test, "]"].join("");
   }
 }

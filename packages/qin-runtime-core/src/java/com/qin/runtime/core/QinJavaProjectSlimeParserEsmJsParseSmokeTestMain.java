@@ -3,6 +3,9 @@ package com.qin.runtime.core;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.FileVisitResult;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,8 +34,11 @@ public final class QinJavaProjectSlimeParserEsmJsParseSmokeTestMain {
 
         Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName = outputs.stream()
                 .collect(Collectors.toMap(QinJavaProjectJsCompiler.EsmFileOutput::binaryName, output -> output));
-        QinJavaProjectJsCompiler.EsmFileOutput parserOutput = byBinaryName.get("com.slime.parser.SlimeParser");
-        require(parserOutput != null, "SlimeParser ESM output");
+        QinJavaProjectJsCompiler.EsmFileOutput parserOutput = findOutput(
+                outputs,
+                byBinaryName,
+                "com.slime.parser.SlimeParser",
+                Path.of("com", "slime", "parser", "SlimeParser.js"));
         require(parserOutput.js().contains("from \"@qin/java-sdk-js\""),
                 "SlimeParser imports the shared Java SDK JS package");
         require(!parserOutput.js().contains("const __QinJavaLangString ="),
@@ -40,11 +46,14 @@ public final class QinJavaProjectSlimeParserEsmJsParseSmokeTestMain {
         require(!parserOutput.js().contains("class __QinJavaLangStringBuilder"),
                 "SlimeParser does not inline StringBuilder runtime");
 
-        Path sdkPackage = outputRoot.resolve("node_modules")
-                .resolve("@qin")
+        Path sdkPackage = outputRoot.getParent()
                 .resolve("java-sdk-js");
         require(Files.isRegularFile(sdkPackage.resolve("package.json")),
                 "@qin/java-sdk-js package.json");
+        Path sdkNodeModulesPackage = outputRoot.resolve("node_modules")
+                .resolve("@qin")
+                .resolve("java-sdk-js");
+        copyDirectory(sdkPackage, sdkNodeModulesPackage);
         String sdkSource = Files.readString(sdkPackage.resolve("index.js"), StandardCharsets.UTF_8);
         require(sdkSource.contains("__QinJavaLangString") && sdkSource.contains("./core/runtime.js"),
                 "@qin/java-sdk-js re-exports java.lang.String runtime");
@@ -93,6 +102,64 @@ public final class QinJavaProjectSlimeParserEsmJsParseSmokeTestMain {
 
         System.out.println("Generated ESM JS files: " + outputRoot);
         System.out.println("QinJavaProjectSlimeParserEsmJsParseSmokeTestMain OK");
+    }
+
+    private static void copyDirectory(Path sourceDir, Path targetDir) throws Exception {
+        if (Files.exists(targetDir)) {
+            deleteRecursively(targetDir);
+        }
+        Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws java.io.IOException {
+                Path relative = sourceDir.relativize(dir);
+                Files.createDirectories(targetDir.resolve(relative));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws java.io.IOException {
+                Path relative = sourceDir.relativize(file);
+                Path targetFile = targetDir.resolve(relative);
+                Files.createDirectories(targetFile.getParent());
+                Files.copy(file, targetFile);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private static void deleteRecursively(Path path) throws Exception {
+        if (!Files.exists(path)) {
+            return;
+        }
+        Files.walkFileTree(path, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws java.io.IOException {
+                Files.deleteIfExists(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, java.io.IOException exc) throws java.io.IOException {
+                Files.deleteIfExists(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private static QinJavaProjectJsCompiler.EsmFileOutput findOutput(
+            List<QinJavaProjectJsCompiler.EsmFileOutput> outputs,
+            Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName,
+            String binaryName,
+            Path outputSuffix) {
+        QinJavaProjectJsCompiler.EsmFileOutput byName = byBinaryName.get(binaryName);
+        if (byName != null) {
+            return byName;
+        }
+        return outputs.stream()
+                .filter(output -> output.outputFile().endsWith(outputSuffix))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Expected output for " + binaryName + " or path suffix " + outputSuffix));
     }
 
     private static void require(boolean condition, String label) {

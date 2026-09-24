@@ -497,7 +497,6 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                 export default com_qin_parser_QinParser
                 export { com_qin_parser_QinParser as QinParser }
                 export { SlimeJavascriptParser }
-                export { com_subhuti_parser_Alternative as Alternative }
                 """, StandardCharsets.UTF_8);
         Files.writeString(languageRoot.resolve("qin.config.js"), """
                 export default {

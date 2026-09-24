@@ -5,8 +5,11 @@ import com.qin.lang.backend.js.QinIrCodeBackend;
 import com.qin.lang.backend.js.QinTsBackend;
 import com.qin.lang.frontend.adapter.QinJavaAstIrLowerer;
 import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrTypeKind;
+import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.java.ast.JavaAstArrayAccessExpression;
 import com.slime.java.ast.JavaAstArrayLiteralExpression;
 import com.slime.java.ast.JavaAstAssignmentExpression;
@@ -149,15 +152,20 @@ public final class QinJavaProjectJsCompiler {
             List<String> additionalEntryBinaryNames,
             Path outputRoot,
             QinIrCodeBackend backend) throws IOException {
+        QinPhaseTimer profile = QinPhaseTimer.start("java-project-esm-files");
         List<String> rootBinaryNames = rootBinaryNames(entryBinaryName, additionalEntryBinaryNames);
         Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, rootBinaryNames);
+        profile.checkpoint("discover source closure",
+                "roots=" + rootBinaryNames.size() + ", sources=" + sourceFiles.size());
         Map<String, JavaAstProgram> parsedPrograms = parseSourceFiles(sourceFiles);
+        profile.checkpoint("parse source files", "sources=" + parsedPrograms.size());
         QinIrProgram bundleProgram;
         try {
             bundleProgram = lowerBundle(parsedPrograms.values());
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Could not lower Java source bundle for " + entryBinaryName, e);
         }
+        profile.checkpoint("lower bundle", "classes=" + bundleProgram.classDeclarations().size());
 
         Map<String, Path> outputFilesByBinaryName = new LinkedHashMap<>();
         Map<String, Set<String>> programClassBinaryNames = new LinkedHashMap<>();
@@ -170,6 +178,7 @@ public final class QinJavaProjectJsCompiler {
                     programClassBinaryNames(parsedPrograms.get(sourceBinaryName)));
         }
 
+        cleanGeneratedEsmOutputRoot(outputRoot);
         List<EsmFileOutput> outputs = new ArrayList<>();
         writeJavaSdkJsPackage(outputRoot);
         for (Map.Entry<String, Path> sourceEntry : sourceFiles.entrySet()) {
@@ -208,8 +217,15 @@ public final class QinJavaProjectJsCompiler {
             Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
             outputs.add(new EsmFileOutput(sourceBinaryName, sourceFile, outputFile, generated));
         }
+        profile.checkpoint("emit esm files", "outputs=" + outputs.size());
+        List<EsmFileOutput> immutableOutputs = List.copyOf(outputs);
+        if (backend instanceof QinTsBackend) {
+            QinGeneratedTsStaticAdmissionAudit.audit(immutableOutputs);
+            profile.checkpoint("static admission audit", "outputs=" + immutableOutputs.size());
+        }
         writeGeneratedEsmPackage(outputRoot, entryBinaryName, additionalEntryBinaryNames, backend, bundleProgram);
-        return List.copyOf(outputs);
+        profile.done("entry=" + entryBinaryName + ", outputs=" + immutableOutputs.size());
+        return immutableOutputs;
     }
 
     private List<String> rootBinaryNames(String entryBinaryName, List<String> additionalEntryBinaryNames) {
@@ -678,6 +694,11 @@ public final class QinJavaProjectJsCompiler {
 
     private String generatedSubhutiStructPackageExports(String extension) {
         return """
+                    "./SubhutiCst": {
+                      "types": "./com/subhuti/struct/SubhutiCst.%1$s",
+                      "import": "./com/subhuti/struct/SubhutiCst.%1$s",
+                      "default": "./com/subhuti/struct/SubhutiCst.%1$s"
+                    },
                     "./SubhutiSourceLocation": {
                       "types": "./com/subhuti/struct/SubhutiSourceLocation.%1$s",
                       "import": "./com/subhuti/struct/SubhutiSourceLocation.%1$s",
@@ -701,13 +722,30 @@ public final class QinJavaProjectJsCompiler {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Cannot generate SlimeCstToAstBridge without com.slime.parser.cstToAst.SlimeCstToAstUtils"));
+        Map<String, QinIrClassDeclaration> classIndex = new LinkedHashMap<>();
+        for (QinIrClassDeclaration classDeclaration : program.classDeclarations()) {
+            classIndex.put(classDeclaration.binaryName(), classDeclaration);
+        }
         String generatedIdentifier =
                 QinJsBackend.generatedJavaClassIdentifier("com.slime.parser.cstToAst.SlimeCstToAstUtils");
-        String typeArgs = typeScript ? "...args: any[]" : "...args";
-        String returnAny = typeScript ? ": any" : "";
         String instanceType = typeScript ? ": SlimeCstToAst" : "";
         String instanceParamType = typeScript ? "instance: SlimeCstToAst" : "instance";
         String nullReturnType = typeScript ? ": void" : "";
+        LinkedHashMap<String, LinkedHashSet<String>> typeImports = new LinkedHashMap<>();
+        List<QinIrMethodDeclaration> bridgeMethods = new ArrayList<>();
+        LinkedHashSet<String> methodNames = new LinkedHashSet<>();
+        for (QinIrMethodDeclaration method : utilityClass.methods()) {
+            if ("constructor".equals(method.name()) || !methodNames.add(method.name())) {
+                continue;
+            }
+            bridgeMethods.add(method);
+            if (typeScript) {
+                collectBridgeTypeImports(method.returnType(), extension, classIndex, typeImports, utilityClass.binaryName());
+                for (var parameter : method.parameters()) {
+                    collectBridgeTypeImports(parameter.type(), extension, classIndex, typeImports, utilityClass.binaryName());
+                }
+            }
+        }
 
         StringBuilder js = new StringBuilder();
         js.append("// Generated Slime CST-to-AST bridge by Qin. Source Java: ")
@@ -718,39 +756,48 @@ public final class QinJavaProjectJsCompiler {
                 .append(" as __QinGeneratedSlimeCstToAstUtils } from \"./com/slime/parser/cstToAst/SlimeCstToAstUtils.")
                 .append(extension)
                 .append("\";\n\n");
+        for (Map.Entry<String, LinkedHashSet<String>> entry : typeImports.entrySet()) {
+            js.append("import { ")
+                    .append(String.join(", ", entry.getValue()))
+                    .append(" } from \"")
+                    .append(entry.getKey())
+                    .append("\";\n");
+        }
+        if (!typeImports.isEmpty()) {
+            js.append('\n');
+        }
         js.append("export class SlimeCstToAst extends __QinGeneratedSlimeCstToAstUtils {\n");
-        js.append("  constructor(...args")
-                .append(typeScript ? ": any[]" : "")
-                .append(") {\n");
-        js.append("    if (args.length !== 0) {\n");
-        js.append("      throw new Error(\"Unsupported SlimeCstToAst constructor arity: \" + args.length);\n");
-        js.append("    }\n");
+        js.append("  constructor() {\n");
         js.append("    super();\n");
         js.append("    __qinBindSlimeCstToAstTransformer(this);\n");
         js.append("    registerSlimeCstToAstUtil(this);\n");
         js.append("  }\n");
-        LinkedHashSet<String> methodNames = new LinkedHashSet<>();
-        for (QinIrMethodDeclaration method : utilityClass.methods()) {
-            if ("constructor".equals(method.name()) || !methodNames.add(method.name())) {
-                continue;
-            }
+        for (QinIrMethodDeclaration method : bridgeMethods) {
+            appendSlimeCstToAstBridgeMethod(js, method, classIndex, typeScript, false);
         }
         js.append("}\n\n");
         js.append("function __qinBindSlimeCstToAstTransformer(instance")
-                .append(typeScript ? ": any" : "")
+                .append(instanceType)
                 .append(")")
                 .append(nullReturnType)
                 .append(" {\n");
-        js.append("  for (const key of Object.keys(instance)) {\n");
-        js.append("    const helper = instance[key];\n");
-        js.append("    if (helper && typeof helper === \"object\" && \"__qin_field_transformer\" in helper) {\n");
-        js.append("      helper.__qin_field_transformer = instance;\n");
-        js.append("    }\n");
-        js.append("  }\n");
+        for (QinIrFieldDeclaration field : utilityClass.fields()) {
+            if (field.staticField() || !hasBridgeTransformerField(field.type(), classIndex)) {
+                continue;
+            }
+            String fieldName = "__qin_field_" + field.name();
+            js.append("  if (instance.")
+                    .append(fieldName)
+                    .append(" !== null) {\n");
+            js.append("    instance.")
+                    .append(fieldName)
+                    .append(".__qin_field_transformer = instance;\n");
+            js.append("  }\n");
+        }
         js.append("}\n\n");
-        js.append("let __qinSlimeCstToAstUtils")
+        js.append("var __qinSlimeCstToAstUtils")
                 .append(instanceType)
-                .append(";\n");
+                .append(" = new SlimeCstToAst();\n");
         js.append("export function registerSlimeCstToAstUtil(")
                 .append(instanceParamType)
                 .append(")")
@@ -758,27 +805,267 @@ public final class QinJavaProjectJsCompiler {
                 .append(" {\n");
         js.append("  __qinSlimeCstToAstUtils = instance;\n");
         js.append("}\n\n");
-        js.append("export const SlimeCstToAstUtils = {}")
-                .append(typeScript ? " as SlimeCstToAst" : "")
-                .append(";\n");
-        js.append("const __qinSlimeCstToAstFacade")
-                .append(typeScript ? ": any" : "")
-                .append(" = SlimeCstToAstUtils;\n");
-        for (String methodName : methodNames) {
-            js.append("__qinSlimeCstToAstFacade.")
-                    .append(methodName)
-                    .append(" = function (")
-                    .append(typeArgs)
-                    .append(")")
-                    .append(returnAny)
-                    .append(" {\n");
+        js.append("export class SlimeCstToAstUtils {\n");
+        for (QinIrMethodDeclaration method : bridgeMethods) {
+            appendSlimeCstToAstBridgeMethodSignature(js, method, classIndex, typeScript, true);
+            js.append(" {\n");
             js.append("  return __qinSlimeCstToAstUtils.")
-                    .append(methodName)
-                    .append("(...args);\n");
-            js.append("};\n");
+                    .append(method.name())
+                    .append("(");
+            for (int i = 0; i < method.parameters().size(); i++) {
+                if (i > 0) {
+                    js.append(", ");
+                }
+                var parameter = method.parameters().get(i);
+                js.append(parameter.name() == null || parameter.name().isBlank() ? "arg" + i : parameter.name());
+            }
+            js.append(");\n");
+            js.append("  }\n");
         }
-        js.append("\n__qinSlimeCstToAstUtils = new SlimeCstToAst();\n");
+        js.append("}\n");
         return js.toString();
+    }
+
+    private void appendSlimeCstToAstBridgeMethod(
+            StringBuilder js,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> classIndex,
+            boolean typeScript,
+            boolean staticMethod) {
+        appendSlimeCstToAstBridgeMethodSignature(js, method, classIndex, typeScript, staticMethod);
+        js.append(" {\n");
+        js.append("  return ")
+                .append(staticMethod ? "__qinSlimeCstToAstUtils" : "super")
+                .append(".")
+                .append(method.name())
+                .append("(");
+        appendSlimeCstToAstBridgeMethodArguments(js, method);
+        js.append(");\n");
+        js.append("  }\n");
+    }
+
+    private void appendSlimeCstToAstBridgeMethodSignature(
+            StringBuilder js,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> classIndex,
+            boolean typeScript,
+            boolean staticMethod) {
+        js.append("  ");
+        if (staticMethod) {
+            js.append("static ");
+        }
+        js.append(method.name()).append("(");
+        for (int i = 0; i < method.parameters().size(); i++) {
+            if (i > 0) {
+                js.append(", ");
+            }
+            var parameter = method.parameters().get(i);
+            js.append(bridgeMethodParameterName(parameter.name(), i));
+            if (typeScript) {
+                js.append(": ").append(bridgeTsTypeName(parameter.type(), classIndex));
+            }
+        }
+        js.append(")");
+        if (typeScript) {
+            js.append(": ").append(bridgeFacadeReturnTypeName(method.returnType()));
+        }
+    }
+
+    private void appendSlimeCstToAstBridgeMethodArguments(
+            StringBuilder js,
+            QinIrMethodDeclaration method) {
+        for (int i = 0; i < method.parameters().size(); i++) {
+            if (i > 0) {
+                js.append(", ");
+            }
+            js.append(bridgeMethodParameterName(method.parameters().get(i).name(), i));
+        }
+    }
+
+    private String bridgeMethodParameterName(String parameterName, int index) {
+        return parameterName == null || parameterName.isBlank() ? "arg" + index : parameterName;
+    }
+
+    private String bridgeFacadeReturnTypeName(QinIrTypeRef returnType) {
+        return returnType != null && returnType.kind() == QinIrTypeKind.VOID ? "void" : "any";
+    }
+
+    private void collectBridgeTypeImports(
+            QinIrTypeRef type,
+            String extension,
+            Map<String, QinIrClassDeclaration> classIndex,
+            LinkedHashMap<String, LinkedHashSet<String>> imports,
+            String currentBinaryName) {
+        if (type == null) {
+            return;
+        }
+        if (type.kind() == QinIrTypeKind.CLASS) {
+            collectBridgeClassImport(type.binaryName(), extension, classIndex, imports, currentBinaryName);
+        }
+        for (QinIrTypeRef argument : type.typeArguments()) {
+            collectBridgeTypeImports(argument, extension, classIndex, imports, currentBinaryName);
+        }
+    }
+
+    private void collectBridgeClassImport(
+            String binaryName,
+            String extension,
+            Map<String, QinIrClassDeclaration> classIndex,
+            LinkedHashMap<String, LinkedHashSet<String>> imports,
+            String currentBinaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            return;
+        }
+        if (binaryName.startsWith("[")) {
+            collectBridgeArrayComponentImport(binaryName, extension, classIndex, imports, currentBinaryName);
+            return;
+        }
+        String outerBinaryName = bridgeOuterBinaryName(binaryName);
+        if (outerBinaryName.equals(currentBinaryName) || !classIndex.containsKey(outerBinaryName)) {
+            return;
+        }
+        imports.computeIfAbsent(bridgeImportPath(outerBinaryName, extension), ignored -> new LinkedHashSet<>())
+                .add(QinJsBackend.generatedJavaClassIdentifier(binaryName));
+    }
+
+    private void collectBridgeArrayComponentImport(
+            String descriptor,
+            String extension,
+            Map<String, QinIrClassDeclaration> classIndex,
+            LinkedHashMap<String, LinkedHashSet<String>> imports,
+            String currentBinaryName) {
+        int index = 0;
+        while (index < descriptor.length() && descriptor.charAt(index) == '[') {
+            index++;
+        }
+        if (index < descriptor.length() && descriptor.charAt(index) == 'L' && descriptor.endsWith(";")) {
+            collectBridgeClassImport(
+                    descriptor.substring(index + 1, descriptor.length() - 1).replace('/', '.'),
+                    extension,
+                    classIndex,
+                    imports,
+                    currentBinaryName);
+        }
+    }
+
+    private boolean hasBridgeTransformerField(
+            QinIrTypeRef type,
+            Map<String, QinIrClassDeclaration> classIndex) {
+        if (type == null || type.kind() != QinIrTypeKind.CLASS || type.binaryName() == null) {
+            return false;
+        }
+        QinIrClassDeclaration declaration = classIndex.get(bridgeOuterBinaryName(type.binaryName()));
+        if (declaration == null) {
+            return false;
+        }
+        return declaration.fields().stream().anyMatch(field -> "transformer".equals(field.name()));
+    }
+
+    private String bridgeOuterBinaryName(String binaryName) {
+        int nestedIndex = binaryName.indexOf('$');
+        return nestedIndex < 0 ? binaryName : binaryName.substring(0, nestedIndex);
+    }
+
+    private String bridgeImportPath(String binaryName, String extension) {
+        return "./" + binaryName.replace('.', '/') + "." + extension;
+    }
+
+    private String bridgeMethodReturnTypeName(
+            QinIrTypeRef type,
+            Map<String, QinIrClassDeclaration> classIndex) {
+        if (type != null && type.kind() == QinIrTypeKind.VOID) {
+            return "void";
+        }
+        return bridgeTsTypeName(type, classIndex);
+    }
+
+    private String bridgeTsTypeName(
+            QinIrTypeRef type,
+            Map<String, QinIrClassDeclaration> classIndex) {
+        if (type == null) {
+            return "any";
+        }
+        return switch (type.kind()) {
+            case VOID -> "any";
+            case BOOLEAN -> "boolean";
+            case INT, DOUBLE -> "number";
+            case STRING -> "string";
+            case CLASS -> bridgeClassTypeName(type, classIndex);
+        };
+    }
+
+    private String bridgeClassTypeName(
+            QinIrTypeRef type,
+            Map<String, QinIrClassDeclaration> classIndex) {
+        String binaryName = type.binaryName();
+        if (binaryName == null || binaryName.isBlank()) {
+            return "any";
+        }
+        if (binaryName.startsWith("[")) {
+            return bridgeArrayTypeName(binaryName, classIndex);
+        }
+        if (String.class.getName().equals(binaryName)) {
+            return "string";
+        }
+        if (Class.class.getName().equals(binaryName)) {
+            return "__QinJavaLangClass";
+        }
+        if (Object.class.getName().equals(binaryName)) {
+            return "any";
+        }
+        if (Boolean.class.getName().equals(binaryName)) {
+            return "boolean | null";
+        }
+        if (Integer.class.getName().equals(binaryName)
+                || Long.class.getName().equals(binaryName)
+                || Double.class.getName().equals(binaryName)
+                || Number.class.getName().equals(binaryName)) {
+            return "number | null";
+        }
+        if ("java.lang.Iterable".equals(binaryName)) {
+            return "Iterable<" + bridgeFirstTypeArgumentName(type, classIndex) + ">";
+        }
+        if ("java.util.List".equals(binaryName)
+                || "java.util.ArrayList".equals(binaryName)
+                || "java.util.Collection".equals(binaryName)) {
+            return "__QinJavaUtilList<" + bridgeFirstTypeArgumentName(type, classIndex) + ">";
+        }
+        if (classIndex.containsKey(bridgeOuterBinaryName(binaryName))) {
+            return QinJsBackend.generatedJavaClassIdentifier(binaryName);
+        }
+        return "any";
+    }
+
+    private String bridgeFirstTypeArgumentName(
+            QinIrTypeRef type,
+            Map<String, QinIrClassDeclaration> classIndex) {
+        return type.typeArguments().isEmpty()
+                ? "any"
+                : bridgeTsTypeName(type.typeArguments().get(0), classIndex);
+    }
+
+    private String bridgeArrayTypeName(
+            String descriptor,
+            Map<String, QinIrClassDeclaration> classIndex) {
+        int dimensions = 0;
+        while (dimensions < descriptor.length() && descriptor.charAt(dimensions) == '[') {
+            dimensions++;
+        }
+        String elementType = "any";
+        if (dimensions < descriptor.length()) {
+            elementType = switch (descriptor.charAt(dimensions)) {
+                case 'Z' -> "boolean";
+                case 'B', 'C', 'S', 'I', 'J', 'F', 'D' -> "number";
+                case 'L' -> descriptor.endsWith(";")
+                        ? bridgeClassTypeName(
+                                QinIrTypeRef.classType(descriptor.substring(dimensions + 1, descriptor.length() - 1)
+                                        .replace('/', '.')),
+                                classIndex)
+                        : "any";
+                default -> "any";
+            };
+        }
+        return elementType + "[]".repeat(dimensions);
     }
 
     private boolean isGeneratedSlimeParserEntry(String entryBinaryName) {
@@ -908,8 +1195,6 @@ public final class QinJavaProjectJsCompiler {
         appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$StatementParams", "StatementParams", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$DeclarationParams", "DeclarationParams", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$TemplateLiteralParams", "TemplateLiteralParams", extension, binaryNames);
-        appendExportAlias(js, "com.subhuti.parser.Alternative", "Alternative", extension, binaryNames);
-
         if (binaryNames.contains("com.slime.token.JavaScriptTokens")) {
             String tokenIdentifier = QinJsBackend.generatedJavaClassIdentifier("com.slime.token.JavaScriptTokens");
             js.append("import { ")
@@ -959,12 +1244,12 @@ public final class QinJavaProjectJsCompiler {
             js.append("  Meta: \"meta\"\n");
             js.append("});\n");
             js.append("export const SlimeContextualKeywordTokenTypes = SlimeJavascriptContextualKeywordTokenTypes;\n");
-            js.append("export const SlimeTokenType = Object.freeze(Object.assign(Object.fromEntries(__qinSlimeTokenTypeEntries), SlimeJavascriptContextualKeywordTokenTypes));\n");
+            appendStaticSlimeTokenType(js);
             if (typeScript) {
                 js.append("function __qinReadTokenMember(token: any, methodName: string, fieldName: string): any {\n");
                 js.append("  if (token == null) return null;\n");
                 js.append("  const method = token[methodName];\n");
-                js.append("  if (typeof method === \"function\") return method.call(token);\n");
+                js.append("  if (typeof method === \"function\") return /* @qin-static-admission member=call owner=com.qin.runtime.core.QinJavaProjectJsCompiler method=__qinReadTokenMember receiver=token arity=0 */ method.call(token);\n");
                 js.append("  return token[fieldName];\n");
                 js.append("}\n");
                 js.append("export const ReservedWords = new Set(slimeTokens.filter((token: any) => __qinReadTokenMember(token, \"isKeyword\", \"isKeyword\")).map((token: any) => __qinReadTokenMember(token, \"getValue\", \"value\")).filter(Boolean));\n");
@@ -972,7 +1257,7 @@ public final class QinJavaProjectJsCompiler {
                 js.append("function __qinReadTokenMember(token, methodName, fieldName) {\n");
                 js.append("  if (token == null) return null;\n");
                 js.append("  const method = token[methodName];\n");
-                js.append("  if (typeof method === \"function\") return method.call(token);\n");
+                js.append("  if (typeof method === \"function\") return /* @qin-static-admission member=call owner=com.qin.runtime.core.QinJavaProjectJsCompiler method=__qinReadTokenMember receiver=token arity=0 */ method.call(token);\n");
                 js.append("  return token[fieldName];\n");
                 js.append("}\n");
                 js.append("export const ReservedWords = new Set(slimeTokens.filter((token) => __qinReadTokenMember(token, \"isKeyword\", \"isKeyword\")).map((token) => __qinReadTokenMember(token, \"getValue\", \"value\")).filter(Boolean));\n");
@@ -994,6 +1279,143 @@ public final class QinJavaProjectJsCompiler {
         }
         return js.toString();
     }
+
+    private void appendStaticSlimeTokenType(StringBuilder js) {
+        js.append("export const SlimeTokenType = {\n");
+        for (String tokenName : STATIC_SLIME_TOKEN_TYPE_NAMES) {
+            js.append("  ")
+                    .append(tokenName)
+                    .append(": \"")
+                    .append(escapeJs(tokenName))
+                    .append("\",\n");
+        }
+        js.append("  Async: \"async\",\n");
+        js.append("  Static: \"static\",\n");
+        js.append("  Let: \"let\",\n");
+        js.append("  Get: \"get\",\n");
+        js.append("  Set: \"set\",\n");
+        js.append("  Of: \"of\",\n");
+        js.append("  From: \"from\",\n");
+        js.append("  As: \"as\",\n");
+        js.append("  Target: \"target\",\n");
+        js.append("  Meta: \"meta\"\n");
+        js.append("};\n");
+    }
+
+    private static final List<String> STATIC_SLIME_TOKEN_TYPE_NAMES = List.of(
+            "Whitespace",
+            "LineTerminatorCRLF",
+            "LineTerminator",
+            "LineComment",
+            "BlockComment",
+            "SingleLineHTMLOpenComment",
+            "SingleLineHTMLCloseComment",
+            "Await",
+            "Break",
+            "Case",
+            "Catch",
+            "Class",
+            "Const",
+            "Continue",
+            "Debugger",
+            "Default",
+            "Delete",
+            "Do",
+            "Else",
+            "Enum",
+            "Export",
+            "Extends",
+            "False",
+            "Finally",
+            "For",
+            "Function",
+            "If",
+            "Import",
+            "In",
+            "Instanceof",
+            "New",
+            "NullLiteral",
+            "Return",
+            "Super",
+            "Switch",
+            "This",
+            "Throw",
+            "True",
+            "Try",
+            "Typeof",
+            "Var",
+            "Void",
+            "While",
+            "With",
+            "Yield",
+            "NumericLiteral",
+            "StringLiteral",
+            "NoSubstitutionTemplate",
+            "TemplateHead",
+            "TemplateMiddle",
+            "TemplateTail",
+            "PrivateIdentifier",
+            "Hash",
+            "IdentifierName",
+            "RegularExpressionLiteral",
+            "UnsignedRightShiftAssign",
+            "Ellipsis",
+            "UnsignedRightShift",
+            "StrictEqual",
+            "StrictNotEqual",
+            "LeftShiftAssign",
+            "RightShiftAssign",
+            "ExponentiationAssign",
+            "LogicalAndAssign",
+            "LogicalOrAssign",
+            "NullishCoalescingAssign",
+            "Arrow",
+            "PlusAssign",
+            "MinusAssign",
+            "MultiplyAssign",
+            "DivideAssign",
+            "ModuloAssign",
+            "LeftShift",
+            "RightShift",
+            "LessEqual",
+            "GreaterEqual",
+            "Equal",
+            "NotEqual",
+            "LogicalAnd",
+            "LogicalOr",
+            "NullishCoalescing",
+            "Increment",
+            "Decrement",
+            "Exponentiation",
+            "BitwiseAndAssign",
+            "BitwiseOrAssign",
+            "BitwiseXorAssign",
+            "QuestionDot",
+            "Plus",
+            "Minus",
+            "Asterisk",
+            "Slash",
+            "Modulo",
+            "Less",
+            "Greater",
+            "BitwiseAnd",
+            "BitwiseOr",
+            "BitwiseXor",
+            "BitwiseNot",
+            "LogicalNot",
+            "Assign",
+            "LBrace",
+            "RBrace",
+            "LParen",
+            "RParen",
+            "LBracket",
+            "RBracket",
+            "Semicolon",
+            "Comma",
+            "Dot",
+            "Colon",
+            "Question",
+            "At");
 
     private void appendGeneratedSlimeParserAdapter(StringBuilder js) {
         js.append("""
@@ -1057,6 +1479,32 @@ public final class QinJavaProjectJsCompiler {
                 .append(".")
                 .append(extension)
                 .append("\";\n");
+    }
+
+    private void cleanGeneratedEsmOutputRoot(Path outputRoot) throws IOException {
+        if (outputRoot == null) {
+            throw new IllegalArgumentException("outputRoot cannot be null");
+        }
+        Path absoluteOutputRoot = outputRoot.toAbsolutePath().normalize();
+        if (absoluteOutputRoot.getParent() == null
+                || absoluteOutputRoot.getRoot() == null
+                || absoluteOutputRoot.equals(absoluteOutputRoot.getRoot())) {
+            throw new IllegalStateException("Refusing to clean unsafe generated output path: " + absoluteOutputRoot);
+        }
+        if (!Files.exists(absoluteOutputRoot, LinkOption.NOFOLLOW_LINKS)) {
+            return;
+        }
+        if (Files.isSymbolicLink(absoluteOutputRoot)
+                || !Files.isDirectory(absoluteOutputRoot, LinkOption.NOFOLLOW_LINKS)) {
+            Files.delete(absoluteOutputRoot);
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(absoluteOutputRoot)) {
+            List<Path> paths = stream.sorted((left, right) -> right.compareTo(left)).toList();
+            for (Path path : paths) {
+                Files.delete(path);
+            }
+        }
     }
 
     private Map<String, JavaAstProgram> parseSourceFiles(Map<String, Path> sourceFiles) {
@@ -1722,9 +2170,43 @@ public final class QinJavaProjectJsCompiler {
     }
 
     private void addIfSource(Set<String> referenced, Set<String> sourceBinaryNames, String binaryName) {
-        if (binaryName != null && sourceBinaryNames.contains(binaryName)) {
-            referenced.add(binaryName);
+        String sourceBinaryName = sourceBinaryName(sourceBinaryNames, binaryName);
+        if (sourceBinaryName != null) {
+            referenced.add(sourceBinaryName);
         }
+    }
+
+    private String sourceBinaryName(Set<String> sourceBinaryNames, String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            return null;
+        }
+        if (sourceBinaryNames.contains(binaryName)) {
+            return binaryName;
+        }
+        int dollar = binaryName.indexOf('$');
+        if (dollar > 0) {
+            String owner = binaryName.substring(0, dollar);
+            if (sourceBinaryNames.contains(owner)) {
+                return owner;
+            }
+        }
+        String candidate = binaryName;
+        int dot = candidate.lastIndexOf('.');
+        while (dot >= 0) {
+            candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
+            if (sourceBinaryNames.contains(candidate)) {
+                return candidate;
+            }
+            dollar = candidate.indexOf('$');
+            if (dollar > 0) {
+                String owner = candidate.substring(0, dollar);
+                if (sourceBinaryNames.contains(owner)) {
+                    return owner;
+                }
+            }
+            dot = candidate.lastIndexOf('.', dot - 1);
+        }
+        return null;
     }
 
     private Class<?> loadClass(String binaryName) {
@@ -1789,6 +2271,10 @@ public final class QinJavaProjectJsCompiler {
         }
 
         private String resolveQualifiedTypeName(String typeName) {
+            String nestedSourceName = sourceBinaryName(typeName);
+            if (nestedSourceName != null) {
+                return nestedSourceName;
+            }
             String candidate = typeName;
             while (!candidate.isBlank()) {
                 if (sourceBinaryNames.contains(candidate)) {
@@ -1807,8 +2293,9 @@ public final class QinJavaProjectJsCompiler {
             if (imported != null) {
                 String importedCandidate = imported + typeName.substring(rootName.length());
                 while (!importedCandidate.isBlank()) {
-                    if (sourceBinaryNames.contains(importedCandidate)) {
-                        return importedCandidate;
+                    String importedSourceName = sourceBinaryName(importedCandidate);
+                    if (importedSourceName != null) {
+                        return importedSourceName;
                     }
                     int importedDot = importedCandidate.lastIndexOf('.');
                     if (importedDot < imported.length()) {
@@ -1816,6 +2303,39 @@ public final class QinJavaProjectJsCompiler {
                     }
                     importedCandidate = importedCandidate.substring(0, importedDot);
                 }
+            }
+            return null;
+        }
+
+        private String sourceBinaryName(String binaryName) {
+            if (binaryName == null || binaryName.isBlank()) {
+                return null;
+            }
+            if (sourceBinaryNames.contains(binaryName)) {
+                return binaryName;
+            }
+            int dollar = binaryName.indexOf('$');
+            if (dollar > 0) {
+                String owner = binaryName.substring(0, dollar);
+                if (sourceBinaryNames.contains(owner)) {
+                    return owner;
+                }
+            }
+            String candidate = binaryName;
+            int dot = candidate.lastIndexOf('.');
+            while (dot >= 0) {
+                candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
+                if (sourceBinaryNames.contains(candidate)) {
+                    return candidate;
+                }
+                dollar = candidate.indexOf('$');
+                if (dollar > 0) {
+                    String owner = candidate.substring(0, dollar);
+                    if (sourceBinaryNames.contains(owner)) {
+                        return owner;
+                    }
+                }
+                dot = candidate.lastIndexOf('.', dot - 1);
             }
             return null;
         }

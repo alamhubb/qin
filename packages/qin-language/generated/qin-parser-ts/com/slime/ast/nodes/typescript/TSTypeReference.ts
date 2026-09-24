@@ -14,7 +14,7 @@ class com_slime_ast_nodes_typescript_TSTypeReference {
   __qin_field_typeParameters: com_slime_ast_AstNode | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const typeName: any = __qin_args[0];
       const typeParameters: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -34,33 +34,34 @@ class com_slime_ast_nodes_typescript_TSTypeReference {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_TS_TYPE_REFERENCE;
   }
-  typeName(): any {
+  typeName(): com_slime_ast_AstNode {
     return this.__qin_field_typeName;
   }
-  typeParameters(): any {
+  typeParameters(): com_slime_ast_AstNode {
     return this.__qin_field_typeParameters;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_typescript_TSTypeReference)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_typeParameters, other.__qin_field_typeParameters)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_typescript_TSTypeReference = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_typeParameters, __qin_record_other.__qin_field_typeParameters)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeParameters);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TSTypeReference[", "typeName=", this.__qin_field_typeName, ", ", "typeParameters=", this.__qin_field_typeParameters, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

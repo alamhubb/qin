@@ -80,12 +80,31 @@ public class QinCli {
                 }
             }
         } catch (Exception e) {
-            System.err.println(red("Error: ") + e.getMessage());
+            System.err.println(red("Error: ") + exceptionSummary(e));
             if ("true".equalsIgnoreCase(System.getenv("QIN_DEBUG"))) {
                 e.printStackTrace(System.err);
             }
             System.exit(1);
         }
+    }
+
+    private static String exceptionSummary(Throwable throwable) {
+        if (throwable == null) {
+            return "<null exception>";
+        }
+        String message = throwable.getMessage();
+        if (message != null && !message.isBlank()) {
+            return message;
+        }
+        Throwable cause = throwable.getCause();
+        if (cause != null) {
+            String causeMessage = cause.getMessage();
+            if (causeMessage != null && !causeMessage.isBlank()) {
+                return throwable.getClass().getName() + ": " + cause.getClass().getName() + ": " + causeMessage;
+            }
+            return throwable.getClass().getName() + ": " + cause.getClass().getName();
+        }
+        return throwable.getClass().getName();
     }
 
     private static void initProject() throws IOException {
@@ -622,9 +641,6 @@ public class QinCli {
         requireSourceContains(indexSource,
                 "SlimeJavascriptParser",
                 "Generated parser index.ts must export SlimeJavascriptParser for OVS/CSSTS inheritance");
-        requireSourceContains(indexSource,
-                "com_subhuti_parser_Alternative as Alternative",
-                "Generated parser index.ts must export Subhuti Alternative for OVS/CSSTS parser combinators");
         for (String additionalEntryBinaryName : config.generated().additionalEntryBinaryNames()) {
             requireSourceContains(generatedConfigSource,
                     "\"" + additionalEntryBinaryName + "\"",

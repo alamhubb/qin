@@ -18,7 +18,8 @@ export default {
   packageOverrides: {
     "slime-parser": "./packages/slime-parser",
     "@qin/java-sdk-js": "./packages/java-sdk-js",
-    "subhuti": "../../../../subhuti",
+    "@qin/generated-qin-parser-ts": "../../../packages/qin-language/generated/qin-parser-ts",
+    "subhuti": "./packages/subhuti-static-facade",
     "cssts-compiler": "./packages/cssts-compiler",
     "ovs-compiler": "../../../../ovsjs/ovs/ovs-compiler"
   },

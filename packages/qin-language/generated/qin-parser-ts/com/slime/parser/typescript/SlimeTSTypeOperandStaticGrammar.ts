@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeTSTypeOperandStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSTypeOperandStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSPrefixTypeOrPrimary").declareExternalRule("TSType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSTypeOperand", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.call("TSPrefixTypeOrPrimary"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("LBracket"), com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.call("TSType")), com_subhuti_parser_SubhutiStaticGrammar.consume("RBracket")))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSPrefixTypeOrPrimary").declareExternalRule("TSType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSTypeOperand", com_subhuti_parser_SubhutiStaticGrammar.seq(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSPrefixTypeOrPrimary"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("LBracket"), com_subhuti_parser_SubhutiStaticGrammar.option(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSType")), com_subhuti_parser_SubhutiStaticGrammar.consume("RBracket")))))).build();
   }
 }
 const SlimeTSTypeOperandStaticGrammar = com_slime_parser_typescript_SlimeTSTypeOperandStaticGrammar;

@@ -208,7 +208,7 @@ function loadGeneratedQinParser(): QinParserConstructor | null {
   try {
     const require = createRequire(import.meta.url)
     const parserModule = require(GENERATED_QIN_PARSER_PACKAGE)
-    parserConstructor = parserModule.default ?? parserModule.QinParser ?? parserModule.com_qin_parser_QinParser ?? null
+    parserConstructor = parserModule.default ?? null
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     logToFile(`Generated Qin parser package not available: ${GENERATED_QIN_PARSER_PACKAGE}`, message)

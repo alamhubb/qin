@@ -8,6 +8,7 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar {
+  static __qin_field_ACTION_CLOSE_GREATER: string | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 0 && true) {
       this.__qin_constructor_com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar_0_0();
@@ -18,11 +19,12 @@ class com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeParameter").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSTypeParameterDeclaration", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Less"), com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeParameter"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Comma"), com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeParameter"))), com_subhuti_parser_SubhutiStaticGrammar.consume("Greater")))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeParameter").declareAction(com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar.__qin_field_ACTION_CLOSE_GREATER).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSTypeParameterDeclaration", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Less"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeParameter"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Comma"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeParameter"))), com_subhuti_parser_SubhutiStaticGrammar.action(com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar.__qin_field_ACTION_CLOSE_GREATER)))).build();
   }
 }
 const SlimeTSTypeParameterDeclarationStaticGrammar = com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar;
+com_slime_parser_typescript_SlimeTSTypeParameterDeclarationStaticGrammar.__qin_field_ACTION_CLOSE_GREATER = "SlimeTSTypeParameterDeclaration.closeGreater";
 
 function run() {
   return null;

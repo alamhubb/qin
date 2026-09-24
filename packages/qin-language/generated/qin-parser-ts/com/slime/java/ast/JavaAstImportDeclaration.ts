@@ -7,8 +7,8 @@ function __qin_structural_object__(value) {
 }
 class com_slime_java_ast_JavaAstImportDeclaration {
   __qin_field_name: string | null = null as any;
-  __qin_field_staticImport: boolean | null = null as any;
-  __qin_field_onDemand: boolean | null = null as any;
+  __qin_field_staticImport: boolean | null = false as any;
+  __qin_field_onDemand: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "boolean" && typeof __qin_args[2] === "boolean") {
       const name: any = __qin_args[0];
@@ -21,8 +21,8 @@ class com_slime_java_ast_JavaAstImportDeclaration {
   }
   __qin_constructor_com_slime_java_ast_JavaAstImportDeclaration_3_0(name: string, staticImport: boolean, onDemand: boolean): void {
     this.__qin_field_name = null;
-    this.__qin_field_staticImport = null;
-    this.__qin_field_onDemand = null;
+    this.__qin_field_staticImport = false;
+    this.__qin_field_onDemand = false;
     (() => {
       this.__qin_field_name = name;
       this.__qin_field_staticImport = staticImport;
@@ -30,30 +30,31 @@ class com_slime_java_ast_JavaAstImportDeclaration {
       return null;
     })();
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  staticImport(): any {
+  staticImport(): boolean {
     return this.__qin_field_staticImport;
   }
-  onDemand(): any {
+  onDemand(): boolean {
     return this.__qin_field_onDemand;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstImportDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_staticImport, other.__qin_field_staticImport)
-      && __qin_java_values_equal__(this.__qin_field_onDemand, other.__qin_field_onDemand);
+    const __qin_record_other: com_slime_java_ast_JavaAstImportDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_staticImport, __qin_record_other.__qin_field_staticImport)
+      && __qin_java_values_equal__(this.__qin_field_onDemand, __qin_record_other.__qin_field_onDemand);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_staticImport);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_onDemand);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstImportDeclaration[", "name=", this.__qin_field_name, ", ", "staticImport=", this.__qin_field_staticImport, ", ", "onDemand=", this.__qin_field_onDemand, "]"].join("");
   }
 }

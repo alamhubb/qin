@@ -9,7 +9,7 @@ function __qin_structural_object__(value) {
 }
 const ArrayList = __QinJavaUtilArrayList;
 class com_slime_java_JavaTokens {
-  static __qin_field_TOKENS: any = null as any;
+  static __qin_field_TOKENS: __QinJavaUtilList<com_subhuti_struct_SubhutiCreateToken> | null = null as any;
   static __qin_field_JAVA_IDENTIFIER_PATTERN: string | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 0 && true) {
@@ -21,7 +21,7 @@ class com_slime_java_JavaTokens {
   __qin_constructor_com_slime_java_JavaTokens_0_0(): void {
     null;
   }
-  static getTokens(): any {
+  static getTokens(): __QinJavaUtilList<com_subhuti_struct_SubhutiCreateToken> {
     return new __QinJavaUtilArrayList(com_slime_java_JavaTokens.__qin_field_TOKENS);
   }
 }

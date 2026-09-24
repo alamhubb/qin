@@ -2,8 +2,8 @@ import { __qin_builtin_constructor__ } from "../core/runtime.js";
 import { __qin_java_hash_key__, __qin_java_hash_key_equals__ } from "../util/hash.js";
 
 export let __qin_subhuti_next_rule_cache_id = 1;
-export const __qin_subhuti_rule_cache_identity_ids = new (__qin_builtin_constructor__("WeakMap"))();
-export const __qin_subhuti_rule_cache_value_buckets = new (__qin_builtin_constructor__("Map"))();
+export const __qin_subhuti_rule_cache_identity_ids = new Map();
+export const __qin_subhuti_rule_cache_value_buckets = new Map();
 export function __qin_subhuti_identity_rule_cache_id(value) {
   if (!__qin_subhuti_rule_cache_identity_ids.has(value)) {
     __qin_subhuti_rule_cache_identity_ids.set(value, __qin_subhuti_next_rule_cache_id++);

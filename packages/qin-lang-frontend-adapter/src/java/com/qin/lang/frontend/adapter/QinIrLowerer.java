@@ -1,5 +1,6 @@
 package com.qin.lang.frontend.adapter;
 
+import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.parser.QinParsedSource;
 
@@ -22,22 +23,29 @@ public final class QinIrLowerer extends QinSlimeIrLoweringSupport {
     }
 
     public QinIrProgram lowerParsedSource(QinParsedSource parsed, Map<String, String> declarationClassExportSlots) {
+        return lowerParsedSource(parsed, declarationClassExportSlots, Map.of());
+    }
+
+    public QinIrProgram lowerParsedSource(
+            QinParsedSource parsed,
+            Map<String, String> declarationClassExportSlots,
+            Map<String, QinIrExpression> staticExportSlotValues) {
         Objects.requireNonNull(parsed, "parsed cannot be null");
         long startNanos = System.nanoTime();
         if (!parsed.hasProgram()) {
-            logPhase("import only", startNanos, "imports=" + parsed.jsImports().size());
             return importOnlyProgram(parsed);
         }
-        currentSourceLength = parsed.effectiveSource() == null ? 0 : parsed.effectiveSource().length();
+        currentSourceText = parsed.effectiveSource() == null ? "" : parsed.effectiveSource();
+        currentSourceLength = currentSourceText.length();
         loweringContext.setSourceLength(currentSourceLength);
-        logPhase("top level assemble start", startNanos, "chars=" + currentSourceLength);
         QinIrProgram program = topLevelIrAssembler.assembleProgram(
                 parsed.requireProgram(),
                 parsed.javaImports(),
                 parsed.jsImports(),
                 declarationClassExportSlots,
-                currentSourceLength);
-        logPhase("top level assemble done", startNanos, "chars=" + currentSourceLength);
+                staticExportSlotValues,
+                currentSourceLength,
+                currentSourceText);
         return program;
     }
 
@@ -57,8 +65,4 @@ public final class QinIrLowerer extends QinSlimeIrLoweringSupport {
         return QinSlimeFrontendAdapter.createImportOnlyProgram(parsed);
     }
 
-    private void logPhase(String phase, long startNanos, String detail) {
-        long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        System.out.println("[QinIrLowerer] " + phase + " +" + elapsedMs + "ms :: " + detail);
-    }
 }

@@ -11,16 +11,17 @@ class com_slime_java_ast_JavaAstNullLiteral {
       throw new Error("Unsupported Java constructor arity: JavaAstNullLiteral/" + __qin_args.length);
     }
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstNullLiteral)) return false;
+    const __qin_record_other: com_slime_java_ast_JavaAstNullLiteral = other;
     return true;
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     return result;
   }
-  toString() {
+  toString(): string {
     return "JavaAstNullLiteral[]";
   }
 }

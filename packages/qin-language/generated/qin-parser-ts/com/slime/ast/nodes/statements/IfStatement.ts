@@ -16,7 +16,7 @@ class com_slime_ast_nodes_statements_IfStatement {
   __qin_field_alternate: com_slime_ast_Statement | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Expression")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Statement")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.Statement")) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Expression")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Statement")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.Statement")) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation))) {
       const test: any = __qin_args[0];
       const consequent: any = __qin_args[1];
       const alternate: any = __qin_args[2];
@@ -39,30 +39,31 @@ class com_slime_ast_nodes_statements_IfStatement {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_IF_STATEMENT;
   }
-  test(): any {
+  test(): com_slime_ast_Expression {
     return this.__qin_field_test;
   }
-  consequent(): any {
+  consequent(): com_slime_ast_Statement {
     return this.__qin_field_consequent;
   }
-  alternate(): any {
+  alternate(): com_slime_ast_Statement {
     return this.__qin_field_alternate;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_statements_IfStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test)
-      && __qin_java_values_equal__(this.__qin_field_consequent, other.__qin_field_consequent)
-      && __qin_java_values_equal__(this.__qin_field_alternate, other.__qin_field_alternate)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_statements_IfStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test)
+      && __qin_java_values_equal__(this.__qin_field_consequent, __qin_record_other.__qin_field_consequent)
+      && __qin_java_values_equal__(this.__qin_field_alternate, __qin_record_other.__qin_field_alternate)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_consequent);
@@ -70,7 +71,7 @@ class com_slime_ast_nodes_statements_IfStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["IfStatement[", "test=", this.__qin_field_test, ", ", "consequent=", this.__qin_field_consequent, ", ", "alternate=", this.__qin_field_alternate, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

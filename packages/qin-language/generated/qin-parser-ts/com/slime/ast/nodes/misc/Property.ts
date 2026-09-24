@@ -13,12 +13,12 @@ class com_slime_ast_nodes_misc_Property {
   __qin_field_key: com_slime_ast_AstNode | null = null as any;
   __qin_field_value: com_slime_ast_AstNode | null = null as any;
   __qin_field_kind: string | null = null as any;
-  __qin_field_method: boolean | null = null as any;
-  __qin_field_shorthand: boolean | null = null as any;
-  __qin_field_computed: boolean | null = null as any;
+  __qin_field_method: boolean | null = false as any;
+  __qin_field_shorthand: boolean | null = false as any;
+  __qin_field_computed: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 7 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && typeof __qin_args[5] === "boolean" && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SourceLocation) || __qin_args[6].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 7 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && typeof __qin_args[5] === "boolean" && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SourceLocation))) {
       const key: any = __qin_args[0];
       const value: any = __qin_args[1];
       const kind: any = __qin_args[2];
@@ -35,9 +35,9 @@ class com_slime_ast_nodes_misc_Property {
     this.__qin_field_key = null;
     this.__qin_field_value = null;
     this.__qin_field_kind = null;
-    this.__qin_field_method = null;
-    this.__qin_field_shorthand = null;
-    this.__qin_field_computed = null;
+    this.__qin_field_method = false;
+    this.__qin_field_shorthand = false;
+    this.__qin_field_computed = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_key = key;
@@ -50,42 +50,43 @@ class com_slime_ast_nodes_misc_Property {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_PROPERTY;
   }
-  key(): any {
+  key(): com_slime_ast_AstNode {
     return this.__qin_field_key;
   }
-  value(): any {
+  value(): com_slime_ast_AstNode {
     return this.__qin_field_value;
   }
-  kind(): any {
+  kind(): string {
     return this.__qin_field_kind;
   }
-  method(): any {
+  method(): boolean {
     return this.__qin_field_method;
   }
-  shorthand(): any {
+  shorthand(): boolean {
     return this.__qin_field_shorthand;
   }
-  computed(): any {
+  computed(): boolean {
     return this.__qin_field_computed;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_Property)) return false;
-    return __qin_java_values_equal__(this.__qin_field_key, other.__qin_field_key)
-      && __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_kind, other.__qin_field_kind)
-      && __qin_java_values_equal__(this.__qin_field_method, other.__qin_field_method)
-      && __qin_java_values_equal__(this.__qin_field_shorthand, other.__qin_field_shorthand)
-      && __qin_java_values_equal__(this.__qin_field_computed, other.__qin_field_computed)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_Property = other;
+    return __qin_java_values_equal__(this.__qin_field_key, __qin_record_other.__qin_field_key)
+      && __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_kind, __qin_record_other.__qin_field_kind)
+      && __qin_java_values_equal__(this.__qin_field_method, __qin_record_other.__qin_field_method)
+      && __qin_java_values_equal__(this.__qin_field_shorthand, __qin_record_other.__qin_field_shorthand)
+      && __qin_java_values_equal__(this.__qin_field_computed, __qin_record_other.__qin_field_computed)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_key);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
@@ -96,7 +97,7 @@ class com_slime_ast_nodes_misc_Property {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["Property[", "key=", this.__qin_field_key, ", ", "value=", this.__qin_field_value, ", ", "kind=", this.__qin_field_kind, ", ", "method=", this.__qin_field_method, ", ", "shorthand=", this.__qin_field_shorthand, ", ", "computed=", this.__qin_field_computed, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

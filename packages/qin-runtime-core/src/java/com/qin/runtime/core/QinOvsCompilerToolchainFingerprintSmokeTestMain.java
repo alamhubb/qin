@@ -43,6 +43,9 @@ public final class QinOvsCompilerToolchainFingerprintSmokeTestMain {
                 "OVS transform fingerprint must include slime-generator");
         require(workspacePackages.containsKey("slime-ast"),
                 "OVS transform fingerprint must include slime-ast");
+        require(!QinInMemoryJvmRunner.moduleClassToolchainFingerprintValue().isBlank(),
+                "Module-class toolchain fingerprint must be available to OVS transform cache");
+        requireCompilerSourceIncludesModuleClassFingerprint();
 
         Method fingerprintMethod = QinOvsCompiler.class.getDeclaredMethod(
                 "transformToolchainFingerprint",
@@ -74,6 +77,21 @@ public final class QinOvsCompilerToolchainFingerprintSmokeTestMain {
             throw new IllegalStateException("Changed toolchain package must invalidate the directory digest cache");
         }
 
+        String previousMode = System.getProperty("qin.dynamicSemanticMode");
+        try {
+            String alternateMode = "error".equals(System.getProperty("qin.dynamicSemanticMode", "warn"))
+                    ? "warn"
+                    : "error";
+            System.setProperty("qin.dynamicSemanticMode", alternateMode);
+            String alternatePolicy = (String) fingerprintMethod.invoke(compiler, root, configSource);
+            if (afterToolchainChange.equals(alternatePolicy)) {
+                throw new IllegalStateException(
+                        "OVS transform fingerprint must include the JVM dynamic semantic policy");
+            }
+        } finally {
+            restoreProperty("qin.dynamicSemanticMode", previousMode);
+        }
+
         System.out.println("QinOvsCompilerToolchainFingerprintSmokeTestMain OK");
     }
 
@@ -87,5 +105,21 @@ public final class QinOvsCompilerToolchainFingerprintSmokeTestMain {
         Field field = target.getClass().getDeclaredField(name);
         field.setAccessible(true);
         return field.getInt(target);
+    }
+
+    private static void requireCompilerSourceIncludesModuleClassFingerprint() throws Exception {
+        Path source = Path.of("packages/qin-runtime-core/src/java/com/qin/runtime/core/QinOvsCompiler.java");
+        require(Files.isRegularFile(source), "QinOvsCompiler source not found: " + source.toAbsolutePath());
+        String text = Files.readString(source, StandardCharsets.UTF_8);
+        require(text.contains("QinInMemoryJvmRunner.moduleClassToolchainFingerprintValue()"),
+                "OVS transform disk cache key must include the module-class toolchain fingerprint");
+    }
+
+    private static void restoreProperty(String name, String value) {
+        if (value == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, value);
+        }
     }
 }

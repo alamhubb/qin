@@ -5,8 +5,10 @@ package com.qin.lang.ir;
  */
 public sealed interface QinIrExpression permits
         QinIrAssignmentExpression,
+        QinIrArrayCreationExpression,
         QinIrArrayLiteral,
         QinIrBooleanLiteral,
+        QinIrBoundMethodReferenceExpression,
         QinIrBuiltinCallExpression,
         QinIrCastExpression,
         QinIrDoWhileExpression,
@@ -30,12 +32,15 @@ public sealed interface QinIrExpression permits
         QinIrObjectLiteral,
         QinIrPropertyAccessExpression,
         QinIrSequenceExpression,
+        QinIrShortCircuitExpression,
         QinIrSpreadArgumentExpression,
         QinIrStaticMethodCallExpression,
+        QinIrSuperMethodCallExpression,
         QinIrSwitchExpression,
         QinIrThrowExpression,
         QinIrThisExpression,
         QinIrStringLiteral,
+        QinIrUnaryExpression,
         QinIrUpdateExpression,
         QinIrWhileExpression {
 }

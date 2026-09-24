@@ -2,15 +2,19 @@ package com.qin.runtime.core;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public final class QinJsPackageRunnerWorkspacePackageIndexCacheSmokeTestMain {
     private QinJsPackageRunnerWorkspacePackageIndexCacheSmokeTestMain() {
     }
 
     public static void main(String[] args) throws Exception {
+        assertWorkspacePackagesIndexed();
+
         Path root = Files.createTempDirectory("qin-js-package-runner-workspace-index-");
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
@@ -45,6 +49,24 @@ public final class QinJsPackageRunnerWorkspacePackageIndexCacheSmokeTestMain {
             throw new IllegalStateException("Expected same-runner module-class cache hit, got:\n" + log);
         }
         System.out.println("QinJsPackageRunnerWorkspacePackageIndexCacheSmokeTestMain OK");
+    }
+
+    private static void assertWorkspacePackagesIndexed() throws Exception {
+        QinJsPackageRunner runner = new QinJsPackageRunner();
+        Method method = QinJsPackageRunner.class.getDeclaredMethod("workspacePackageIndex", Path.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, Path> index = (Map<String, Path>) method.invoke(
+                runner,
+                Path.of("").toAbsolutePath().normalize());
+        if (!index.containsKey("cssts-compiler")) {
+            throw new IllegalStateException("Expected workspace package index to include cssts-compiler, got:\n"
+                    + index.keySet());
+        }
+        if (!index.containsKey("@qin/java-sdk-js")) {
+            throw new IllegalStateException("Expected workspace package index to include @qin/java-sdk-js, got:\n"
+                    + index.keySet());
+        }
     }
 
     private static void requireResult(Object value, String label) {

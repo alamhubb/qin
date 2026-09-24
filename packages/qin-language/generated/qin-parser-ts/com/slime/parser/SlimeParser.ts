@@ -55,7 +55,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalInitializer(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalInitializer(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalInitializer receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalInitializer.call(this, params);
     }), "OptionalInitializer", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_OptionalInitializer(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -70,7 +70,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalBindingIdentifierQuestion(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalBindingIdentifierQuestion();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalBindingIdentifierQuestion receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalBindingIdentifierQuestion.call(this);
     }), "OptionalBindingIdentifierQuestion", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalBindingIdentifierQuestion(): void {
@@ -85,7 +85,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalTSPropertyMarker(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalTSPropertyMarker();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalTSPropertyMarker receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalTSPropertyMarker.call(this);
     }), "OptionalTSPropertyMarker", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalTSPropertyMarker(): void {
@@ -104,7 +104,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalTSTypeParameterInstantiation(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalTSTypeParameterInstantiation();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalTSTypeParameterInstantiation receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalTSTypeParameterInstantiation.call(this);
     }), "OptionalTSTypeParameterInstantiation", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalTSTypeParameterInstantiation(): void {
@@ -119,7 +119,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalWithClause(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalWithClause();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalWithClause receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalWithClause.call(this);
     }), "OptionalWithClause", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalWithClause(): void {
@@ -134,7 +134,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalTSTypeAnnotation(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalTSTypeAnnotation();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalTSTypeAnnotation receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalTSTypeAnnotation.call(this);
     }), "OptionalTSTypeAnnotation", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalTSTypeAnnotation(): void {
@@ -149,7 +149,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalTSDefiniteAssignmentAssertion(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalTSDefiniteAssignmentAssertion();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalTSDefiniteAssignmentAssertion receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalTSDefiniteAssignmentAssertion.call(this);
     }), "OptionalTSDefiniteAssignmentAssertion", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalTSDefiniteAssignmentAssertion(): void {
@@ -164,19 +164,19 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingIdentifier(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingIdentifier(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingIdentifier receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingIdentifier.call(this, params);
     }), "BindingIdentifier", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingIdentifier(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       super.__qin_subhuti_raw_BindingIdentifier(params);
       {
-        const __qin_typed_receiver_1684: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1684.OptionalBindingIdentifierQuestion();
+        const __qin_typed_receiver_1688: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1688.OptionalBindingIdentifierQuestion();
       }
       {
-        const __qin_typed_receiver_1685: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1685.OptionalTSTypeAnnotation();
+        const __qin_typed_receiver_1689: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1689.OptionalTSTypeAnnotation();
       }
       return null;
     }
@@ -185,7 +185,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalTSDecorators(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalTSDecorators();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalTSDecorators receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalTSDecorators.call(this);
     }), "OptionalTSDecorators", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalTSDecorators(): void {
@@ -200,7 +200,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalTSAbstractModifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalTSAbstractModifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalTSAbstractModifier receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalTSAbstractModifier.call(this);
     }), "OptionalTSAbstractModifier", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalTSAbstractModifier(): void {
@@ -215,7 +215,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ManyTSAccessibilityModifiers(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ManyTSAccessibilityModifiers();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ManyTSAccessibilityModifiers receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ManyTSAccessibilityModifiers.call(this);
     }), "ManyTSAccessibilityModifiers", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ManyTSAccessibilityModifiers(): void {
@@ -230,7 +230,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ManyTSClassMethodModifiers(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ManyTSClassMethodModifiers();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ManyTSClassMethodModifiers receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ManyTSClassMethodModifiers.call(this);
     }), "ManyTSClassMethodModifiers", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ManyTSClassMethodModifiers(): void {
@@ -252,22 +252,22 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_Declaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_Declaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_Declaration.call(this, params);
     }), "Declaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSInterfaceDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSInterfaceDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSInterfaceDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSInterfaceDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSTypeAliasDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSTypeAliasDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSTypeAliasDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSTypeAliasDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSEnumDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSEnumDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSEnumDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSEnumDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSModuleDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSModuleDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSModuleDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSModuleDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSDeclareStatement.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSDeclareStatement receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSDeclareStatement.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSDeclareStatement();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.declarationStandardStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=declarationStandardStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.declarationStandardStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.StandardDeclaration(params);
     })));
       return null;
@@ -277,7 +277,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   StandardDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_StandardDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_StandardDeclaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_StandardDeclaration.call(this, params);
     }), "StandardDeclaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_StandardDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
@@ -290,41 +290,41 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   VariableDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_VariableDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_VariableDeclaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_VariableDeclaration.call(this, params);
     }), "VariableDeclaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_VariableDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1686: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1686.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+        const __qin_typed_receiver_1690: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1690.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
       }
       {
-        const __qin_typed_receiver_1687: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1687.OptionalTSDefiniteAssignmentAssertion();
+        const __qin_typed_receiver_1691: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1691.OptionalTSDefiniteAssignmentAssertion();
       }
       {
-        const __qin_typed_receiver_1688: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1688.OptionalTSTypeAnnotation();
+        const __qin_typed_receiver_1692: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1692.OptionalTSTypeAnnotation();
       }
       {
-        const __qin_typed_receiver_1689: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1689.OptionalInitializer(params);
+        const __qin_typed_receiver_1693: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1693.OptionalInitializer(params);
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1690: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1690.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+        const __qin_typed_receiver_1694: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1694.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
       }
       {
-        const __qin_typed_receiver_1691: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1691.OptionalTSTypeAnnotation();
+        const __qin_typed_receiver_1695: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1695.OptionalTSTypeAnnotation();
       }
       {
-        const __qin_typed_receiver_1692: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1692.Initializer(params);
+        const __qin_typed_receiver_1696: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1696.Initializer(params);
       }
       return null;
     }));
@@ -335,41 +335,41 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   LexicalBinding(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_LexicalBinding(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_LexicalBinding receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_LexicalBinding.call(this, params);
     }), "LexicalBinding", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_LexicalBinding(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1693: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1693.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+        const __qin_typed_receiver_1697: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1697.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
       }
       {
-        const __qin_typed_receiver_1694: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1694.OptionalTSDefiniteAssignmentAssertion();
+        const __qin_typed_receiver_1698: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1698.OptionalTSDefiniteAssignmentAssertion();
       }
       {
-        const __qin_typed_receiver_1695: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1695.OptionalTSTypeAnnotation();
+        const __qin_typed_receiver_1699: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1699.OptionalTSTypeAnnotation();
       }
       {
-        const __qin_typed_receiver_1696: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1696.OptionalInitializer(params);
+        const __qin_typed_receiver_1700: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1700.OptionalInitializer(params);
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1697: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1697.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+        const __qin_typed_receiver_1701: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1701.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
       }
       {
-        const __qin_typed_receiver_1698: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1698.OptionalTSTypeAnnotation();
+        const __qin_typed_receiver_1702: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1702.OptionalTSTypeAnnotation();
       }
       {
-        const __qin_typed_receiver_1699: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1699.Initializer(params);
+        const __qin_typed_receiver_1703: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1703.Initializer(params);
       }
       return null;
     }));
@@ -380,55 +380,37 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassElement(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassElement(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassElement receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassElement.call(this, params);
     }), "ClassElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ClassElement(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       let elementNameParams: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams = new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await());
       {
-        const __qin_typed_receiver_1700: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1700.OptionalTSDecorators();
-      }
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementSemicolonStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      return this.__qin_field_tokenConsumer.Semicolon();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementTsClassMethodSignatureStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      return this.TSClassMethodSignature(elementNameParams);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementTsClassAbstractPropertySignatureStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      return this.TSClassAbstractPropertySignature(elementNameParams);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementMethodStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1701: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1701.OptionalTSAbstractModifier();
-      }
-      {
-        const __qin_typed_receiver_1702: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1702.ManyTSAccessibilityModifiers();
-      }
-      {
-        const __qin_typed_receiver_1703: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1703.MethodDefinition(elementNameParams);
-      }
-      return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementStaticMethodStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      {
         const __qin_typed_receiver_1704: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1704.OptionalTSAbstractModifier();
+        __qin_typed_receiver_1704.OptionalTSDecorators();
       }
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementSemicolonStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementSemicolonStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      return this.__qin_field_tokenConsumer.Semicolon();
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementTsClassMethodSignatureStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementTsClassMethodSignatureStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      return this.TSClassMethodSignature(elementNameParams);
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementTsClassAbstractPropertySignatureStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementTsClassAbstractPropertySignatureStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      return this.TSClassAbstractPropertySignature(elementNameParams);
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementMethodStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementMethodStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1705: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1705.ManyTSAccessibilityModifiers();
+        __qin_typed_receiver_1705.OptionalTSAbstractModifier();
       }
       {
-        const __qin_typed_receiver_1706: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1706.IdentifierName();
+        const __qin_typed_receiver_1706: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1706.ManyTSAccessibilityModifiers();
       }
       {
         const __qin_typed_receiver_1707: com_slime_parser_SlimeParser = this;
         __qin_typed_receiver_1707.MethodDefinition(elementNameParams);
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementFieldStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementStaticMethodStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementStaticMethodStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1708: com_slime_parser_SlimeParser = this;
         __qin_typed_receiver_1708.OptionalTSAbstractModifier();
@@ -438,15 +420,15 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
         __qin_typed_receiver_1709.ManyTSAccessibilityModifiers();
       }
       {
-        const __qin_typed_receiver_1710: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1710.FieldDefinition(params);
+        const __qin_typed_receiver_1710: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1710.IdentifierName();
       }
       {
         const __qin_typed_receiver_1711: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1711.SemicolonASI();
+        __qin_typed_receiver_1711.MethodDefinition(elementNameParams);
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementStaticFieldStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementFieldStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementFieldStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1712: com_slime_parser_SlimeParser = this;
         __qin_typed_receiver_1712.OptionalTSAbstractModifier();
@@ -456,30 +438,48 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
         __qin_typed_receiver_1713.ManyTSAccessibilityModifiers();
       }
       {
-        const __qin_typed_receiver_1714: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1714.IdentifierName();
+        const __qin_typed_receiver_1714: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1714.FieldDefinition(params);
       }
       {
         const __qin_typed_receiver_1715: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1715.FieldDefinition(params);
-      }
-      {
-        const __qin_typed_receiver_1716: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1716.SemicolonASI();
+        __qin_typed_receiver_1715.SemicolonASI();
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.classElementStaticBlockStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementStaticFieldStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementStaticFieldStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1717: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1717.OptionalTSAbstractModifier();
+        const __qin_typed_receiver_1716: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1716.OptionalTSAbstractModifier();
       }
       {
-        const __qin_typed_receiver_1718: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1718.ManyTSAccessibilityModifiers();
+        const __qin_typed_receiver_1717: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1717.ManyTSAccessibilityModifiers();
+      }
+      {
+        const __qin_typed_receiver_1718: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1718.IdentifierName();
       }
       {
         const __qin_typed_receiver_1719: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1719.ClassStaticBlock(params);
+        __qin_typed_receiver_1719.FieldDefinition(params);
+      }
+      {
+        const __qin_typed_receiver_1720: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1720.SemicolonASI();
+      }
+      return null;
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=classElementStaticBlockStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.classElementStaticBlockStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1721: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1721.OptionalTSAbstractModifier();
+      }
+      {
+        const __qin_typed_receiver_1722: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1722.ManyTSAccessibilityModifiers();
+      }
+      {
+        const __qin_typed_receiver_1723: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1723.ClassStaticBlock(params);
       }
       return null;
     })));
@@ -490,109 +490,109 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   MethodDefinition(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_MethodDefinition(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_MethodDefinition receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_MethodDefinition.call(this, params);
     }), "MethodDefinition", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_MethodDefinition(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.methodDefinitionGeneratorStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=methodDefinitionGeneratorStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.methodDefinitionGeneratorStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.GeneratorMethod(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.methodDefinitionAsyncGeneratorStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=methodDefinitionAsyncGeneratorStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.methodDefinitionAsyncGeneratorStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.AsyncGeneratorMethod(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.methodDefinitionAsyncStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=methodDefinitionAsyncStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.methodDefinitionAsyncStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.AsyncMethod(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.methodDefinitionGetterStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1720: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1720.IdentifierName();
-      }
-      {
-        const __qin_typed_receiver_1721: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1721.ClassElementName(params);
-      }
-      {
-        const __qin_typed_receiver_1722: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1722.LParen();
-      }
-      {
-        const __qin_typed_receiver_1723: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1723.RParen();
-      }
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=methodDefinitionGetterStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.methodDefinitionGetterStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1724: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1724.LBrace();
+        __qin_typed_receiver_1724.IdentifierName();
       }
       {
         const __qin_typed_receiver_1725: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1725.FunctionBody();
+        __qin_typed_receiver_1725.ClassElementName(params);
       }
       {
         const __qin_typed_receiver_1726: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1726.RBrace();
+        __qin_typed_receiver_1726.LParen();
       }
-      return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.methodDefinitionSetterStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1727: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1727.IdentifierName();
+        __qin_typed_receiver_1727.RParen();
       }
       {
-        const __qin_typed_receiver_1728: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1728.ClassElementName(params);
+        const __qin_typed_receiver_1728: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1728.LBrace();
       }
       {
-        const __qin_typed_receiver_1729: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1729.LParen();
+        const __qin_typed_receiver_1729: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1729.FunctionBody();
       }
       {
-        const __qin_typed_receiver_1730: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1730.PropertySetParameterList();
-      }
-      {
-        const __qin_typed_receiver_1731: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1731.RParen();
-      }
-      {
-        const __qin_typed_receiver_1732: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1732.LBrace();
-      }
-      {
-        const __qin_typed_receiver_1733: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1733.FunctionBody();
-      }
-      {
-        const __qin_typed_receiver_1734: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1734.RBrace();
+        const __qin_typed_receiver_1730: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1730.RBrace();
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.methodDefinitionOrdinaryStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=methodDefinitionSetterStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.methodDefinitionSetterStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1735: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1735.ClassElementName(params);
+        const __qin_typed_receiver_1731: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1731.IdentifierName();
+      }
+      {
+        const __qin_typed_receiver_1732: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1732.ClassElementName(params);
+      }
+      {
+        const __qin_typed_receiver_1733: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1733.LParen();
+      }
+      {
+        const __qin_typed_receiver_1734: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1734.PropertySetParameterList();
+      }
+      {
+        const __qin_typed_receiver_1735: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1735.RParen();
       }
       {
         const __qin_typed_receiver_1736: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1736.LParen();
+        __qin_typed_receiver_1736.LBrace();
       }
       {
         const __qin_typed_receiver_1737: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1737.UniqueFormalParameters();
+        __qin_typed_receiver_1737.FunctionBody();
       }
       {
         const __qin_typed_receiver_1738: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1738.RParen();
+        __qin_typed_receiver_1738.RBrace();
+      }
+      return null;
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=methodDefinitionOrdinaryStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.methodDefinitionOrdinaryStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1739: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1739.ClassElementName(params);
       }
       {
-        const __qin_typed_receiver_1739: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1739.LBrace();
+        const __qin_typed_receiver_1740: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1740.LParen();
       }
       {
-        const __qin_typed_receiver_1740: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1740.FunctionBody();
+        const __qin_typed_receiver_1741: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1741.UniqueFormalParameters();
       }
       {
-        const __qin_typed_receiver_1741: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1741.RBrace();
+        const __qin_typed_receiver_1742: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1742.RParen();
+      }
+      {
+        const __qin_typed_receiver_1743: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1743.LBrace();
+      }
+      {
+        const __qin_typed_receiver_1744: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1744.FunctionBody();
+      }
+      {
+        const __qin_typed_receiver_1745: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1745.RBrace();
       }
       return null;
     })));
@@ -847,18 +847,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   IterationStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_IterationStatement(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_IterationStatement receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_IterationStatement.call(this, params);
     }), "IterationStatement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_IterationStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.iterationStatementDoWhileStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=iterationStatementDoWhileStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.iterationStatementDoWhileStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.DoWhileStatement(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.iterationStatementWhileStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=iterationStatementWhileStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.iterationStatementWhileStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.WhileStatement(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.iterationStatementForInOfStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=iterationStatementForInOfStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.iterationStatementForInOfStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.ForInOfStatement(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.iterationStatementForStatementStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=iterationStatementForStatementStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.iterationStatementForStatementStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.ForStatement(params);
     })));
       return null;
@@ -868,7 +868,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassElementName(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassElementName(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassElementName receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassElementName.call(this, params);
     }), "ClassElementName", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ClassElementName(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -885,14 +885,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassBody(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassBody receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassBody.call(this, params);
     }), "ClassBody", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ClassBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1742: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1742.ClassElementList(params);
+        const __qin_typed_receiver_1746: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1746.ClassElementList(params);
       }
       return null;
     }
@@ -901,14 +901,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassElementList(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassElementList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassElementList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassElementList.call(this, params);
     }), "ClassElementList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ClassElementList(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1743: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1743.ClassElement(params);
+        const __qin_typed_receiver_1747: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1747.ClassElement(params);
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       return this.ClassElement(params);
@@ -920,7 +920,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassTail(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassTail(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassTail receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassTail.call(this, params);
     }), "ClassTail", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ClassTail(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
@@ -929,15 +929,15 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.ClassHeritage(params);
     }));
       {
-        const __qin_typed_receiver_1744: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1744.LBrace();
+        const __qin_typed_receiver_1748: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1748.LBrace();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.ClassBody(params);
     }));
       {
-        const __qin_typed_receiver_1745: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1745.RBrace();
+        const __qin_typed_receiver_1749: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1749.RBrace();
       }
       return null;
     }
@@ -946,26 +946,26 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassStaticBlock(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassStaticBlock(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassStaticBlock receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassStaticBlock.call(this, params);
     }), "ClassStaticBlock", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ClassStaticBlock(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1746: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1746.consumeIdentifierValue("static");
+        const __qin_typed_receiver_1750: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1750.consumeIdentifierValue("static");
       }
       {
-        const __qin_typed_receiver_1747: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1747.LBrace();
+        const __qin_typed_receiver_1751: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1751.LBrace();
       }
       {
-        const __qin_typed_receiver_1748: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1748.ClassStaticBlockBody();
+        const __qin_typed_receiver_1752: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1752.ClassStaticBlockBody();
       }
       {
-        const __qin_typed_receiver_1749: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1749.RBrace();
+        const __qin_typed_receiver_1753: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1753.RBrace();
       }
       return null;
     }
@@ -974,14 +974,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassStaticBlockBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassStaticBlockBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassStaticBlockBody receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassStaticBlockBody.call(this);
     }), "ClassStaticBlockBody", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ClassStaticBlockBody(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1750: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1750.ClassStaticBlockStatementList();
+        const __qin_typed_receiver_1754: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1754.ClassStaticBlockStatementList();
       }
       return null;
     }
@@ -990,7 +990,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ClassStaticBlockStatementList(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ClassStaticBlockStatementList();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ClassStaticBlockStatementList receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ClassStaticBlockStatementList.call(this);
     }), "ClassStaticBlockStatementList", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ClassStaticBlockStatementList(): void {
@@ -1005,22 +1005,22 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   FieldDefinition(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_FieldDefinition(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_FieldDefinition receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_FieldDefinition.call(this, params);
     }), "FieldDefinition", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_FieldDefinition(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1751: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1751.ClassElementName(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+        const __qin_typed_receiver_1755: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1755.ClassElementName(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
       }
       {
-        const __qin_typed_receiver_1752: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1752.OptionalTSTypeAnnotation();
+        const __qin_typed_receiver_1756: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1756.OptionalTSTypeAnnotation();
       }
       {
-        const __qin_typed_receiver_1753: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1753.OptionalInitializer(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, false, false));
+        const __qin_typed_receiver_1757: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1757.OptionalInitializer(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, false, false));
       }
       return null;
     }
@@ -1034,16 +1034,16 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FormalParameter_0_0(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FormalParameter_0_0();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FormalParameter_0_0 receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FormalParameter_0_0.call(this);
     }), "FormalParameter", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw___qin_overload_FormalParameter_0_0(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1754: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1754.OptionalTSDecorators();
+        const __qin_typed_receiver_1758: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1758.OptionalTSDecorators();
       }
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSParameterProperty.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSParameterProperty receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSParameterProperty.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSParameterProperty();
     })), __qin_java_functional(() => {
       return this.BindingElement();
@@ -1055,16 +1055,16 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FormalParameter_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FormalParameter_1_1(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FormalParameter_1_1 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FormalParameter_1_1.call(this, params);
     }), "FormalParameter", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_FormalParameter_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1755: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1755.OptionalTSDecorators();
+        const __qin_typed_receiver_1759: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1759.OptionalTSDecorators();
       }
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSParameterProperty.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSParameterProperty receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSParameterProperty.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSParameterProperty();
     })), __qin_java_functional(() => {
       return this.BindingElement(params);
@@ -1081,30 +1081,30 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FormalParameters_0_0(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FormalParameters_0_0();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FormalParameters_0_0 receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FormalParameters_0_0.call(this);
     }), "FormalParameters", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw___qin_overload_FormalParameters_0_0(): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1756: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1756.TSThisParameter();
+        const __qin_typed_receiver_1760: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1760.TSThisParameter();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1757: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1757.Comma();
+        const __qin_typed_receiver_1761: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1761.Comma();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1758: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1758.FormalParameterList();
+        const __qin_typed_receiver_1762: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1762.FormalParameterList();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1759: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1759.Comma();
+        const __qin_typed_receiver_1763: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1763.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.FunctionRestParameter();
@@ -1128,30 +1128,30 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FormalParameters_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FormalParameters_1_1(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FormalParameters_1_1 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FormalParameters_1_1.call(this, params);
     }), "FormalParameters", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_FormalParameters_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1760: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1760.TSThisParameter();
+        const __qin_typed_receiver_1764: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1764.TSThisParameter();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1761: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1761.Comma();
+        const __qin_typed_receiver_1765: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1765.Comma();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1762: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1762.FormalParameterList(params);
+        const __qin_typed_receiver_1766: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1766.FormalParameterList(params);
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1763: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1763.Comma();
+        const __qin_typed_receiver_1767: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1767.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.FunctionRestParameter(params);
@@ -1180,14 +1180,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_UniqueFormalParameters_0_0(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_UniqueFormalParameters_0_0();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_UniqueFormalParameters_0_0 receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_UniqueFormalParameters_0_0.call(this);
     }), "UniqueFormalParameters", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw___qin_overload_UniqueFormalParameters_0_0(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1764: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1764.FormalParameters();
+        const __qin_typed_receiver_1768: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1768.FormalParameters();
       }
       return null;
     }
@@ -1196,14 +1196,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_UniqueFormalParameters_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_UniqueFormalParameters_1_1(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_UniqueFormalParameters_1_1 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_UniqueFormalParameters_1_1.call(this, params);
     }), "UniqueFormalParameters", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_UniqueFormalParameters_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1765: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1765.FormalParameters(params);
+        const __qin_typed_receiver_1769: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1769.FormalParameters(params);
       }
       return null;
     }
@@ -1217,23 +1217,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FormalParameterList_0_0(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FormalParameterList_0_0();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FormalParameterList_0_0 receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FormalParameterList_0_0.call(this);
     }), "FormalParameterList", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw___qin_overload_FormalParameterList_0_0(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1766: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1766.FormalParameter();
+        const __qin_typed_receiver_1770: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1770.FormalParameter();
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1767: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1767.Comma();
+        const __qin_typed_receiver_1771: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1771.Comma();
       }
       {
-        const __qin_typed_receiver_1768: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1768.FormalParameter();
+        const __qin_typed_receiver_1772: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1772.FormalParameter();
       }
       return null;
     }));
@@ -1244,23 +1244,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FormalParameterList_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FormalParameterList_1_1(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FormalParameterList_1_1 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FormalParameterList_1_1.call(this, params);
     }), "FormalParameterList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_FormalParameterList_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1769: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1769.FormalParameter(params);
+        const __qin_typed_receiver_1773: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1773.FormalParameter(params);
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1770: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1770.Comma();
+        const __qin_typed_receiver_1774: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1774.Comma();
       }
       {
-        const __qin_typed_receiver_1771: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1771.FormalParameter(params);
+        const __qin_typed_receiver_1775: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1775.FormalParameter(params);
       }
       return null;
     }));
@@ -1276,18 +1276,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FunctionRestParameter_0_0(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FunctionRestParameter_0_0();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FunctionRestParameter_0_0 receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FunctionRestParameter_0_0.call(this);
     }), "FunctionRestParameter", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw___qin_overload_FunctionRestParameter_0_0(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1772: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1772.Ellipsis();
+        const __qin_typed_receiver_1776: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1776.Ellipsis();
       }
       {
-        const __qin_typed_receiver_1773: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1773.BindingRestElement();
+        const __qin_typed_receiver_1777: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1777.BindingRestElement();
       }
       return null;
     }
@@ -1296,18 +1296,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FunctionRestParameter_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FunctionRestParameter_1_1(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FunctionRestParameter_1_1 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FunctionRestParameter_1_1.call(this, params);
     }), "FunctionRestParameter", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_FunctionRestParameter_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1774: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1774.Ellipsis();
+        const __qin_typed_receiver_1778: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1778.Ellipsis();
       }
       {
-        const __qin_typed_receiver_1775: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1775.BindingRestElement(params);
+        const __qin_typed_receiver_1779: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1779.BindingRestElement(params);
       }
       return null;
     }
@@ -1316,7 +1316,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalFunctionBindingIdentifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalFunctionBindingIdentifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalFunctionBindingIdentifier receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalFunctionBindingIdentifier.call(this);
     }), "OptionalFunctionBindingIdentifier", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_OptionalFunctionBindingIdentifier(): void {
@@ -1327,75 +1327,75 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return null;
     }
     {
-      const __qin_typed_receiver_1776: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_1776.BindingIdentifier();
+      const __qin_typed_receiver_1780: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_1780.BindingIdentifier();
     }
     return null;
   }
   RequiredFunctionBindingIdentifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_RequiredFunctionBindingIdentifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_RequiredFunctionBindingIdentifier receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_RequiredFunctionBindingIdentifier.call(this);
     }), "RequiredFunctionBindingIdentifier", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_RequiredFunctionBindingIdentifier(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1777: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1777.BindingIdentifier();
+        const __qin_typed_receiver_1781: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1781.BindingIdentifier();
       }
       return null;
     }
     {
-      const __qin_typed_receiver_1778: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_1778.BindingIdentifier();
+      const __qin_typed_receiver_1782: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_1782.BindingIdentifier();
     }
     return null;
   }
   FunctionDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_FunctionDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_FunctionDeclaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_FunctionDeclaration.call(this, params);
     }), "FunctionDeclaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_FunctionDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1779: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1779.Function();
+        const __qin_typed_receiver_1783: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1783.Function();
       }
       if (params.isDefault()) {
         {
-          const __qin_typed_receiver_1780: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1780.OptionalFunctionBindingIdentifier();
+          const __qin_typed_receiver_1784: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1784.OptionalFunctionBindingIdentifier();
         }
       } else {
         {
-          const __qin_typed_receiver_1781: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1781.RequiredFunctionBindingIdentifier();
+          const __qin_typed_receiver_1785: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1785.RequiredFunctionBindingIdentifier();
         }
       }
       {
-        const __qin_typed_receiver_1782: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1782.LParen();
+        const __qin_typed_receiver_1786: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1786.LParen();
       }
       {
-        const __qin_typed_receiver_1783: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1783.FormalParameters();
+        const __qin_typed_receiver_1787: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1787.FormalParameters();
       }
       {
-        const __qin_typed_receiver_1784: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1784.RParen();
+        const __qin_typed_receiver_1788: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1788.RParen();
       }
       {
-        const __qin_typed_receiver_1785: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1785.LBrace();
+        const __qin_typed_receiver_1789: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1789.LBrace();
       }
       {
-        const __qin_typed_receiver_1786: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1786.FunctionBody();
+        const __qin_typed_receiver_1790: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1790.FunctionBody();
       }
       {
-        const __qin_typed_receiver_1787: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1787.RBrace();
+        const __qin_typed_receiver_1791: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1791.RBrace();
       }
       return null;
     }
@@ -1404,42 +1404,42 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   FunctionExpression(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_FunctionExpression();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_FunctionExpression receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_FunctionExpression.call(this);
     }), "FunctionExpression", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_FunctionExpression(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1788: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1788.Function();
-      }
-      {
-        const __qin_typed_receiver_1789: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1789.OptionalFunctionBindingIdentifier();
-      }
-      {
-        const __qin_typed_receiver_1790: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1790.LParen();
-      }
-      {
-        const __qin_typed_receiver_1791: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1791.FormalParameters();
-      }
-      {
         const __qin_typed_receiver_1792: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1792.RParen();
+        __qin_typed_receiver_1792.Function();
       }
       {
-        const __qin_typed_receiver_1793: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1793.LBrace();
+        const __qin_typed_receiver_1793: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1793.OptionalFunctionBindingIdentifier();
       }
       {
-        const __qin_typed_receiver_1794: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1794.FunctionBody();
+        const __qin_typed_receiver_1794: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1794.LParen();
       }
       {
-        const __qin_typed_receiver_1795: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1795.RBrace();
+        const __qin_typed_receiver_1795: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1795.FormalParameters();
+      }
+      {
+        const __qin_typed_receiver_1796: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1796.RParen();
+      }
+      {
+        const __qin_typed_receiver_1797: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1797.LBrace();
+      }
+      {
+        const __qin_typed_receiver_1798: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1798.FunctionBody();
+      }
+      {
+        const __qin_typed_receiver_1799: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1799.RBrace();
       }
       return null;
     }
@@ -1453,31 +1453,31 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_FunctionBody_0_0(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FunctionBody_0_0();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FunctionBody_0_0 receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FunctionBody_0_0.call(this);
     }), "FunctionBody", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw___qin_overload_FunctionBody_0_0(): void {
     {
-      const __qin_typed_receiver_1796: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_1796.FunctionStatementList(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, false));
+      const __qin_typed_receiver_1800: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_1800.FunctionStatementList(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, false));
     }
     return null;
   }
   __qin_overload_FunctionBody_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_FunctionBody_1_1(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_FunctionBody_1_1 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_FunctionBody_1_1.call(this, params);
     }), "FunctionBody", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_FunctionBody_1_1(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     {
-      const __qin_typed_receiver_1797: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_1797.FunctionStatementList(params);
+      const __qin_typed_receiver_1801: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_1801.FunctionStatementList(params);
     }
     return null;
   }
   FunctionStatementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_FunctionStatementList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_FunctionStatementList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_FunctionStatementList.call(this, params);
     }), "FunctionStatementList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_FunctionStatementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -1490,53 +1490,53 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   GeneratorDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_GeneratorDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_GeneratorDeclaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_GeneratorDeclaration.call(this, params);
     }), "GeneratorDeclaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_GeneratorDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1798: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1798.Function();
+        const __qin_typed_receiver_1802: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1802.Function();
       }
       {
-        const __qin_typed_receiver_1799: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1799.Asterisk();
+        const __qin_typed_receiver_1803: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1803.Asterisk();
       }
       if (params.isDefault()) {
         {
-          const __qin_typed_receiver_1800: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1800.OptionalFunctionBindingIdentifier();
+          const __qin_typed_receiver_1804: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1804.OptionalFunctionBindingIdentifier();
         }
       } else {
         {
-          const __qin_typed_receiver_1801: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1801.RequiredFunctionBindingIdentifier();
+          const __qin_typed_receiver_1805: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1805.RequiredFunctionBindingIdentifier();
         }
       }
       {
-        const __qin_typed_receiver_1802: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1802.LParen();
+        const __qin_typed_receiver_1806: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1806.LParen();
       }
       {
-        const __qin_typed_receiver_1803: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1803.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, false));
+        const __qin_typed_receiver_1807: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1807.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, false));
       }
       {
-        const __qin_typed_receiver_1804: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1804.RParen();
+        const __qin_typed_receiver_1808: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1808.RParen();
       }
       {
-        const __qin_typed_receiver_1805: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1805.LBrace();
+        const __qin_typed_receiver_1809: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1809.LBrace();
       }
       {
-        const __qin_typed_receiver_1806: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1806.GeneratorBody();
+        const __qin_typed_receiver_1810: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1810.GeneratorBody();
       }
       {
-        const __qin_typed_receiver_1807: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1807.RBrace();
+        const __qin_typed_receiver_1811: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1811.RBrace();
       }
       return null;
     }
@@ -1545,46 +1545,46 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   GeneratorExpression(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_GeneratorExpression();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_GeneratorExpression receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_GeneratorExpression.call(this);
     }), "GeneratorExpression", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_GeneratorExpression(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1808: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1808.Function();
-      }
-      {
-        const __qin_typed_receiver_1809: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1809.Asterisk();
-      }
-      {
-        const __qin_typed_receiver_1810: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1810.OptionalFunctionBindingIdentifier();
-      }
-      {
-        const __qin_typed_receiver_1811: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1811.LParen();
-      }
-      {
-        const __qin_typed_receiver_1812: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1812.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, false));
+        const __qin_typed_receiver_1812: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1812.Function();
       }
       {
         const __qin_typed_receiver_1813: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1813.RParen();
+        __qin_typed_receiver_1813.Asterisk();
       }
       {
-        const __qin_typed_receiver_1814: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1814.LBrace();
+        const __qin_typed_receiver_1814: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1814.OptionalFunctionBindingIdentifier();
       }
       {
-        const __qin_typed_receiver_1815: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1815.GeneratorBody();
+        const __qin_typed_receiver_1815: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1815.LParen();
       }
       {
-        const __qin_typed_receiver_1816: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1816.RBrace();
+        const __qin_typed_receiver_1816: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1816.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, false));
+      }
+      {
+        const __qin_typed_receiver_1817: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1817.RParen();
+      }
+      {
+        const __qin_typed_receiver_1818: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1818.LBrace();
+      }
+      {
+        const __qin_typed_receiver_1819: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1819.GeneratorBody();
+      }
+      {
+        const __qin_typed_receiver_1820: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1820.RBrace();
       }
       return null;
     }
@@ -1593,14 +1593,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   GeneratorBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_GeneratorBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_GeneratorBody receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_GeneratorBody.call(this);
     }), "GeneratorBody", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_GeneratorBody(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1817: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1817.FunctionBody(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, false));
+        const __qin_typed_receiver_1821: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1821.FunctionBody(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, false));
       }
       return null;
     }
@@ -1609,57 +1609,57 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AsyncFunctionDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AsyncFunctionDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AsyncFunctionDeclaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AsyncFunctionDeclaration.call(this, params);
     }), "AsyncFunctionDeclaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AsyncFunctionDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1818: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1818.consumeIdentifierValue("async");
+        const __qin_typed_receiver_1822: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1822.consumeIdentifierValue("async");
       }
       {
-        const __qin_typed_receiver_1819: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1819.assertNoLineBreak();
+        const __qin_typed_receiver_1823: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1823.assertNoLineBreak();
       }
       {
-        const __qin_typed_receiver_1820: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1820.Function();
+        const __qin_typed_receiver_1824: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1824.Function();
       }
       if (params.isDefault()) {
         {
-          const __qin_typed_receiver_1821: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1821.OptionalFunctionBindingIdentifier();
+          const __qin_typed_receiver_1825: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1825.OptionalFunctionBindingIdentifier();
         }
       } else {
         {
-          const __qin_typed_receiver_1822: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1822.RequiredFunctionBindingIdentifier();
+          const __qin_typed_receiver_1826: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1826.RequiredFunctionBindingIdentifier();
         }
       }
       {
-        const __qin_typed_receiver_1823: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1823.LParen();
+        const __qin_typed_receiver_1827: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1827.LParen();
       }
       {
-        const __qin_typed_receiver_1824: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1824.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, true));
+        const __qin_typed_receiver_1828: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1828.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, true));
       }
       {
-        const __qin_typed_receiver_1825: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1825.RParen();
+        const __qin_typed_receiver_1829: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1829.RParen();
       }
       {
-        const __qin_typed_receiver_1826: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1826.LBrace();
+        const __qin_typed_receiver_1830: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1830.LBrace();
       }
       {
-        const __qin_typed_receiver_1827: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1827.AsyncFunctionBody();
+        const __qin_typed_receiver_1831: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1831.AsyncFunctionBody();
       }
       {
-        const __qin_typed_receiver_1828: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1828.RBrace();
+        const __qin_typed_receiver_1832: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1832.RBrace();
       }
       return null;
     }
@@ -1668,50 +1668,50 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AsyncFunctionExpression(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AsyncFunctionExpression();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AsyncFunctionExpression receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AsyncFunctionExpression.call(this);
     }), "AsyncFunctionExpression", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_AsyncFunctionExpression(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1829: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1829.consumeIdentifierValue("async");
-      }
-      {
-        const __qin_typed_receiver_1830: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1830.assertNoLineBreak();
-      }
-      {
-        const __qin_typed_receiver_1831: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1831.Function();
-      }
-      {
-        const __qin_typed_receiver_1832: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1832.OptionalFunctionBindingIdentifier();
-      }
-      {
-        const __qin_typed_receiver_1833: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1833.LParen();
+        const __qin_typed_receiver_1833: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1833.consumeIdentifierValue("async");
       }
       {
         const __qin_typed_receiver_1834: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1834.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, true));
+        __qin_typed_receiver_1834.assertNoLineBreak();
       }
       {
         const __qin_typed_receiver_1835: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1835.RParen();
+        __qin_typed_receiver_1835.Function();
       }
       {
-        const __qin_typed_receiver_1836: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1836.LBrace();
+        const __qin_typed_receiver_1836: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1836.OptionalFunctionBindingIdentifier();
       }
       {
-        const __qin_typed_receiver_1837: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1837.AsyncFunctionBody();
+        const __qin_typed_receiver_1837: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1837.LParen();
       }
       {
-        const __qin_typed_receiver_1838: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1838.RBrace();
+        const __qin_typed_receiver_1838: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1838.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, true));
+      }
+      {
+        const __qin_typed_receiver_1839: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1839.RParen();
+      }
+      {
+        const __qin_typed_receiver_1840: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1840.LBrace();
+      }
+      {
+        const __qin_typed_receiver_1841: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1841.AsyncFunctionBody();
+      }
+      {
+        const __qin_typed_receiver_1842: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1842.RBrace();
       }
       return null;
     }
@@ -1720,73 +1720,73 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AsyncFunctionBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AsyncFunctionBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AsyncFunctionBody receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AsyncFunctionBody.call(this);
     }), "AsyncFunctionBody", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_AsyncFunctionBody(): void {
     {
-      const __qin_typed_receiver_1839: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_1839.FunctionBody(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, true));
+      const __qin_typed_receiver_1843: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_1843.FunctionBody(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, false, true));
     }
     return null;
   }
   AsyncGeneratorDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AsyncGeneratorDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AsyncGeneratorDeclaration receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AsyncGeneratorDeclaration.call(this, params);
     }), "AsyncGeneratorDeclaration", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AsyncGeneratorDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1840: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1840.consumeIdentifierValue("async");
+        const __qin_typed_receiver_1844: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1844.consumeIdentifierValue("async");
       }
       {
-        const __qin_typed_receiver_1841: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1841.assertNoLineBreak();
-      }
-      {
-        const __qin_typed_receiver_1842: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1842.Function();
-      }
-      {
-        const __qin_typed_receiver_1843: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1843.Asterisk();
-      }
-      if (params.isDefault()) {
-        {
-          const __qin_typed_receiver_1844: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1844.OptionalFunctionBindingIdentifier();
-        }
-      } else {
-        {
-          const __qin_typed_receiver_1845: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1845.RequiredFunctionBindingIdentifier();
-        }
+        const __qin_typed_receiver_1845: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1845.assertNoLineBreak();
       }
       {
         const __qin_typed_receiver_1846: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1846.LParen();
+        __qin_typed_receiver_1846.Function();
       }
       {
-        const __qin_typed_receiver_1847: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1847.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, true));
+        const __qin_typed_receiver_1847: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1847.Asterisk();
+      }
+      if (params.isDefault()) {
+        {
+          const __qin_typed_receiver_1848: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1848.OptionalFunctionBindingIdentifier();
+        }
+      } else {
+        {
+          const __qin_typed_receiver_1849: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1849.RequiredFunctionBindingIdentifier();
+        }
       }
       {
-        const __qin_typed_receiver_1848: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1848.RParen();
+        const __qin_typed_receiver_1850: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1850.LParen();
       }
       {
-        const __qin_typed_receiver_1849: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1849.LBrace();
+        const __qin_typed_receiver_1851: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1851.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, true));
       }
       {
-        const __qin_typed_receiver_1850: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1850.AsyncGeneratorBody();
+        const __qin_typed_receiver_1852: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1852.RParen();
       }
       {
-        const __qin_typed_receiver_1851: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1851.RBrace();
+        const __qin_typed_receiver_1853: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1853.LBrace();
+      }
+      {
+        const __qin_typed_receiver_1854: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1854.AsyncGeneratorBody();
+      }
+      {
+        const __qin_typed_receiver_1855: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1855.RBrace();
       }
       return null;
     }
@@ -1795,54 +1795,54 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AsyncGeneratorExpression(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AsyncGeneratorExpression();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AsyncGeneratorExpression receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AsyncGeneratorExpression.call(this);
     }), "AsyncGeneratorExpression", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_AsyncGeneratorExpression(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1852: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1852.consumeIdentifierValue("async");
-      }
-      {
-        const __qin_typed_receiver_1853: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1853.assertNoLineBreak();
-      }
-      {
-        const __qin_typed_receiver_1854: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1854.Function();
-      }
-      {
-        const __qin_typed_receiver_1855: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1855.Asterisk();
-      }
-      {
         const __qin_typed_receiver_1856: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1856.OptionalFunctionBindingIdentifier();
+        __qin_typed_receiver_1856.consumeIdentifierValue("async");
       }
       {
-        const __qin_typed_receiver_1857: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1857.LParen();
+        const __qin_typed_receiver_1857: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1857.assertNoLineBreak();
       }
       {
-        const __qin_typed_receiver_1858: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1858.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, true));
+        const __qin_typed_receiver_1858: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1858.Function();
       }
       {
         const __qin_typed_receiver_1859: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1859.RParen();
+        __qin_typed_receiver_1859.Asterisk();
       }
       {
-        const __qin_typed_receiver_1860: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1860.LBrace();
+        const __qin_typed_receiver_1860: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1860.OptionalFunctionBindingIdentifier();
       }
       {
-        const __qin_typed_receiver_1861: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1861.AsyncGeneratorBody();
+        const __qin_typed_receiver_1861: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1861.LParen();
       }
       {
-        const __qin_typed_receiver_1862: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1862.RBrace();
+        const __qin_typed_receiver_1862: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1862.FormalParameters(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, true));
+      }
+      {
+        const __qin_typed_receiver_1863: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1863.RParen();
+      }
+      {
+        const __qin_typed_receiver_1864: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1864.LBrace();
+      }
+      {
+        const __qin_typed_receiver_1865: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1865.AsyncGeneratorBody();
+      }
+      {
+        const __qin_typed_receiver_1866: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1866.RBrace();
       }
       return null;
     }
@@ -1851,14 +1851,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AsyncGeneratorBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AsyncGeneratorBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AsyncGeneratorBody receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AsyncGeneratorBody.call(this);
     }), "AsyncGeneratorBody", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_AsyncGeneratorBody(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1863: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1863.FunctionBody(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, true));
+        const __qin_typed_receiver_1867: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1867.FunctionBody(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, true, true));
       }
       return null;
     }
@@ -1867,14 +1867,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   PropertySetParameterList(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_PropertySetParameterList();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_PropertySetParameterList receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_PropertySetParameterList.call(this);
     }), "PropertySetParameterList", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_PropertySetParameterList(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1864: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1864.FormalParameter();
+        const __qin_typed_receiver_1868: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1868.FormalParameter();
       }
       return null;
     }
@@ -1883,18 +1883,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSThisParameter(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSThisParameter();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSThisParameter receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSThisParameter.call(this);
     }), "TSThisParameter", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSThisParameter(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1865: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1865.This();
+        const __qin_typed_receiver_1869: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1869.This();
       }
       {
-        const __qin_typed_receiver_1866: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1866.TSTypeAnnotation();
+        const __qin_typed_receiver_1870: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1870.TSTypeAnnotation();
       }
       return null;
     }
@@ -1903,7 +1903,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSParameterProperty(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSParameterProperty();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSParameterProperty receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSParameterProperty.call(this);
     }), "TSParameterProperty", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSParameterProperty(): void {
@@ -1915,8 +1915,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.consumeIdentifierValue("readonly");
     }));
       {
-        const __qin_typed_receiver_1867: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1867.Identifier();
+        const __qin_typed_receiver_1871: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1871.Identifier();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Question();
@@ -1926,12 +1926,12 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }));
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1868: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1868.Assign();
+        const __qin_typed_receiver_1872: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1872.Assign();
       }
       {
-        const __qin_typed_receiver_1869: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1869.Expression();
+        const __qin_typed_receiver_1873: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1873.Expression();
       }
       return null;
     }));
@@ -1942,7 +1942,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingPattern(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingPattern receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingPattern.call(this, params);
     }), "BindingPattern", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -1959,27 +1959,27 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ObjectBindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ObjectBindingPattern(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ObjectBindingPattern receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ObjectBindingPattern.call(this, params);
     }), "ObjectBindingPattern", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ObjectBindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1870: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1870.LBrace();
+        const __qin_typed_receiver_1874: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1874.LBrace();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.BindingRestProperty(params);
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1871: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1871.BindingPropertyList(params);
+        const __qin_typed_receiver_1875: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1875.BindingPropertyList(params);
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1872: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1872.Comma();
+        const __qin_typed_receiver_1876: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1876.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.BindingRestProperty(params);
@@ -1990,8 +1990,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }));
     }));
       {
-        const __qin_typed_receiver_1873: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1873.RBrace();
+        const __qin_typed_receiver_1877: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1877.RBrace();
       }
       return null;
     }
@@ -2000,14 +2000,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ArrayBindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ArrayBindingPattern(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ArrayBindingPattern receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ArrayBindingPattern.call(this, params);
     }), "ArrayBindingPattern", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ArrayBindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1874: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1874.LBracket();
+        const __qin_typed_receiver_1878: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1878.LBracket();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.RBracket();
@@ -2019,28 +2019,28 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.BindingRestElement(params);
     }));
       {
-        const __qin_typed_receiver_1875: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1875.RBracket();
-      }
-      return null;
-    }), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1876: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1876.BindingElementList(params);
-      }
-      {
-        const __qin_typed_receiver_1877: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1877.RBracket();
-      }
-      return null;
-    }), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1878: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1878.BindingElementList(params);
-      }
-      {
         const __qin_typed_receiver_1879: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1879.Comma();
+        __qin_typed_receiver_1879.RBracket();
+      }
+      return null;
+    }), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1880: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1880.BindingElementList(params);
+      }
+      {
+        const __qin_typed_receiver_1881: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1881.RBracket();
+      }
+      return null;
+    }), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1882: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1882.BindingElementList(params);
+      }
+      {
+        const __qin_typed_receiver_1883: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1883.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.Elision();
@@ -2049,8 +2049,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.BindingRestElement(params);
     }));
       {
-        const __qin_typed_receiver_1880: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1880.RBracket();
+        const __qin_typed_receiver_1884: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1884.RBracket();
       }
       return null;
     }));
@@ -2061,18 +2061,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingRestProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingRestProperty(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingRestProperty receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingRestProperty.call(this, params);
     }), "BindingRestProperty", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingRestProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1881: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1881.Ellipsis();
+        const __qin_typed_receiver_1885: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1885.Ellipsis();
       }
       {
-        const __qin_typed_receiver_1882: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1882.BindingIdentifier(params);
+        const __qin_typed_receiver_1886: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1886.BindingIdentifier(params);
       }
       return null;
     }
@@ -2081,23 +2081,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingPropertyList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingPropertyList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingPropertyList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingPropertyList.call(this, params);
     }), "BindingPropertyList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingPropertyList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1883: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1883.BindingProperty(params);
+        const __qin_typed_receiver_1887: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1887.BindingProperty(params);
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1884: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1884.Comma();
+        const __qin_typed_receiver_1888: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1888.Comma();
       }
       {
-        const __qin_typed_receiver_1885: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1885.BindingProperty(params);
+        const __qin_typed_receiver_1889: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1889.BindingProperty(params);
       }
       return null;
     }));
@@ -2108,23 +2108,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingProperty(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingProperty receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingProperty.call(this, params);
     }), "BindingProperty", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1886: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1886.PropertyName(params);
+        const __qin_typed_receiver_1890: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1890.PropertyName(params);
       }
       {
-        const __qin_typed_receiver_1887: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1887.Colon();
+        const __qin_typed_receiver_1891: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1891.Colon();
       }
       {
-        const __qin_typed_receiver_1888: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1888.BindingElement(params);
+        const __qin_typed_receiver_1892: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1892.BindingElement(params);
       }
       return null;
     }), __qin_java_functional(() => {
@@ -2137,14 +2137,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   SingleNameBinding(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_SingleNameBinding(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_SingleNameBinding receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_SingleNameBinding.call(this, params);
     }), "SingleNameBinding", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_SingleNameBinding(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1889: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1889.BindingIdentifier(params);
+        const __qin_typed_receiver_1893: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1893.BindingIdentifier(params);
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.Initializer(params);
@@ -2156,23 +2156,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingElementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingElementList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingElementList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingElementList.call(this, params);
     }), "BindingElementList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingElementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1890: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1890.BindingElisionElement(params);
+        const __qin_typed_receiver_1894: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1894.BindingElisionElement(params);
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1891: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1891.Comma();
+        const __qin_typed_receiver_1895: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1895.Comma();
       }
       {
-        const __qin_typed_receiver_1892: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1892.BindingElisionElement(params);
+        const __qin_typed_receiver_1896: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1896.BindingElisionElement(params);
       }
       return null;
     }));
@@ -2183,7 +2183,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   BindingElisionElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_BindingElisionElement(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_BindingElisionElement receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_BindingElisionElement.call(this, params);
     }), "BindingElisionElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_BindingElisionElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2192,8 +2192,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.Elision();
     }));
       {
-        const __qin_typed_receiver_1893: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1893.BindingElement(params);
+        const __qin_typed_receiver_1897: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1897.BindingElement(params);
       }
       return null;
     }
@@ -2207,7 +2207,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_BindingElement_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_BindingElement_1_0(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_BindingElement_1_0 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_BindingElement_1_0.call(this, params);
     }), "BindingElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_BindingElement_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2216,8 +2216,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.SingleNameBinding(params);
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1894: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1894.BindingPattern(params);
+        const __qin_typed_receiver_1898: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1898.BindingPattern(params);
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.Initializer(params);
@@ -2232,8 +2232,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   __qin_overload_BindingElement_0_1(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1895: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1895.BindingElement(com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams.__qin_field_DEFAULT);
+        const __qin_typed_receiver_1899: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1899.BindingElement(com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams.__qin_field_DEFAULT);
       }
       return null;
     }
@@ -2247,14 +2247,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   __qin_overload_BindingRestElement_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_BindingRestElement_1_0(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw___qin_overload_BindingRestElement_1_0 receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw___qin_overload_BindingRestElement_1_0.call(this, params);
     }), "BindingRestElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw___qin_overload_BindingRestElement_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1896: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1896.Ellipsis();
+        const __qin_typed_receiver_1900: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1900.Ellipsis();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.BindingIdentifier(params);
@@ -2269,8 +2269,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   __qin_overload_BindingRestElement_0_1(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1897: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1897.BindingRestElement(com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams.__qin_field_DEFAULT);
+        const __qin_typed_receiver_1901: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1901.BindingRestElement(com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams.__qin_field_DEFAULT);
       }
       return null;
     }
@@ -2279,7 +2279,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentPattern(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentPattern receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentPattern.call(this, params);
     }), "AssignmentPattern", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2296,52 +2296,52 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ObjectAssignmentPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ObjectAssignmentPattern(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ObjectAssignmentPattern receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ObjectAssignmentPattern.call(this, params);
     }), "ObjectAssignmentPattern", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ObjectAssignmentPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1898: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1898.LBrace();
+        const __qin_typed_receiver_1902: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1902.LBrace();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.RBrace();
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1899: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1899.AssignmentRestProperty(params);
+        const __qin_typed_receiver_1903: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1903.AssignmentRestProperty(params);
       }
       {
-        const __qin_typed_receiver_1900: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1900.RBrace();
+        const __qin_typed_receiver_1904: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1904.RBrace();
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1901: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1901.AssignmentPropertyList(params);
+        const __qin_typed_receiver_1905: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1905.AssignmentPropertyList(params);
       }
       {
-        const __qin_typed_receiver_1902: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1902.Comma();
+        const __qin_typed_receiver_1906: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1906.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.AssignmentRestProperty(params);
     }));
       {
-        const __qin_typed_receiver_1903: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1903.RBrace();
+        const __qin_typed_receiver_1907: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1907.RBrace();
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1904: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1904.AssignmentPropertyList(params);
+        const __qin_typed_receiver_1908: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1908.AssignmentPropertyList(params);
       }
       {
-        const __qin_typed_receiver_1905: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1905.RBrace();
+        const __qin_typed_receiver_1909: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1909.RBrace();
       }
       return null;
     }));
@@ -2352,14 +2352,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ArrayAssignmentPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ArrayAssignmentPattern(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ArrayAssignmentPattern receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ArrayAssignmentPattern.call(this, params);
     }), "ArrayAssignmentPattern", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ArrayAssignmentPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1906: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1906.LBracket();
+        const __qin_typed_receiver_1910: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1910.LBracket();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.RBracket();
@@ -2371,18 +2371,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.AssignmentRestElement(params);
     }));
       {
-        const __qin_typed_receiver_1907: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1907.RBracket();
+        const __qin_typed_receiver_1911: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1911.RBracket();
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1908: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1908.AssignmentElementList(params);
+        const __qin_typed_receiver_1912: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1912.AssignmentElementList(params);
       }
       {
-        const __qin_typed_receiver_1909: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1909.Comma();
+        const __qin_typed_receiver_1913: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1913.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.Elision();
@@ -2391,18 +2391,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.AssignmentRestElement(params);
     }));
       {
-        const __qin_typed_receiver_1910: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1910.RBracket();
+        const __qin_typed_receiver_1914: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1914.RBracket();
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1911: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1911.AssignmentElementList(params);
+        const __qin_typed_receiver_1915: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1915.AssignmentElementList(params);
       }
       {
-        const __qin_typed_receiver_1912: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1912.RBracket();
+        const __qin_typed_receiver_1916: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1916.RBracket();
       }
       return null;
     }));
@@ -2413,18 +2413,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentRestProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentRestProperty(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentRestProperty receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentRestProperty.call(this, params);
     }), "AssignmentRestProperty", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentRestProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1913: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1913.Ellipsis();
+        const __qin_typed_receiver_1917: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1917.Ellipsis();
       }
       {
-        const __qin_typed_receiver_1914: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1914.DestructuringAssignmentTarget(params);
+        const __qin_typed_receiver_1918: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1918.DestructuringAssignmentTarget(params);
       }
       return null;
     }
@@ -2433,23 +2433,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentPropertyList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentPropertyList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentPropertyList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentPropertyList.call(this, params);
     }), "AssignmentPropertyList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentPropertyList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1915: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1915.AssignmentProperty(params);
+        const __qin_typed_receiver_1919: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1919.AssignmentProperty(params);
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1916: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1916.Comma();
+        const __qin_typed_receiver_1920: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1920.Comma();
       }
       {
-        const __qin_typed_receiver_1917: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1917.AssignmentProperty(params);
+        const __qin_typed_receiver_1921: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1921.AssignmentProperty(params);
       }
       return null;
     }));
@@ -2460,29 +2460,29 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentProperty(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentProperty receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentProperty.call(this, params);
     }), "AssignmentProperty", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentProperty(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1918: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1918.PropertyName(params);
+        const __qin_typed_receiver_1922: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1922.PropertyName(params);
       }
       {
-        const __qin_typed_receiver_1919: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1919.Colon();
+        const __qin_typed_receiver_1923: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1923.Colon();
       }
       {
-        const __qin_typed_receiver_1920: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1920.AssignmentElement(params);
+        const __qin_typed_receiver_1924: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1924.AssignmentElement(params);
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1921: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1921.IdentifierReference(params);
+        const __qin_typed_receiver_1925: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1925.IdentifierReference(params);
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.AssignmentInitializer(params);
@@ -2496,7 +2496,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentElisionElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentElisionElement(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentElisionElement receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentElisionElement.call(this, params);
     }), "AssignmentElisionElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentElisionElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2505,8 +2505,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.Elision();
     }));
       {
-        const __qin_typed_receiver_1922: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1922.AssignmentElement(params);
+        const __qin_typed_receiver_1926: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1926.AssignmentElement(params);
       }
       return null;
     }
@@ -2515,23 +2515,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentElementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentElementList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentElementList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentElementList.call(this, params);
     }), "AssignmentElementList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentElementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1923: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1923.AssignmentElisionElement(params);
+        const __qin_typed_receiver_1927: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1927.AssignmentElisionElement(params);
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1924: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1924.Comma();
+        const __qin_typed_receiver_1928: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1928.Comma();
       }
       {
-        const __qin_typed_receiver_1925: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1925.AssignmentElisionElement(params);
+        const __qin_typed_receiver_1929: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1929.AssignmentElisionElement(params);
       }
       return null;
     }));
@@ -2542,7 +2542,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentElement(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentElement receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentElement.call(this, params);
     }), "AssignmentElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2559,14 +2559,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentRestElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentRestElement(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentRestElement receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentRestElement.call(this, params);
     }), "AssignmentRestElement", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentRestElement(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1926: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1926.Ellipsis();
+        const __qin_typed_receiver_1930: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1930.Ellipsis();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.IdentifierReference(params);
@@ -2580,26 +2580,26 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSTypeAssertion(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSTypeAssertion(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSTypeAssertion receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSTypeAssertion.call(this, params);
     }), "TSTypeAssertion", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_TSTypeAssertion(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1927: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1927.Less();
+        const __qin_typed_receiver_1931: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1931.Less();
       }
       {
-        const __qin_typed_receiver_1928: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1928.TSType();
+        const __qin_typed_receiver_1932: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1932.TSType();
       }
       {
-        const __qin_typed_receiver_1929: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1929.Greater();
+        const __qin_typed_receiver_1933: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1933.Greater();
       }
       {
-        const __qin_typed_receiver_1930: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1930.Expression();
+        const __qin_typed_receiver_1934: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1934.Expression();
       }
       return null;
     }
@@ -2608,7 +2608,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AssignmentExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AssignmentExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AssignmentExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AssignmentExpression.call(this, params);
     }), "AssignmentExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AssignmentExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2628,14 +2628,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSAsExpressionTail(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSAsExpressionTail();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSAsExpressionTail receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSAsExpressionTail.call(this);
     }), "TSAsExpressionTail", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSAsExpressionTail(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1931: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1931.consumeIdentifierValue("as");
+        const __qin_typed_receiver_1935: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1935.consumeIdentifierValue("as");
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Const();
@@ -2649,18 +2649,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSSatisfiesExpressionTail(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSSatisfiesExpressionTail();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSSatisfiesExpressionTail receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSSatisfiesExpressionTail.call(this);
     }), "TSSatisfiesExpressionTail", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSSatisfiesExpressionTail(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1932: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1932.consumeIdentifierValue("satisfies");
+        const __qin_typed_receiver_1936: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1936.consumeIdentifierValue("satisfies");
       }
       {
-        const __qin_typed_receiver_1933: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1933.TSType();
+        const __qin_typed_receiver_1937: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1937.TSType();
       }
       return null;
     }
@@ -2669,14 +2669,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSNonNullExpressionTail(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSNonNullExpressionTail();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSNonNullExpressionTail receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSNonNullExpressionTail.call(this);
     }), "TSNonNullExpressionTail", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSNonNullExpressionTail(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1934: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1934.LogicalNot();
+        const __qin_typed_receiver_1938: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1938.LogicalNot();
       }
       return null;
     }
@@ -2685,7 +2685,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ArrowParameters(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ArrowParameters(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ArrowParameters receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ArrowParameters.call(this, params);
     }), "ArrowParameters", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ArrowParameters(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2702,67 +2702,67 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   CoverParenthesizedExpressionAndArrowParameterList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_CoverParenthesizedExpressionAndArrowParameterList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_CoverParenthesizedExpressionAndArrowParameterList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_CoverParenthesizedExpressionAndArrowParameterList.call(this, params);
     }), "CoverParenthesizedExpressionAndArrowParameterList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_CoverParenthesizedExpressionAndArrowParameterList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1935: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1935.LParen();
+        const __qin_typed_receiver_1939: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1939.LParen();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.RParen();
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1936: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1936.Ellipsis();
+        const __qin_typed_receiver_1940: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1940.Ellipsis();
       }
       {
-        const __qin_typed_receiver_1937: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1937.coverArrowBindingTarget(params);
+        const __qin_typed_receiver_1941: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1941.coverArrowBindingTarget(params);
       }
       {
-        const __qin_typed_receiver_1938: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1938.RParen();
+        const __qin_typed_receiver_1942: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1942.RParen();
       }
       return null;
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.coverArrowFormalParameterListStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=coverArrowFormalParameterListStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.coverArrowFormalParameterListStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1939: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1939.FormalParameterList(params);
+        const __qin_typed_receiver_1943: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1943.FormalParameterList(params);
       }
       {
-        const __qin_typed_receiver_1940: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1940.RParen();
+        const __qin_typed_receiver_1944: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1944.RParen();
       }
       return null;
     })), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1941: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1941.Expression(params.withIn(true));
+        const __qin_typed_receiver_1945: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1945.Expression(params.withIn(true));
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1942: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1942.Comma();
+        const __qin_typed_receiver_1946: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1946.Comma();
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1943: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1943.Ellipsis();
+        const __qin_typed_receiver_1947: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1947.Ellipsis();
       }
       {
-        const __qin_typed_receiver_1944: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1944.coverArrowBindingTarget(params);
+        const __qin_typed_receiver_1948: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1948.coverArrowBindingTarget(params);
       }
       return null;
     }));
       return null;
     }));
       {
-        const __qin_typed_receiver_1945: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1945.RParen();
+        const __qin_typed_receiver_1949: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1949.RParen();
       }
       return null;
     }));
@@ -2773,54 +2773,54 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ImportSpecifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ImportSpecifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ImportSpecifier receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ImportSpecifier.call(this);
     }), "ImportSpecifier", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ImportSpecifier(): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.importSpecifierTypeAliasStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1946: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1946.consumeIdentifierValue("type");
-      }
-      {
-        const __qin_typed_receiver_1947: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1947.ModuleExportName();
-      }
-      {
-        const __qin_typed_receiver_1948: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1948.consumeIdentifierValue("as");
-      }
-      {
-        const __qin_typed_receiver_1949: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1949.ImportedBinding();
-      }
-      return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.importSpecifierTypeBindingOnlyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=importSpecifierTypeAliasStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.importSpecifierTypeAliasStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1950: com_slime_parser_SlimeParser = this;
         __qin_typed_receiver_1950.consumeIdentifierValue("type");
       }
       {
         const __qin_typed_receiver_1951: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1951.ImportedBinding();
+        __qin_typed_receiver_1951.ModuleExportName();
       }
-      return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.importSpecifierAliasStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1952: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1952.ModuleExportName();
+        __qin_typed_receiver_1952.consumeIdentifierValue("as");
       }
       {
         const __qin_typed_receiver_1953: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1953.consumeIdentifierValue("as");
-      }
-      {
-        const __qin_typed_receiver_1954: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1954.ImportedBinding();
+        __qin_typed_receiver_1953.ImportedBinding();
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.importSpecifierBindingOnlyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=importSpecifierTypeBindingOnlyStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.importSpecifierTypeBindingOnlyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1954: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1954.consumeIdentifierValue("type");
+      }
+      {
+        const __qin_typed_receiver_1955: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1955.ImportedBinding();
+      }
+      return null;
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=importSpecifierAliasStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.importSpecifierAliasStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1956: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1956.ModuleExportName();
+      }
+      {
+        const __qin_typed_receiver_1957: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1957.consumeIdentifierValue("as");
+      }
+      {
+        const __qin_typed_receiver_1958: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1958.ImportedBinding();
+      }
+      return null;
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=importSpecifierBindingOnlyStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.importSpecifierBindingOnlyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.ImportedBinding();
     })));
       return null;
@@ -2830,40 +2830,40 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   UpdateExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_UpdateExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_UpdateExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_UpdateExpression.call(this, params);
     }), "UpdateExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_UpdateExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1955: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1955.Increment();
+        const __qin_typed_receiver_1959: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1959.Increment();
       }
       {
-        const __qin_typed_receiver_1956: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1956.UnaryExpression(params);
-      }
-      return null;
-    }), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1957: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1957.Decrement();
-      }
-      {
-        const __qin_typed_receiver_1958: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1958.UnaryExpression(params);
+        const __qin_typed_receiver_1960: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1960.UnaryExpression(params);
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1959: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1959.LeftHandSideExpression(params);
+        const __qin_typed_receiver_1961: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1961.Decrement();
+      }
+      {
+        const __qin_typed_receiver_1962: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1962.UnaryExpression(params);
+      }
+      return null;
+    }), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1963: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1963.LeftHandSideExpression(params);
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
-      return SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.noLineBreakBeforeNextToken.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      return SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=noLineBreakBeforeNextToken receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.noLineBreakBeforeNextToken.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Increment();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.noLineBreakBeforeNextToken.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=noLineBreakBeforeNextToken receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.noLineBreakBeforeNextToken.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Decrement();
     })));
     }));
@@ -2876,7 +2876,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   UnaryExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_UnaryExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_UnaryExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_UnaryExpression.call(this, params);
     }), "UnaryExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_UnaryExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2887,28 +2887,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.TSTypeAssertion(params);
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1960: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1960.Delete();
-      }
-      {
-        const __qin_typed_receiver_1961: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1961.UnaryExpression(params);
-      }
-      return null;
-    }), __qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_1962: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1962.Void();
-      }
-      {
-        const __qin_typed_receiver_1963: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1963.UnaryExpression(params);
-      }
-      return null;
-    }), __qin_java_functional(() => {
-      {
         const __qin_typed_receiver_1964: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1964.Typeof();
+        __qin_typed_receiver_1964.Delete();
       }
       {
         const __qin_typed_receiver_1965: com_slime_parser_SlimeParser = this;
@@ -2918,7 +2898,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1966: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1966.Plus();
+        __qin_typed_receiver_1966.Void();
       }
       {
         const __qin_typed_receiver_1967: com_slime_parser_SlimeParser = this;
@@ -2928,7 +2908,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1968: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1968.Minus();
+        __qin_typed_receiver_1968.Typeof();
       }
       {
         const __qin_typed_receiver_1969: com_slime_parser_SlimeParser = this;
@@ -2938,7 +2918,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1970: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1970.BitwiseNot();
+        __qin_typed_receiver_1970.Plus();
       }
       {
         const __qin_typed_receiver_1971: com_slime_parser_SlimeParser = this;
@@ -2948,7 +2928,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }), __qin_java_functional(() => {
       {
         const __qin_typed_receiver_1972: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1972.LogicalNot();
+        __qin_typed_receiver_1972.Minus();
       }
       {
         const __qin_typed_receiver_1973: com_slime_parser_SlimeParser = this;
@@ -2956,10 +2936,30 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       }
       return null;
     }), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1974: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1974.BitwiseNot();
+      }
+      {
+        const __qin_typed_receiver_1975: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1975.UnaryExpression(params);
+      }
+      return null;
+    }), __qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_1976: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1976.LogicalNot();
+      }
+      {
+        const __qin_typed_receiver_1977: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1977.UnaryExpression(params);
+      }
+      return null;
+    }), __qin_java_functional(() => {
       if (params.await()) {
         {
-          const __qin_typed_receiver_1974: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1974.AwaitExpression(params);
+          const __qin_typed_receiver_1978: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1978.AwaitExpression(params);
         }
       }
       return null;
@@ -2971,7 +2971,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   LeftHandSideExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_LeftHandSideExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_LeftHandSideExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_LeftHandSideExpression.call(this, params);
     }), "LeftHandSideExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_LeftHandSideExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -2990,18 +2990,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   AwaitExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_AwaitExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_AwaitExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_AwaitExpression.call(this, params);
     }), "AwaitExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_AwaitExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1975: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1975.Await();
+        const __qin_typed_receiver_1979: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1979.Await();
       }
       {
-        const __qin_typed_receiver_1976: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1976.UnaryExpression(params);
+        const __qin_typed_receiver_1980: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1980.UnaryExpression(params);
       }
       return null;
     }
@@ -3010,7 +3010,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   MetaProperty(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_MetaProperty();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_MetaProperty receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_MetaProperty.call(this);
     }), "MetaProperty", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_MetaProperty(): void {
@@ -3027,22 +3027,22 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   NewTarget(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_NewTarget();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_NewTarget receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_NewTarget.call(this);
     }), "NewTarget", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_NewTarget(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1977: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1977.New();
+        const __qin_typed_receiver_1981: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1981.New();
       }
       {
-        const __qin_typed_receiver_1978: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1978.Dot();
+        const __qin_typed_receiver_1982: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1982.Dot();
       }
       {
-        const __qin_typed_receiver_1979: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1979.consumeIdentifierValue("target");
+        const __qin_typed_receiver_1983: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1983.consumeIdentifierValue("target");
       }
       return null;
     }
@@ -3051,22 +3051,22 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ImportMeta(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ImportMeta();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ImportMeta receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ImportMeta.call(this);
     }), "ImportMeta", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ImportMeta(): void {
     if (false) {
       {
-        const __qin_typed_receiver_1980: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1980.Import();
+        const __qin_typed_receiver_1984: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1984.Import();
       }
       {
-        const __qin_typed_receiver_1981: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1981.Dot();
+        const __qin_typed_receiver_1985: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1985.Dot();
       }
       {
-        const __qin_typed_receiver_1982: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1982.consumeIdentifierValue("meta");
+        const __qin_typed_receiver_1986: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1986.consumeIdentifierValue("meta");
       }
       return null;
     }
@@ -3075,7 +3075,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   CallExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_CallExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_CallExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_CallExpression.call(this, params);
     }), "CallExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_CallExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -3097,7 +3097,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   CallExpressionSuffix(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_CallExpressionSuffix(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_CallExpressionSuffix receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_CallExpressionSuffix.call(this, params);
     }), "CallExpressionSuffix", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_CallExpressionSuffix(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -3106,69 +3106,69 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.Arguments(params);
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1983: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1983.LBracket();
+        const __qin_typed_receiver_1987: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1987.LBracket();
       }
       {
-        const __qin_typed_receiver_1984: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1984.Expression(params.withIn(true));
+        const __qin_typed_receiver_1988: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1988.Expression(params.withIn(true));
       }
       {
-        const __qin_typed_receiver_1985: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1985.RBracket();
+        const __qin_typed_receiver_1989: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1989.RBracket();
       }
       return null;
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.dotIdentifierMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=dotIdentifierMemberPropertyStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.dotIdentifierMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1986: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1986.Dot();
+        const __qin_typed_receiver_1990: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1990.Dot();
       }
       {
-        const __qin_typed_receiver_1987: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1987.IdentifierName();
+        const __qin_typed_receiver_1991: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1991.IdentifierName();
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.incompleteMemberAccessStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=incompleteMemberAccessStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.incompleteMemberAccessStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.IncompleteMemberAccessProperty();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=templateLiteralStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TemplateLiteral(new com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams(params, true));
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.dotPrivateMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=dotPrivateMemberPropertyStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.dotPrivateMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1988: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1988.Dot();
+        const __qin_typed_receiver_1992: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1992.Dot();
       }
       {
-        const __qin_typed_receiver_1989: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1989.PrivateIdentifier();
+        const __qin_typed_receiver_1993: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1993.PrivateIdentifier();
       }
       return null;
     })), __qin_java_functional(() => {
       return this.OptionalChain(params);
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.tsNonNullExpressionTailStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=tsNonNullExpressionTailStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.tsNonNullExpressionTailStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSNonNullExpressionTailStatic();
     })));
       return null;
     }
     {
-      const __qin_typed_receiver_1990: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_1990.setParseFail();
+      const __qin_typed_receiver_1994: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_1994.setParseFail();
     }
     return null;
   }
   OptionalExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalExpression.call(this, params);
     }), "OptionalExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_OptionalExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.callExpressionBeforeOptionalChainStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=callExpressionBeforeOptionalChainStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.callExpressionBeforeOptionalChainStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.CallExpression(params);
     })), __qin_java_functional(() => {
       if (this.memberExpressionBeforeOptionalChainStart(params)) {
         {
-          const __qin_typed_receiver_1991: com_slime_parser_SlimeParser = this;
-          __qin_typed_receiver_1991.MemberExpression(params);
+          const __qin_typed_receiver_1995: com_slime_parser_SlimeParser = this;
+          __qin_typed_receiver_1995.MemberExpression(params);
         }
       }
       return null;
@@ -3180,34 +3180,34 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalChain(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalChain(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalChain receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalChain.call(this, params);
     }), "OptionalChain", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_OptionalChain(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_1992: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1992.QuestionDot();
+        const __qin_typed_receiver_1996: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1996.QuestionDot();
       }
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.Arguments(params);
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1993: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1993.LBracket();
+        const __qin_typed_receiver_1997: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1997.LBracket();
       }
       {
-        const __qin_typed_receiver_1994: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1994.Expression(params.withIn(true));
+        const __qin_typed_receiver_1998: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_1998.Expression(params.withIn(true));
       }
       {
-        const __qin_typed_receiver_1995: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1995.RBracket();
+        const __qin_typed_receiver_1999: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_1999.RBracket();
       }
       return null;
     }), __qin_java_functional(() => {
       return this.IdentifierName();
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=templateLiteralStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TemplateLiteral(new com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams(params, true));
     })), __qin_java_functional(() => {
       return this.PrivateIdentifier();
@@ -3222,7 +3222,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   OptionalChainSuffix(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_OptionalChainSuffix(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_OptionalChainSuffix receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_OptionalChainSuffix.call(this, params);
     }), "OptionalChainSuffix", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_OptionalChainSuffix(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -3231,52 +3231,52 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.Arguments(params);
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1996: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1996.LBracket();
+        const __qin_typed_receiver_2000: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2000.LBracket();
       }
       {
-        const __qin_typed_receiver_1997: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_1997.Expression(params.withIn(true));
+        const __qin_typed_receiver_2001: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2001.Expression(params.withIn(true));
       }
       {
-        const __qin_typed_receiver_1998: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1998.RBracket();
+        const __qin_typed_receiver_2002: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2002.RBracket();
       }
       return null;
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_1999: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_1999.Dot();
+        const __qin_typed_receiver_2003: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2003.Dot();
       }
       {
-        const __qin_typed_receiver_2000: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2000.IdentifierName();
+        const __qin_typed_receiver_2004: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2004.IdentifierName();
       }
       return null;
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=templateLiteralStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TemplateLiteral(new com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams(params, true));
     })), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2001: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2001.Dot();
+        const __qin_typed_receiver_2005: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2005.Dot();
       }
       {
-        const __qin_typed_receiver_2002: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2002.PrivateIdentifier();
+        const __qin_typed_receiver_2006: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2006.PrivateIdentifier();
       }
       return null;
     }));
       return null;
     }
     {
-      const __qin_typed_receiver_2003: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_2003.setParseFail();
+      const __qin_typed_receiver_2007: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_2007.setParseFail();
     }
     return null;
   }
   MemberExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_MemberExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_MemberExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_MemberExpression.call(this, params);
     }), "MemberExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_MemberExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -3289,19 +3289,19 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.MetaProperty();
     }), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2004: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2004.New();
+        const __qin_typed_receiver_2008: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2008.New();
       }
       {
-        const __qin_typed_receiver_2005: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2005.MemberExpression(params);
+        const __qin_typed_receiver_2009: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2009.MemberExpression(params);
       }
-      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=tsTypeParameterInstantiationStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSTypeParameterInstantiationStatic();
     })));
       {
-        const __qin_typed_receiver_2006: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2006.Arguments(params);
+        const __qin_typed_receiver_2010: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2010.Arguments(params);
       }
       return null;
     }));
@@ -3315,81 +3315,81 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   MemberExpressionSuffix(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_MemberExpressionSuffix(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_MemberExpressionSuffix receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_MemberExpressionSuffix.call(this, params);
     }), "MemberExpressionSuffix", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_MemberExpressionSuffix(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2007: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2007.LBracket();
+        const __qin_typed_receiver_2011: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2011.LBracket();
       }
       {
-        const __qin_typed_receiver_2008: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2008.Expression(params.withIn(true));
+        const __qin_typed_receiver_2012: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2012.Expression(params.withIn(true));
       }
       {
-        const __qin_typed_receiver_2009: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2009.RBracket();
+        const __qin_typed_receiver_2013: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2013.RBracket();
       }
       return null;
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.dotIdentifierMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=dotIdentifierMemberPropertyStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.dotIdentifierMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2010: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2010.Dot();
+        const __qin_typed_receiver_2014: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2014.Dot();
       }
       {
-        const __qin_typed_receiver_2011: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2011.IdentifierName();
+        const __qin_typed_receiver_2015: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2015.IdentifierName();
       }
       return null;
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.incompleteMemberAccessStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=incompleteMemberAccessStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.incompleteMemberAccessStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.IncompleteMemberAccessProperty();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=templateLiteralStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.templateLiteralStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TemplateLiteral(new com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams(params, true));
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.dotPrivateMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=dotPrivateMemberPropertyStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.dotPrivateMemberPropertyStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2012: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2012.Dot();
+        const __qin_typed_receiver_2016: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2016.Dot();
       }
       {
-        const __qin_typed_receiver_2013: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2013.PrivateIdentifier();
+        const __qin_typed_receiver_2017: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2017.PrivateIdentifier();
       }
       return null;
     })), __qin_java_functional(() => {
       return this.OptionalChain(params);
-    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.tsNonNullExpressionTailStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=tsNonNullExpressionTailStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.tsNonNullExpressionTailStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSNonNullExpressionTailStatic();
     })));
       return null;
     }
     {
-      const __qin_typed_receiver_2014: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_2014.setParseFail();
+      const __qin_typed_receiver_2018: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_2018.setParseFail();
     }
     return null;
   }
   NewExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_NewExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_NewExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_NewExpression.call(this, params);
     }), "NewExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_NewExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.notNewExpressionStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=notNewExpressionStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.notNewExpressionStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.MemberExpression(params);
     })), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2015: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2015.New();
+        const __qin_typed_receiver_2019: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2019.New();
       }
       {
-        const __qin_typed_receiver_2016: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2016.NewExpression(params);
+        const __qin_typed_receiver_2020: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2020.NewExpression(params);
       }
-      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=tsTypeParameterInstantiationStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSTypeParameterInstantiationStatic();
     })));
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
@@ -3404,21 +3404,21 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   CoverCallExpressionAndAsyncArrowHead(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_CoverCallExpressionAndAsyncArrowHead(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_CoverCallExpressionAndAsyncArrowHead receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_CoverCallExpressionAndAsyncArrowHead.call(this, params);
     }), "CoverCallExpressionAndAsyncArrowHead", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_CoverCallExpressionAndAsyncArrowHead(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_2017: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2017.MemberExpression(params);
+        const __qin_typed_receiver_2021: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2021.MemberExpression(params);
       }
-      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=tsTypeParameterInstantiationStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSTypeParameterInstantiationStatic();
     })));
       {
-        const __qin_typed_receiver_2018: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2018.Arguments(params);
+        const __qin_typed_receiver_2022: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2022.Arguments(params);
       }
       return null;
     }
@@ -3427,21 +3427,21 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   CallMemberExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_CallMemberExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_CallMemberExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_CallMemberExpression.call(this, params);
     }), "CallMemberExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_CallMemberExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_2019: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2019.MemberExpression(params);
+        const __qin_typed_receiver_2023: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2023.MemberExpression(params);
       }
-      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=tsTypeParameterInstantiationStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.tsTypeParameterInstantiationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSTypeParameterInstantiationStatic();
     })));
       {
-        const __qin_typed_receiver_2020: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2020.Arguments(params);
+        const __qin_typed_receiver_2024: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2024.Arguments(params);
       }
       return null;
     }
@@ -3450,18 +3450,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   SuperCall(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_SuperCall(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_SuperCall receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_SuperCall.call(this, params);
     }), "SuperCall", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_SuperCall(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_2021: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2021.Super();
+        const __qin_typed_receiver_2025: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2025.Super();
       }
       {
-        const __qin_typed_receiver_2022: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2022.Arguments(params);
+        const __qin_typed_receiver_2026: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2026.Arguments(params);
       }
       return null;
     }
@@ -3470,32 +3470,32 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ImportCall(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ImportCall(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ImportCall receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ImportCall.call(this, params);
     }), "ImportCall", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ImportCall(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_2023: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2023.Import();
+        const __qin_typed_receiver_2027: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2027.Import();
       }
       {
-        const __qin_typed_receiver_2024: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2024.LParen();
+        const __qin_typed_receiver_2028: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2028.LParen();
       }
       {
-        const __qin_typed_receiver_2025: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2025.AssignmentExpression(params.withIn(true));
-      }
-      SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
-      {
-        const __qin_typed_receiver_2026: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2026.Comma();
+        const __qin_typed_receiver_2029: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2029.AssignmentExpression(params.withIn(true));
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2027: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2027.AssignmentExpression(params.withIn(true));
+        const __qin_typed_receiver_2030: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2030.Comma();
+      }
+      SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
+      {
+        const __qin_typed_receiver_2031: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2031.AssignmentExpression(params.withIn(true));
       }
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Comma();
@@ -3505,8 +3505,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return null;
     }));
       {
-        const __qin_typed_receiver_2028: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2028.RParen();
+        const __qin_typed_receiver_2032: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2032.RParen();
       }
       return null;
     }
@@ -3515,24 +3515,24 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   Arguments(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_Arguments(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_Arguments receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_Arguments.call(this, params);
     }), "Arguments", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_Arguments(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_2029: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2029.LParen();
+        const __qin_typed_receiver_2033: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2033.LParen();
       }
-      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.argumentListStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=argumentListStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.argumentListStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.ArgumentList(params);
     })));
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Comma();
     }));
       {
-        const __qin_typed_receiver_2030: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2030.RParen();
+        const __qin_typed_receiver_2034: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2034.RParen();
       }
       return null;
     }
@@ -3541,23 +3541,23 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ArgumentList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ArgumentList(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ArgumentList receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ArgumentList.call(this, params);
     }), "ArgumentList", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ArgumentList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     if (false) {
       {
-        const __qin_typed_receiver_2031: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2031.ArgumentListItem(params);
+        const __qin_typed_receiver_2035: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2035.ArgumentListItem(params);
       }
-      SubhutiCompileOnlyDsl.Many(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.argumentListContinuationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Many(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=argumentListContinuationStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.argumentListContinuationStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       {
-        const __qin_typed_receiver_2032: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2032.Comma();
+        const __qin_typed_receiver_2036: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2036.Comma();
       }
       {
-        const __qin_typed_receiver_2033: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2033.ArgumentListItem(params);
+        const __qin_typed_receiver_2037: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2037.ArgumentListItem(params);
       }
       return null;
     })));
@@ -3568,7 +3568,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   ArgumentListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ArgumentListItem(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_ArgumentListItem receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_ArgumentListItem.call(this, params);
     }), "ArgumentListItem", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_ArgumentListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -3577,8 +3577,8 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
       return this.__qin_field_tokenConsumer.Ellipsis();
     }));
       {
-        const __qin_typed_receiver_2034: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2034.AssignmentExpression(params.withIn(true));
+        const __qin_typed_receiver_2038: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2038.AssignmentExpression(params.withIn(true));
       }
       return null;
     }
@@ -3587,7 +3587,7 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   PrimaryExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_PrimaryExpression(params);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_PrimaryExpression receiver=this arity=1 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_PrimaryExpression.call(this, params);
     }), "PrimaryExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_PrimaryExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): void {
@@ -3599,12 +3599,12 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     }));
       return null;
     }
-    this.__qin_subhuti_raw_StandardPrimaryExpression(params);
+    super.__qin_subhuti_raw_PrimaryExpression(params);
     return null;
   }
   TSAccessibilityModifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSAccessibilityModifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSAccessibilityModifier receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSAccessibilityModifier.call(this);
     }), "TSAccessibilityModifier", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSAccessibilityModifier(): void {
@@ -3631,14 +3631,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSAbstractModifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSAbstractModifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSAbstractModifier receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSAbstractModifier.call(this);
     }), "TSAbstractModifier", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSAbstractModifier(): void {
     if (false) {
       {
-        const __qin_typed_receiver_2035: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2035.consumeIdentifierValue("abstract");
+        const __qin_typed_receiver_2039: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2039.consumeIdentifierValue("abstract");
       }
       return null;
     }
@@ -3647,14 +3647,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSDecorators(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSDecorators();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSDecorators receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSDecorators.call(this);
     }), "TSDecorators", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSDecorators(): void {
     if (false) {
       {
-        const __qin_typed_receiver_2036: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2036.TSDecorator();
+        const __qin_typed_receiver_2040: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2040.TSDecorator();
       }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       return this.TSDecorator();
@@ -3666,18 +3666,18 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
   }
   TSDecorator(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSDecorator();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeParser method=__qin_subhuti_raw_TSDecorator receiver=this arity=0 */ com_slime_parser_SlimeParser.prototype.__qin_subhuti_raw_TSDecorator.call(this);
     }), "TSDecorator", "SlimeParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_TSDecorator(): void {
     if (false) {
       {
-        const __qin_typed_receiver_2037: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
-        __qin_typed_receiver_2037.At();
+        const __qin_typed_receiver_2041: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2041.At();
       }
       {
-        const __qin_typed_receiver_2038: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2038.LeftHandSideExpression(com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams.__qin_field_DEFAULT);
+        const __qin_typed_receiver_2042: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2042.LeftHandSideExpression(com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams.__qin_field_DEFAULT);
       }
       return null;
     }
@@ -3957,14 +3957,14 @@ class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBa
     let tokenName: string = this.tokenNameAt(1.0);
     if ((__QinJavaLangString.equals("LBrace", tokenName) || __QinJavaLangString.equals("LBracket", tokenName))) {
       {
-        const __qin_typed_receiver_2039: com_slime_parser_SlimeParser = this;
-        __qin_typed_receiver_2039.BindingPattern(params);
+        const __qin_typed_receiver_2043: com_slime_parser_SlimeParser = this;
+        __qin_typed_receiver_2043.BindingPattern(params);
       }
       return null;
     }
     {
-      const __qin_typed_receiver_2040: com_slime_parser_SlimeParser = this;
-      __qin_typed_receiver_2040.BindingIdentifier(params);
+      const __qin_typed_receiver_2044: com_slime_parser_SlimeParser = this;
+      __qin_typed_receiver_2044.BindingIdentifier(params);
     }
     return null;
   }

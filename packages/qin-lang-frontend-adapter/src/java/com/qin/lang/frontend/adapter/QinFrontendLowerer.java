@@ -1,5 +1,6 @@
 package com.qin.lang.frontend.adapter;
 
+import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.parser.QinParsedSource;
 import com.qin.parser.QinParserFacade;
@@ -21,12 +22,22 @@ public final class QinFrontendLowerer {
     }
 
     public QinIrProgram lowerSource(String source, Map<String, String> declarationClassExportSlots) {
+        return lowerSource(source, declarationClassExportSlots, Map.of());
+    }
+
+    public QinIrProgram lowerSource(
+            String source,
+            Map<String, String> declarationClassExportSlots,
+            Map<String, QinIrExpression> staticExportSlotValues) {
         long startNanos = System.nanoTime();
         logPhase("parse start", startNanos, "chars=" + (source == null ? 0 : source.length()));
         QinParsedSource parsed = parserFacade.parseSource(source);
         logPhase("parse done", startNanos, "hasProgram=" + parsed.hasProgram());
         logPhase("ir lower start", startNanos, "chars=" + (source == null ? 0 : source.length()));
-        QinIrProgram program = irLowerer.lowerParsedSource(parsed, declarationClassExportSlots);
+        QinIrProgram program = irLowerer.lowerParsedSource(
+                parsed,
+                declarationClassExportSlots,
+                staticExportSlotValues);
         logPhase("ir lower done", startNanos, "chars=" + (source == null ? 0 : source.length()));
         return program;
     }

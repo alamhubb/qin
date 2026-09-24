@@ -30,9 +30,9 @@ class com_slime_parser_cstToAst_statements_SlimeBreakContinueCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createBreakStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let label: any = null;
+  createBreakStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_BreakStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let label: com_slime_ast_nodes_expressions_Identifier = null;
     for (const child of children) {
       if (__QinJavaLangString.equals("LabelIdentifier", child.getName())) {
         label = com_slime_parser_cstToAst_statements_SlimeBreakContinueCstToAst.createLabelAst(child);
@@ -40,9 +40,9 @@ class com_slime_parser_cstToAst_statements_SlimeBreakContinueCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createBreakStatement(label, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  createContinueStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let label: any = null;
+  createContinueStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_ContinueStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let label: com_slime_ast_nodes_expressions_Identifier = null;
     for (const child of children) {
       if (__QinJavaLangString.equals("LabelIdentifier", child.getName())) {
         label = com_slime_parser_cstToAst_statements_SlimeBreakContinueCstToAst.createLabelAst(child);
@@ -50,9 +50,9 @@ class com_slime_parser_cstToAst_statements_SlimeBreakContinueCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createContinueStatement(label, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  createThrowStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let argument: any = null;
+  createThrowStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_ThrowStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let argument: com_slime_ast_Expression = null;
     for (const child of children) {
       if (__QinJavaLangString.equals("Expression", child.getName())) {
         argument = this.createExpressionAst(child);
@@ -60,13 +60,13 @@ class com_slime_parser_cstToAst_statements_SlimeBreakContinueCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createThrowStatement(argument, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  static createLabelAst(cst: com_subhuti_struct_SubhutiCst): any {
+  static createLabelAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_expressions_Identifier {
     if (__qin_binary__("==", cst, null)) {
-      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("label", (null));
+      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("label", (null as com_subhuti_struct_SubhutiSourceLocation));
     }
     return com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst.createIdentifierAst(cst);
   }
-  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Expression {
     return this.__qin_field_transformer.createExpressionAst(cst);
   }
 }

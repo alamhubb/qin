@@ -13,65 +13,54 @@ class com_slime_ast_SyntaxToken {
   __qin_field_value: string | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_ast_SyntaxToken_0_0();
-      return;
-    }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const type: any = __qin_args[0];
       const value: any = __qin_args[1];
       const location: any = __qin_args[2];
-      this.__qin_constructor_com_slime_ast_SyntaxToken_3_1(type, value, location);
+      this.__qin_constructor_com_slime_ast_SyntaxToken_3_0(type, value, location);
       return;
     }
     throw new Error("Unsupported Java constructor overload: SyntaxToken/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_SyntaxToken_0_0(): void {
+  __qin_constructor_com_slime_ast_SyntaxToken_3_0(type: string, value: string, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_type = null;
     this.__qin_field_value = null;
     this.__qin_field_location = null;
-    if ((__qin_binary__("==", this.__qin_field_type, null) || __QinJavaLangString.isBlank(this.__qin_field_type))) {
+    if ((__qin_binary__("==", type, null) || __QinJavaLangString.isBlank(type))) {
       throw new __QinJavaLangIllegalArgumentException("type cannot be null or blank");
     }
-    if (__qin_binary__("==", this.__qin_field_location, null)) {
+    if (__qin_binary__("==", location, null)) {
       throw new __QinJavaLangIllegalArgumentException("location cannot be null");
     }
+    this.__qin_field_type = type;
+    this.__qin_field_value = value;
+    this.__qin_field_location = location;
   }
-  __qin_constructor_com_slime_ast_SyntaxToken_3_1(type: string, value: string, location: com_slime_ast_SourceLocation): void {
-    this.__qin_field_type = null;
-    this.__qin_field_value = null;
-    this.__qin_field_location = null;
-    (() => {
-      this.__qin_field_type = type;
-      this.__qin_field_value = value;
-      this.__qin_field_location = location;
-      return null;
-    })();
-  }
-  type(): any {
+  type(): string {
     return this.__qin_field_type;
   }
-  value(): any {
+  value(): string {
     return this.__qin_field_value;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_SyntaxToken)) return false;
-    return __qin_java_values_equal__(this.__qin_field_type, other.__qin_field_type)
-      && __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_SyntaxToken = other;
+    return __qin_java_values_equal__(this.__qin_field_type, __qin_record_other.__qin_field_type)
+      && __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_type);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["SyntaxToken[", "type=", this.__qin_field_type, ", ", "value=", this.__qin_field_value, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

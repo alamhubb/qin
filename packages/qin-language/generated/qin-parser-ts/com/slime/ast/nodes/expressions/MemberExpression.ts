@@ -12,11 +12,11 @@ function __qin_structural_object__(value) {
 class com_slime_ast_nodes_expressions_MemberExpression {
   __qin_field_object: com_slime_ast_Expression | null = null as any;
   __qin_field_property: com_slime_ast_Expression | null = null as any;
-  __qin_field_computed: boolean | null = null as any;
-  __qin_field_optional: boolean | null = null as any;
+  __qin_field_computed: boolean | null = false as any;
+  __qin_field_optional: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Expression")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && typeof __qin_args[2] === "boolean" && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Expression")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && typeof __qin_args[2] === "boolean" && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const object: any = __qin_args[0];
       const property: any = __qin_args[1];
       const computed: any = __qin_args[2];
@@ -30,8 +30,8 @@ class com_slime_ast_nodes_expressions_MemberExpression {
   __qin_constructor_com_slime_ast_nodes_expressions_MemberExpression_5_0(object: com_slime_ast_Expression, property: com_slime_ast_Expression, computed: boolean, optional: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_object = null;
     this.__qin_field_property = null;
-    this.__qin_field_computed = null;
-    this.__qin_field_optional = null;
+    this.__qin_field_computed = false;
+    this.__qin_field_optional = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_object = object;
@@ -42,34 +42,35 @@ class com_slime_ast_nodes_expressions_MemberExpression {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_MEMBER_EXPRESSION;
   }
-  object(): any {
+  object(): com_slime_ast_Expression {
     return this.__qin_field_object;
   }
-  property(): any {
+  property(): com_slime_ast_Expression {
     return this.__qin_field_property;
   }
-  computed(): any {
+  computed(): boolean {
     return this.__qin_field_computed;
   }
-  optional(): any {
+  optional(): boolean {
     return this.__qin_field_optional;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_expressions_MemberExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_object, other.__qin_field_object)
-      && __qin_java_values_equal__(this.__qin_field_property, other.__qin_field_property)
-      && __qin_java_values_equal__(this.__qin_field_computed, other.__qin_field_computed)
-      && __qin_java_values_equal__(this.__qin_field_optional, other.__qin_field_optional)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_expressions_MemberExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_object, __qin_record_other.__qin_field_object)
+      && __qin_java_values_equal__(this.__qin_field_property, __qin_record_other.__qin_field_property)
+      && __qin_java_values_equal__(this.__qin_field_computed, __qin_record_other.__qin_field_computed)
+      && __qin_java_values_equal__(this.__qin_field_optional, __qin_record_other.__qin_field_optional)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_object);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_property);
@@ -78,7 +79,7 @@ class com_slime_ast_nodes_expressions_MemberExpression {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["MemberExpression[", "object=", this.__qin_field_object, ", ", "property=", this.__qin_field_property, ", ", "computed=", this.__qin_field_computed, ", ", "optional=", this.__qin_field_optional, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

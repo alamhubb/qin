@@ -372,6 +372,9 @@ public final class QinOvsCompiler {
                 }
                 function __qinTransformOne(input) {
                   try {
+                    if (__qin_profile__) {
+                      console.log("[QinProfile] ovs-transform-batch input :: " + input.id);
+                    }
                     const __qin_total_start__ = __qinNow();
                     RuntimeStore.clearUsedStyles();
                     const __qin_shared_styles__ = new Set();
@@ -405,11 +408,30 @@ public final class QinOvsCompiler {
                     };
                   } catch (error) {
                     const message = error && error.message ? error.message : String(error);
+                    console.error("[QinProfile] ovs-transform-batch failed :: " + input.id + " :: " + message);
+                    if (error && error.stack) {
+                      console.error(error.stack);
+                    }
                     throw new Error("ovs-compiler transform failed for " + input.id + ": " + message);
                   }
                 }
                 const __qin_inputs__ = globalThis.%s;
-                __qin_inputs__.map(input => __qinTransformOne(input));
+                if (__qin_profile__) {
+                  console.log("[QinProfile] ovs-transform-batch inputs :: " + (
+                    __qin_inputs__ == null ? "null" : (
+                      typeof __qin_inputs__ + ", iterable=" + (typeof __qin_inputs__[Symbol.iterator] === "function") +
+                      ", length=" + (__qin_inputs__.length ?? "n/a")
+                    )
+                  ));
+                }
+                if (__qin_inputs__ == null || typeof __qin_inputs__[Symbol.iterator] !== "function") {
+                  throw new Error("ovs-compiler batch inputs missing or not iterable");
+                }
+                const __qin_results__ = [];
+                for (const input of __qin_inputs__) {
+                  __qin_results__.push(__qinTransformOne(input));
+                }
+                __qin_results__;
                 """.formatted(
                 optionsGlobal,
                 profileGlobal,
@@ -603,6 +625,14 @@ public final class QinOvsCompiler {
         MessageDigest digest = newSha256Digest();
         updateClassResourceDigest(digest, QinOvsCompiler.class);
         updateClassResourceDigest(digest, QinJsPackageRunner.class);
+        digest.update("module-class-toolchain".getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+        digest.update(QinInMemoryJvmRunner.moduleClassToolchainFingerprintValue().getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) '\n');
+        digest.update("dynamic-semantic-policy".getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+        digest.update(QinDynamicSemanticPolicyFingerprint.current().getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) '\n');
         for (String packageName : TRANSFORM_TOOLCHAIN_PACKAGES) {
             digest.update(packageName.getBytes(StandardCharsets.UTF_8));
             digest.update((byte) '=');

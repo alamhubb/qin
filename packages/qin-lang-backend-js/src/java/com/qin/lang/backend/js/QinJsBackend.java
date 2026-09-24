@@ -115,6 +115,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinJavaLangClassNotFoundException",
             "__QinJavaLangClassCastException",
             "__QinJavaLangNoSuchMethodException",
+            "__QinJavaLangReflectMethod",
             "__QinJavaLangReflectInvocationTargetException",
             "__QinJavaLangError",
             "__QinJavaLangStackOverflowError",
@@ -187,6 +188,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__qin_collection_add__",
             "__qin_collection_contains__",
             "__qin_collection_to_array__",
+            "__qin_java_new_array__",
             "__qin_java_utf8_decode__",
             "__qin_java_time_now__",
             "__qin_java_time_from__",
@@ -698,6 +700,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrJavaMethodReferenceExpression methodReferenceExpression) {
+            if ("new".equals(methodReferenceExpression.methodName())
+                    && javaArrayDimensions(methodReferenceExpression.ownerBinaryName()) > 0) {
+                return;
+            }
             emitJavaRuntimeAlias(
                     js,
                     methodReferenceExpression.classLocalName(),
@@ -904,6 +910,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.NoSuchMethodException" -> {
                 emitJavaLangExceptionRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangNoSuchMethodException");
+            }
+            case "java.lang.reflect.Method" -> {
+                requireExternalJavaSdkRuntime("__QinJavaLangReflectMethod");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangReflectMethod");
             }
             case "java.lang.reflect.InvocationTargetException" -> {
                 emitJavaLangExceptionRuntime(js);
@@ -1502,6 +1512,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.ClassNotFoundException" -> "__QinJavaLangClassNotFoundException";
             case "java.lang.ClassCastException" -> "__QinJavaLangClassCastException";
             case "java.lang.NoSuchMethodException" -> "__QinJavaLangNoSuchMethodException";
+            case "java.lang.reflect.Method" -> "__QinJavaLangReflectMethod";
             case "java.lang.reflect.InvocationTargetException" -> "__QinJavaLangReflectInvocationTargetException";
             case "java.lang.NumberFormatException" -> "__QinJavaLangNumberFormatException";
             case "java.lang.UnsupportedOperationException" -> "__QinJavaLangUnsupportedOperationException";
@@ -5490,6 +5501,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                   if (typeof collection[Symbol.iterator] === "function") return Array.from(collection);
                   throw new Error("Unsupported generated collection toArray target");
                 }
+                function __qin_java_new_array__(arrayType, length) {
+                  return Array.from({ length: Math.max(0, Number(length) | 0) }, () => null);
+                }
                 function __qin_java_utf8_decode__(bytes) {
                   const encoded = __qin_collection_to_array__(bytes);
                   if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(Uint8Array.from(encoded));
@@ -6487,6 +6501,67 @@ public class QinJsBackend implements QinIrCodeBackend {
             case BOOLEAN -> "false";
             case INT, DOUBLE -> "0";
             default -> "null";
+        };
+    }
+
+    private boolean emitJavaArrayConstructorMethodReference(StringBuilder js, String ownerBinaryName) {
+        int dimensions = javaArrayDimensions(ownerBinaryName);
+        if (dimensions <= 0) {
+            return false;
+        }
+        requireExternalJavaSdkRuntime("__qin_java_new_array__");
+        js.append("((...__qin_args) => __qin_java_new_array__(\"")
+                .append(escapeJs(ownerBinaryName))
+                .append("\", (__qin_args.length === 0 ? 0 : Number(__qin_args[0]))))");
+        return true;
+    }
+
+    private int javaArrayDimensions(String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            return 0;
+        }
+        if (binaryName.startsWith("[")) {
+            int dimensions = 0;
+            while (dimensions < binaryName.length() && binaryName.charAt(dimensions) == '[') {
+                dimensions++;
+            }
+            return dimensions;
+        }
+        int dimensions = 0;
+        String remaining = binaryName;
+        while (remaining.endsWith("[]")) {
+            dimensions++;
+            remaining = remaining.substring(0, remaining.length() - 2);
+        }
+        return dimensions;
+    }
+
+    private String javaArrayConstructorDefaultElement(String binaryName, int dimensions) {
+        if (dimensions > 1 || binaryName == null || binaryName.isBlank()) {
+            return "null";
+        }
+        if (binaryName.startsWith("[")) {
+            char component = binaryName.length() > dimensions ? binaryName.charAt(dimensions) : 'L';
+            return component == 'Z' ? "false" : (isPrimitiveArrayDescriptor(component) ? "0" : "null");
+        }
+        String component = binaryName;
+        while (component.endsWith("[]")) {
+            component = component.substring(0, component.length() - 2);
+        }
+        return "boolean".equals(component) ? "false" : (isPrimitiveArrayComponent(component) ? "0" : "null");
+    }
+
+    private boolean isPrimitiveArrayDescriptor(char descriptor) {
+        return switch (descriptor) {
+            case 'B', 'C', 'D', 'F', 'I', 'J', 'S', 'Z' -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isPrimitiveArrayComponent(String component) {
+        return switch (component) {
+            case "byte", "char", "double", "float", "int", "long", "short", "boolean" -> true;
+            default -> false;
         };
     }
 
@@ -8433,6 +8508,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                 js.append(": {\n");
             }
             emitStatements(js, switchCase.consequent(), indent + "    ");
+            if (!switchCase.fallthroughAllowed()) {
+                js.append(indent).append("    break;\n");
+            }
             js.append(indent).append("  }\n");
         }
         js.append(indent).append("}\n");
@@ -8444,23 +8522,53 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         js.append("(() => {\n");
-        js.append("      switch (");
+        js.append("      const __switch_discriminant = ");
         emitExpression(js, switchExpression.discriminant());
-        js.append(") {\n");
+        js.append(";\n");
+        boolean emittedConditional = false;
+        boolean pendingDefault = false;
+        List<QinIrExpression> pendingTests = new ArrayList<>();
         for (QinIrSwitchCase switchCase : switchExpression.cases()) {
             if (switchCase.isDefault()) {
-                js.append("        default: {\n");
+                pendingDefault = true;
             } else {
-                js.append("        case ");
-                emitExpression(js, switchCase.test());
-                js.append(": {\n");
+                pendingTests.add(switchCase.test());
             }
-            emitStatements(js, switchCase.consequent(), "          ");
-            js.append("        }\n");
+            if (switchCase.consequent().isEmpty() && switchCase.fallthroughAllowed()) {
+                continue;
+            }
+            js.append("      ");
+            if (emittedConditional) {
+                js.append("else ");
+            }
+            if (!pendingDefault) {
+                js.append("if (");
+                emitSwitchExpressionCondition(js, pendingTests);
+                js.append(") ");
+            }
+            js.append("{\n");
+            emitStatements(js, switchCase.consequent(), "        ");
+            js.append("      }\n");
+            emittedConditional = true;
+            pendingDefault = false;
+            pendingTests.clear();
         }
-        js.append("      }\n");
         js.append("      return null;\n");
         js.append("    })()");
+    }
+
+    private void emitSwitchExpressionCondition(StringBuilder js, List<QinIrExpression> tests) {
+        if (tests.isEmpty()) {
+            js.append("false");
+            return;
+        }
+        for (int i = 0; i < tests.size(); i++) {
+            if (i > 0) {
+                js.append(" || ");
+            }
+            js.append("__switch_discriminant === ");
+            emitExpression(js, tests.get(i));
+        }
     }
 
     private boolean hasPatternSwitchCase(List<QinIrSwitchCase> cases) {
@@ -8993,6 +9101,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrJavaMethodReferenceExpression methodReferenceExpression) {
+            if ("new".equals(methodReferenceExpression.methodName())
+                    && emitJavaArrayConstructorMethodReference(js, methodReferenceExpression.ownerBinaryName())) {
+                return;
+            }
             ensureSupportedJavaOwner(methodReferenceExpression.ownerBinaryName());
             String ownerReference = javaOwnerReference(
                     methodReferenceExpression.ownerBinaryName(),
@@ -9393,6 +9505,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             default -> {
                 js.append("(");
                 emitExpression(js, castExpression.expression());
+                String typeName = tsTypeName(QinIrTypeRef.classType(castExpression.typeName()));
+                if (emitTypeAnnotations() && !"any".equals(typeName)) {
+                    js.append(" as ").append(typeName);
+                }
                 js.append(")");
             }
         }
@@ -9812,6 +9928,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.lang.ClassNotFoundException".equals(ownerBinaryName)
                 || "java.lang.ClassCastException".equals(ownerBinaryName)
                 || "java.lang.NoSuchMethodException".equals(ownerBinaryName)
+                || "java.lang.reflect.Method".equals(ownerBinaryName)
                 || "java.lang.reflect.InvocationTargetException".equals(ownerBinaryName)
                 || "java.lang.NumberFormatException".equals(ownerBinaryName)
                 || "java.lang.UnsupportedOperationException".equals(ownerBinaryName)
@@ -9941,6 +10058,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.ClassNotFoundException" -> "__QinJavaLangClassNotFoundException";
             case "java.lang.ClassCastException" -> "__QinJavaLangClassCastException";
             case "java.lang.NoSuchMethodException" -> "__QinJavaLangNoSuchMethodException";
+            case "java.lang.reflect.Method" -> "__QinJavaLangReflectMethod";
             case "java.lang.reflect.InvocationTargetException" -> "__QinJavaLangReflectInvocationTargetException";
             case "java.lang.NumberFormatException" -> "__QinJavaLangNumberFormatException";
             case "java.lang.UnsupportedOperationException" -> "__QinJavaLangUnsupportedOperationException";

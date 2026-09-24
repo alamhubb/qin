@@ -9,13 +9,17 @@ function __qin_structural_object__(value) {
 }
 class com_slime_java_ast_JavaAstSwitchCase {
   __qin_field_test: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_statements: any = null as any;
+  __qin_field_statements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
+  __qin_field_fallthroughAllowed: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstSwitchCase_0_0();
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && typeof __qin_args[2] === "boolean") {
+      const test: any = __qin_args[0];
+      const statements: any = __qin_args[1];
+      const fallthroughAllowed: any = __qin_args[2];
+      this.__qin_constructor_com_slime_java_ast_JavaAstSwitchCase_3_0(test, statements, fallthroughAllowed);
       return;
     }
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList))) {
       const test: any = __qin_args[0];
       const statements: any = __qin_args[1];
       this.__qin_constructor_com_slime_java_ast_JavaAstSwitchCase_2_1(test, statements);
@@ -23,43 +27,47 @@ class com_slime_java_ast_JavaAstSwitchCase {
     }
     throw new Error("Unsupported Java constructor overload: JavaAstSwitchCase/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstSwitchCase_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstSwitchCase_3_0(test: com_slime_java_ast_JavaAstExpression, statements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>, fallthroughAllowed: boolean): void {
     this.__qin_field_test = null;
     this.__qin_field_statements = null;
-    this.__qin_field_statements = (__qin_binary__("==", this.__qin_field_statements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_statements));
+    this.__qin_field_fallthroughAllowed = false;
+    statements = (__qin_binary__("==", statements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(statements));
+    this.__qin_field_test = test;
+    this.__qin_field_statements = statements;
+    this.__qin_field_fallthroughAllowed = fallthroughAllowed;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstSwitchCase_2_1(test: com_slime_java_ast_JavaAstExpression, statements: any): void {
-    this.__qin_field_test = null;
-    this.__qin_field_statements = null;
-    (() => {
-      this.__qin_field_test = test;
-      this.__qin_field_statements = statements;
-      return null;
-    })();
+  __qin_constructor_com_slime_java_ast_JavaAstSwitchCase_2_1(test: com_slime_java_ast_JavaAstExpression, statements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 3 && (__qin_delegate_args[0] === null || __qin_java_implements(__qin_delegate_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[2] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstSwitchCase_3_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstSwitchCase/" + __qin_delegate_args.length); })(test, statements, true);
   }
-  isDefault(): any {
+  isDefault(): boolean {
     return __qin_binary__("==", this.__qin_field_test, null);
   }
-  test(): any {
+  test(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_test;
   }
-  statements(): any {
+  statements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_statements;
   }
-  equals(other) {
+  fallthroughAllowed(): boolean {
+    return this.__qin_field_fallthroughAllowed;
+  }
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstSwitchCase)) return false;
-    return __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test)
-      && __qin_java_values_equal__(this.__qin_field_statements, other.__qin_field_statements);
+    const __qin_record_other: com_slime_java_ast_JavaAstSwitchCase = other;
+    return __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test)
+      && __qin_java_values_equal__(this.__qin_field_statements, __qin_record_other.__qin_field_statements)
+      && __qin_java_values_equal__(this.__qin_field_fallthroughAllowed, __qin_record_other.__qin_field_fallthroughAllowed);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_statements);
+    result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_fallthroughAllowed);
     return result;
   }
-  toString() {
-    return ["JavaAstSwitchCase[", "test=", this.__qin_field_test, ", ", "statements=", this.__qin_field_statements, "]"].join("");
+  toString(): string {
+    return ["JavaAstSwitchCase[", "test=", this.__qin_field_test, ", ", "statements=", this.__qin_field_statements, ", ", "fallthroughAllowed=", this.__qin_field_fallthroughAllowed, "]"].join("");
   }
 }
 const JavaAstSwitchCase = com_slime_java_ast_JavaAstSwitchCase;

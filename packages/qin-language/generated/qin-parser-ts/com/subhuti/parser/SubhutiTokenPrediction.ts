@@ -9,7 +9,7 @@ function __qin_structural_object__(value) {
 }
 const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 class com_subhuti_parser_SubhutiTokenPrediction {
-  static __qin_field_VALUE_SEPARATOR: number | null = null as any;
+  static __qin_field_VALUE_SEPARATOR: string | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 0 && true) {
       this.__qin_constructor_com_subhuti_parser_SubhutiTokenPrediction_0_0();
@@ -20,7 +20,7 @@ class com_subhuti_parser_SubhutiTokenPrediction {
   __qin_constructor_com_subhuti_parser_SubhutiTokenPrediction_0_0(): void {
     null;
   }
-  static key(tokenName: string, tokenValue: string): any {
+  static key(tokenName: string, tokenValue: string): string {
     if ((__qin_binary__("==", tokenName, null) || __QinJavaLangString.isBlank(tokenName))) {
       throw new __QinJavaLangIllegalArgumentException("tokenName cannot be blank");
     }
@@ -29,39 +29,39 @@ class com_subhuti_parser_SubhutiTokenPrediction {
     }
     return __qin_binary__("+", __qin_binary__("+", tokenName, com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR), tokenValue);
   }
-  static isValueAware(key: string): any {
+  static isValueAware(key: string): boolean {
     return (__qin_binary__("!=", key, null) && __qin_binary__(">=", key.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR), 0.0));
   }
-  static tokenName(key: string): any {
+  static tokenName(key: string): string {
     if (__qin_binary__("==", key, null)) {
       return null;
     }
-    let separatorIndex: any = key.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR);
+    let separatorIndex: number = key.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR);
     return (__qin_binary__("<", separatorIndex, 0.0) ? key : __QinJavaLangString.substring(key, 0.0, separatorIndex));
   }
-  static tokenValue(key: string): any {
+  static tokenValue(key: string): string {
     if ((!com_subhuti_parser_SubhutiTokenPrediction.isValueAware(key))) {
       return null;
     }
     return __QinJavaLangString.substring(key, __qin_binary__("+", key.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR), 1.0));
   }
-  static matches(expectedKey: string, token: com_subhuti_struct_SubhutiMatchToken): any {
+  static matches(expectedKey: string, token: com_subhuti_struct_SubhutiMatchToken): boolean {
     if ((__qin_binary__("==", expectedKey, null) || __QinJavaLangString.isBlank(expectedKey) || __qin_binary__("==", token, null) || token.isEof())) {
       return false;
     }
-    let separatorIndex: any = expectedKey.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR);
+    let separatorIndex: number = expectedKey.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR);
     if (__qin_binary__("<", separatorIndex, 0.0)) {
       return __QinJavaLangString.equals(expectedKey, token.getTokenName());
     }
-    let tokenName: any = __QinJavaLangString.substring(expectedKey, 0.0, separatorIndex);
-    let tokenValue: any = __QinJavaLangString.substring(expectedKey, __qin_binary__("+", separatorIndex, 1.0));
+    let tokenName: string = __QinJavaLangString.substring(expectedKey, 0.0, separatorIndex);
+    let tokenValue: string = __QinJavaLangString.substring(expectedKey, __qin_binary__("+", separatorIndex, 1.0));
     return (__QinJavaLangString.equals(tokenName, token.getTokenName()) && __QinJavaLangString.equals(tokenValue, token.getTokenValue()));
   }
-  static display(key: string): any {
+  static display(key: string): string {
     if ((!com_subhuti_parser_SubhutiTokenPrediction.isValueAware(key))) {
       return key;
     }
-    let separatorIndex: any = key.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR);
+    let separatorIndex: number = key.indexOf(com_subhuti_parser_SubhutiTokenPrediction.__qin_field_VALUE_SEPARATOR);
     return (__QinJavaLangString.substring(key, 0.0, separatorIndex) + "(\"" + __QinJavaLangString.substring(key, __qin_binary__("+", separatorIndex, 1.0)) + "\")");
   }
 }

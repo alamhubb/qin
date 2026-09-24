@@ -9,7 +9,8 @@ export default {
                          "com.qin:qin-lang-module-policy":  "0.1.0",
                          "com.qin:qin-lang-module-resolver":  "0.1.0",
                          "com.qin:qin-lang-sema-esm":  "0.1.0",
-                         "com.qin:qin-lang-lowering-jvm":  "0.1.0"
+                         "com.qin:qin-lang-lowering-jvm":  "0.1.0",
+                         "com.qin:qin-lang-backend-jvm":  "0.1.0"
                      },
     "java":  {
                  "version":  "25",

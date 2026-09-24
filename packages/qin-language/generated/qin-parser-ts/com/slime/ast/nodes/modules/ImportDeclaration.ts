@@ -12,24 +12,24 @@ function __qin_structural_object__(value) {
 }
 class com_slime_ast_nodes_modules_ImportDeclaration {
   __qin_field_source: com_slime_ast_nodes_expressions_Literal | null = null as any;
-  __qin_field_specifiers: any = null as any;
+  __qin_field_specifiers: __QinJavaUtilList<com_slime_ast_AstNode> | null = null as any;
   __qin_field_importToken: com_slime_ast_SyntaxToken | null = null as any;
   __qin_field_fromToken: com_slime_ast_SyntaxToken | null = null as any;
   __qin_field_lBraceToken: com_slime_ast_SyntaxToken | null = null as any;
   __qin_field_rBraceToken: com_slime_ast_SyntaxToken | null = null as any;
   __qin_field_semicolonToken: com_slime_ast_SyntaxToken | null = null as any;
   __qin_field_attributesCode: string | null = null as any;
-  __qin_field_typeOnly: boolean | null = null as any;
+  __qin_field_typeOnly: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Literal) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_nodes_expressions_Literal)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const specifiers: any = __qin_args[0];
       const source: any = __qin_args[1];
       const location: any = __qin_args[2];
       this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_3_0(specifiers, source, location);
       return;
     }
-    if (__qin_args.length === 8 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Literal) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SyntaxToken) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SyntaxToken) || __qin_args[5].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SyntaxToken) || __qin_args[6].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[7] === null || __qin_instanceof__(__qin_args[7], com_slime_ast_SourceLocation) || __qin_args[7].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 8 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Literal)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SyntaxToken)) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken)) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SyntaxToken)) && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SyntaxToken)) && (__qin_args[7] === null || __qin_instanceof__(__qin_args[7], com_slime_ast_SourceLocation))) {
       const source: any = __qin_args[0];
       const specifiers: any = __qin_args[1];
       const importToken: any = __qin_args[2];
@@ -41,7 +41,7 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
       this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_8_1(source, specifiers, importToken, fromToken, lBraceToken, rBraceToken, semicolonToken, location);
       return;
     }
-    if (__qin_args.length === 9 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Literal) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SyntaxToken) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SyntaxToken) || __qin_args[5].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SyntaxToken) || __qin_args[6].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[7] === null || typeof __qin_args[7] === "string") && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_slime_ast_SourceLocation) || __qin_args[8].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 9 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Literal)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SyntaxToken)) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken)) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SyntaxToken)) && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SyntaxToken)) && (__qin_args[7] === null || typeof __qin_args[7] === "string") && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_slime_ast_SourceLocation))) {
       const source: any = __qin_args[0];
       const specifiers: any = __qin_args[1];
       const importToken: any = __qin_args[2];
@@ -54,7 +54,7 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
       this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_9_2(source, specifiers, importToken, fromToken, lBraceToken, rBraceToken, semicolonToken, attributesCode, location);
       return;
     }
-    if (__qin_args.length === 10 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Literal) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SyntaxToken) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SyntaxToken) || __qin_args[5].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SyntaxToken) || __qin_args[6].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_args[7] === null || typeof __qin_args[7] === "string") && typeof __qin_args[8] === "boolean" && (__qin_args[9] === null || __qin_instanceof__(__qin_args[9], com_slime_ast_SourceLocation) || __qin_args[9].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 10 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Literal)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SyntaxToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SyntaxToken)) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SyntaxToken)) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SyntaxToken)) && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_slime_ast_SyntaxToken)) && (__qin_args[7] === null || typeof __qin_args[7] === "string") && typeof __qin_args[8] === "boolean" && (__qin_args[9] === null || __qin_instanceof__(__qin_args[9], com_slime_ast_SourceLocation))) {
       const source: any = __qin_args[0];
       const specifiers: any = __qin_args[1];
       const importToken: any = __qin_args[2];
@@ -70,16 +70,16 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
     }
     throw new Error("Unsupported Java constructor overload: ImportDeclaration/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_3_0(specifiers: any, source: com_slime_ast_nodes_expressions_Literal, location: com_slime_ast_SourceLocation): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Literal) || __qin_delegate_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_delegate_args[1] instanceof __QinJavaUtilArrayList || __qin_delegate_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SyntaxToken) || __qin_delegate_args[3].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken) || __qin_delegate_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[5] === null || __qin_instanceof__(__qin_delegate_args[5], com_slime_ast_SyntaxToken) || __qin_delegate_args[5].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[6] === null || __qin_instanceof__(__qin_delegate_args[6], com_slime_ast_SyntaxToken) || __qin_delegate_args[6].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "string") && typeof __qin_delegate_args[8] === "boolean" && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_slime_ast_SourceLocation) || __qin_delegate_args[9].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportDeclaration/" + __qin_delegate_args.length); })(source, specifiers, null, null, null, null, null, null, false, location);
+  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_3_0(specifiers: __QinJavaUtilList<com_slime_ast_AstNode>, source: com_slime_ast_nodes_expressions_Literal, location: com_slime_ast_SourceLocation): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Literal)) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[5] === null || __qin_instanceof__(__qin_delegate_args[5], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[6] === null || __qin_instanceof__(__qin_delegate_args[6], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "string") && typeof __qin_delegate_args[8] === "boolean" && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_slime_ast_SourceLocation))) { return this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportDeclaration/" + __qin_delegate_args.length); })(source, specifiers, null, null, null, null, null, null, false, location);
   }
-  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_8_1(source: com_slime_ast_nodes_expressions_Literal, specifiers: any, importToken: com_slime_ast_SyntaxToken, fromToken: com_slime_ast_SyntaxToken, lBraceToken: com_slime_ast_SyntaxToken, rBraceToken: com_slime_ast_SyntaxToken, semicolonToken: com_slime_ast_SyntaxToken, location: com_slime_ast_SourceLocation): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Literal) || __qin_delegate_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_delegate_args[1] instanceof __QinJavaUtilArrayList || __qin_delegate_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SyntaxToken) || __qin_delegate_args[3].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken) || __qin_delegate_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[5] === null || __qin_instanceof__(__qin_delegate_args[5], com_slime_ast_SyntaxToken) || __qin_delegate_args[5].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[6] === null || __qin_instanceof__(__qin_delegate_args[6], com_slime_ast_SyntaxToken) || __qin_delegate_args[6].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "string") && typeof __qin_delegate_args[8] === "boolean" && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_slime_ast_SourceLocation) || __qin_delegate_args[9].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportDeclaration/" + __qin_delegate_args.length); })(source, specifiers, importToken, fromToken, lBraceToken, rBraceToken, semicolonToken, null, false, location);
+  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_8_1(source: com_slime_ast_nodes_expressions_Literal, specifiers: __QinJavaUtilList<com_slime_ast_AstNode>, importToken: com_slime_ast_SyntaxToken, fromToken: com_slime_ast_SyntaxToken, lBraceToken: com_slime_ast_SyntaxToken, rBraceToken: com_slime_ast_SyntaxToken, semicolonToken: com_slime_ast_SyntaxToken, location: com_slime_ast_SourceLocation): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Literal)) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[5] === null || __qin_instanceof__(__qin_delegate_args[5], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[6] === null || __qin_instanceof__(__qin_delegate_args[6], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "string") && typeof __qin_delegate_args[8] === "boolean" && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_slime_ast_SourceLocation))) { return this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportDeclaration/" + __qin_delegate_args.length); })(source, specifiers, importToken, fromToken, lBraceToken, rBraceToken, semicolonToken, null, false, location);
   }
-  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_9_2(source: com_slime_ast_nodes_expressions_Literal, specifiers: any, importToken: com_slime_ast_SyntaxToken, fromToken: com_slime_ast_SyntaxToken, lBraceToken: com_slime_ast_SyntaxToken, rBraceToken: com_slime_ast_SyntaxToken, semicolonToken: com_slime_ast_SyntaxToken, attributesCode: string, location: com_slime_ast_SourceLocation): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Literal) || __qin_delegate_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal.__qinJavaRecordClass) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_delegate_args[1] instanceof __QinJavaUtilArrayList || __qin_delegate_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken) || __qin_delegate_args[2].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SyntaxToken) || __qin_delegate_args[3].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken) || __qin_delegate_args[4].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[5] === null || __qin_instanceof__(__qin_delegate_args[5], com_slime_ast_SyntaxToken) || __qin_delegate_args[5].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[6] === null || __qin_instanceof__(__qin_delegate_args[6], com_slime_ast_SyntaxToken) || __qin_delegate_args[6].__qinJavaRecordClass === com_slime_ast_SyntaxToken.__qinJavaRecordClass) && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "string") && typeof __qin_delegate_args[8] === "boolean" && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_slime_ast_SourceLocation) || __qin_delegate_args[9].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) { return this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportDeclaration/" + __qin_delegate_args.length); })(source, specifiers, importToken, fromToken, lBraceToken, rBraceToken, semicolonToken, attributesCode, false, location);
+  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_9_2(source: com_slime_ast_nodes_expressions_Literal, specifiers: __QinJavaUtilList<com_slime_ast_AstNode>, importToken: com_slime_ast_SyntaxToken, fromToken: com_slime_ast_SyntaxToken, lBraceToken: com_slime_ast_SyntaxToken, rBraceToken: com_slime_ast_SyntaxToken, semicolonToken: com_slime_ast_SyntaxToken, attributesCode: string, location: com_slime_ast_SourceLocation): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || __qin_instanceof__(__qin_delegate_args[0], com_slime_ast_nodes_expressions_Literal)) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[5] === null || __qin_instanceof__(__qin_delegate_args[5], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[6] === null || __qin_instanceof__(__qin_delegate_args[6], com_slime_ast_SyntaxToken)) && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "string") && typeof __qin_delegate_args[8] === "boolean" && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_slime_ast_SourceLocation))) { return this.__qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: ImportDeclaration/" + __qin_delegate_args.length); })(source, specifiers, importToken, fromToken, lBraceToken, rBraceToken, semicolonToken, attributesCode, false, location);
   }
-  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(source: com_slime_ast_nodes_expressions_Literal, specifiers: any, importToken: com_slime_ast_SyntaxToken, fromToken: com_slime_ast_SyntaxToken, lBraceToken: com_slime_ast_SyntaxToken, rBraceToken: com_slime_ast_SyntaxToken, semicolonToken: com_slime_ast_SyntaxToken, attributesCode: string, typeOnly: boolean, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_modules_ImportDeclaration_10_3(source: com_slime_ast_nodes_expressions_Literal, specifiers: __QinJavaUtilList<com_slime_ast_AstNode>, importToken: com_slime_ast_SyntaxToken, fromToken: com_slime_ast_SyntaxToken, lBraceToken: com_slime_ast_SyntaxToken, rBraceToken: com_slime_ast_SyntaxToken, semicolonToken: com_slime_ast_SyntaxToken, attributesCode: string, typeOnly: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_source = null;
     this.__qin_field_specifiers = null;
     this.__qin_field_importToken = null;
@@ -88,7 +88,7 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
     this.__qin_field_rBraceToken = null;
     this.__qin_field_semicolonToken = null;
     this.__qin_field_attributesCode = null;
-    this.__qin_field_typeOnly = null;
+    this.__qin_field_typeOnly = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_source = source;
@@ -104,54 +104,55 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_IMPORT_DECLARATION;
   }
-  source(): any {
+  source(): com_slime_ast_nodes_expressions_Literal {
     return this.__qin_field_source;
   }
-  specifiers(): any {
+  specifiers(): __QinJavaUtilList<com_slime_ast_AstNode> {
     return this.__qin_field_specifiers;
   }
-  importToken(): any {
+  importToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_importToken;
   }
-  fromToken(): any {
+  fromToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_fromToken;
   }
-  lBraceToken(): any {
+  lBraceToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_lBraceToken;
   }
-  rBraceToken(): any {
+  rBraceToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_rBraceToken;
   }
-  semicolonToken(): any {
+  semicolonToken(): com_slime_ast_SyntaxToken {
     return this.__qin_field_semicolonToken;
   }
-  attributesCode(): any {
+  attributesCode(): string {
     return this.__qin_field_attributesCode;
   }
-  typeOnly(): any {
+  typeOnly(): boolean {
     return this.__qin_field_typeOnly;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_modules_ImportDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_source, other.__qin_field_source)
-      && __qin_java_values_equal__(this.__qin_field_specifiers, other.__qin_field_specifiers)
-      && __qin_java_values_equal__(this.__qin_field_importToken, other.__qin_field_importToken)
-      && __qin_java_values_equal__(this.__qin_field_fromToken, other.__qin_field_fromToken)
-      && __qin_java_values_equal__(this.__qin_field_lBraceToken, other.__qin_field_lBraceToken)
-      && __qin_java_values_equal__(this.__qin_field_rBraceToken, other.__qin_field_rBraceToken)
-      && __qin_java_values_equal__(this.__qin_field_semicolonToken, other.__qin_field_semicolonToken)
-      && __qin_java_values_equal__(this.__qin_field_attributesCode, other.__qin_field_attributesCode)
-      && __qin_java_values_equal__(this.__qin_field_typeOnly, other.__qin_field_typeOnly)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_modules_ImportDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_source, __qin_record_other.__qin_field_source)
+      && __qin_java_values_equal__(this.__qin_field_specifiers, __qin_record_other.__qin_field_specifiers)
+      && __qin_java_values_equal__(this.__qin_field_importToken, __qin_record_other.__qin_field_importToken)
+      && __qin_java_values_equal__(this.__qin_field_fromToken, __qin_record_other.__qin_field_fromToken)
+      && __qin_java_values_equal__(this.__qin_field_lBraceToken, __qin_record_other.__qin_field_lBraceToken)
+      && __qin_java_values_equal__(this.__qin_field_rBraceToken, __qin_record_other.__qin_field_rBraceToken)
+      && __qin_java_values_equal__(this.__qin_field_semicolonToken, __qin_record_other.__qin_field_semicolonToken)
+      && __qin_java_values_equal__(this.__qin_field_attributesCode, __qin_record_other.__qin_field_attributesCode)
+      && __qin_java_values_equal__(this.__qin_field_typeOnly, __qin_record_other.__qin_field_typeOnly)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_source);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_specifiers);
@@ -165,7 +166,7 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ImportDeclaration[", "source=", this.__qin_field_source, ", ", "specifiers=", this.__qin_field_specifiers, ", ", "importToken=", this.__qin_field_importToken, ", ", "fromToken=", this.__qin_field_fromToken, ", ", "lBraceToken=", this.__qin_field_lBraceToken, ", ", "rBraceToken=", this.__qin_field_rBraceToken, ", ", "semicolonToken=", this.__qin_field_semicolonToken, ", ", "attributesCode=", this.__qin_field_attributesCode, ", ", "typeOnly=", this.__qin_field_typeOnly, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

@@ -11,11 +11,11 @@ function __qin_structural_object__(value) {
 class com_slime_ast_nodes_expressions_Literal {
   __qin_field_value: any = null as any;
   __qin_field_raw: string | null = null as any;
-  __qin_field_regex: any = null as any;
+  __qin_field_regex: __QinJavaUtilRegexPattern | null = null as any;
   __qin_field_bigint: com_slime_ast_nodes_expressions_Literal$BigintValue | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] !== "undefined") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], __QinJavaUtilRegexPattern)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_nodes_expressions_Literal$BigintValue) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Literal$BigintValue.__qinJavaRecordClass) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] !== "undefined") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], __QinJavaUtilRegexPattern)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_nodes_expressions_Literal$BigintValue)) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const value: any = __qin_args[0];
       const raw: any = __qin_args[1];
       const regex: any = __qin_args[2];
@@ -26,7 +26,7 @@ class com_slime_ast_nodes_expressions_Literal {
     }
     throw new Error("Unsupported Java constructor overload: Literal/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_expressions_Literal_5_0(value: any, raw: string, regex: any, bigint: com_slime_ast_nodes_expressions_Literal$BigintValue, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_expressions_Literal_5_0(value: any, raw: string, regex: __QinJavaUtilRegexPattern, bigint: com_slime_ast_nodes_expressions_Literal$BigintValue, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_value = null;
     this.__qin_field_raw = null;
     this.__qin_field_regex = null;
@@ -41,46 +41,47 @@ class com_slime_ast_nodes_expressions_Literal {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_LITERAL;
   }
-  static string(value: string, loc: com_slime_ast_SourceLocation): any {
+  static string(value: string, loc: com_slime_ast_SourceLocation): com_slime_ast_nodes_expressions_Literal {
     return new com_slime_ast_nodes_expressions_Literal(value, ("\"" + value + "\""), null, null, loc);
   }
-  static number(value: number, loc: com_slime_ast_SourceLocation): any {
+  static number(value: number, loc: com_slime_ast_SourceLocation): com_slime_ast_nodes_expressions_Literal {
     return new com_slime_ast_nodes_expressions_Literal(value, __QinJavaLangString.valueOf(value), null, null, loc);
   }
-  static bool(value: boolean, loc: com_slime_ast_SourceLocation): any {
+  static bool(value: boolean, loc: com_slime_ast_SourceLocation): com_slime_ast_nodes_expressions_Literal {
     return new com_slime_ast_nodes_expressions_Literal(value, __QinJavaLangString.valueOf(value), null, null, loc);
   }
-  static nullLiteral(loc: com_slime_ast_SourceLocation): any {
+  static nullLiteral(loc: com_slime_ast_SourceLocation): com_slime_ast_nodes_expressions_Literal {
     return new com_slime_ast_nodes_expressions_Literal(null, "null", null, null, loc);
   }
   value(): any {
     return this.__qin_field_value;
   }
-  raw(): any {
+  raw(): string {
     return this.__qin_field_raw;
   }
-  regex(): any {
+  regex(): __QinJavaUtilRegexPattern {
     return this.__qin_field_regex;
   }
-  bigint(): any {
+  bigint(): com_slime_ast_nodes_expressions_Literal$BigintValue {
     return this.__qin_field_bigint;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_expressions_Literal)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_raw, other.__qin_field_raw)
-      && __qin_java_values_equal__(this.__qin_field_regex, other.__qin_field_regex)
-      && __qin_java_values_equal__(this.__qin_field_bigint, other.__qin_field_bigint)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_expressions_Literal = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_raw, __qin_record_other.__qin_field_raw)
+      && __qin_java_values_equal__(this.__qin_field_regex, __qin_record_other.__qin_field_regex)
+      && __qin_java_values_equal__(this.__qin_field_bigint, __qin_record_other.__qin_field_bigint)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_raw);
@@ -89,7 +90,7 @@ class com_slime_ast_nodes_expressions_Literal {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["Literal[", "value=", this.__qin_field_value, ", ", "raw=", this.__qin_field_raw, ", ", "regex=", this.__qin_field_regex, ", ", "bigint=", this.__qin_field_bigint, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }
@@ -112,20 +113,21 @@ class com_slime_ast_nodes_expressions_Literal$BigintValue {
       return null;
     })();
   }
-  value(): any {
+  value(): string {
     return this.__qin_field_value;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_expressions_Literal$BigintValue)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value);
+    const __qin_record_other: com_slime_ast_nodes_expressions_Literal$BigintValue = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["Literal$BigintValue[", "value=", this.__qin_field_value, "]"].join("");
   }
 }

@@ -29,15 +29,28 @@ public final class QinModuleGraphBuilder {
     }
 
     private final QinImportParser importParser = new QinImportParser();
-    private final QinEsmSpecifierResolver specifierResolver = new QinEsmSpecifierResolver();
+    private final QinEsmSpecifierResolver specifierResolver;
     private static final char UTF8_BOM = '\uFEFF';
     private final ImportVirtualizer importVirtualizer;
 
     public QinModuleGraphBuilder() {
-        this(null);
+        this((ImportVirtualizer) null);
     }
 
     public QinModuleGraphBuilder(ImportVirtualizer importVirtualizer) {
+        this(new QinEsmSpecifierResolver(), importVirtualizer);
+    }
+
+    public QinModuleGraphBuilder(Path projectOverrideRoot) {
+        this(new QinEsmSpecifierResolver(projectOverrideRoot), null);
+    }
+
+    public QinModuleGraphBuilder(Path projectOverrideRoot, ImportVirtualizer importVirtualizer) {
+        this(new QinEsmSpecifierResolver(projectOverrideRoot), importVirtualizer);
+    }
+
+    private QinModuleGraphBuilder(QinEsmSpecifierResolver specifierResolver, ImportVirtualizer importVirtualizer) {
+        this.specifierResolver = specifierResolver;
         this.importVirtualizer = importVirtualizer;
     }
 

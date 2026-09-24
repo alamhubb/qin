@@ -300,6 +300,26 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 export const extra = "extra";
                 """, StandardCharsets.UTF_8);
 
+        Path exportsOnlyPackageRoot = root.resolve("workspace-exports-only");
+        Files.createDirectories(exportsOnlyPackageRoot.resolve("src"));
+        Files.writeString(exportsOnlyPackageRoot.resolve("package.json"), """
+                {
+                  "name": "exports-only-package",
+                  "version": "0.0.0-local",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.ts",
+                    "./tooling": "./src/tooling.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(exportsOnlyPackageRoot.resolve("index.ts"), """
+                export default "exports-only";
+                """, StandardCharsets.UTF_8);
+        Files.writeString(exportsOnlyPackageRoot.resolve("src").resolve("tooling.ts"), """
+                export const tooling = "tooling";
+                """, StandardCharsets.UTF_8);
+
         Method materializeDependency = QinJsPackageRunner.class.getDeclaredMethod(
                 "materializeDependency",
                 String.class,
@@ -315,7 +335,8 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         Map<String, Path> workspacePackages = Map.of(
                 "vite-plugin-local-source", missingDistPackageRoot,
                 "vite-plugin-built-source", builtPackageRoot,
-                "source-exports-package", sourceExportsPackageRoot);
+                "source-exports-package", sourceExportsPackageRoot,
+                "exports-only-package", exportsOnlyPackageRoot);
         materializeDependency.invoke(
                 runner,
                 "vite-plugin-local-source",
@@ -349,6 +370,17 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 workspacePackages,
                 Map.of(),
                 new LinkedHashSet<String>());
+        materializeDependency.invoke(
+                runner,
+                "exports-only-package",
+                null,
+                null,
+                root,
+                runtimeNodeModules,
+                root,
+                workspacePackages,
+                Map.of(),
+                new LinkedHashSet<String>());
 
         String missingDistManifest = Files.readString(
                 runtimeNodeModules.resolve("vite-plugin-local-source").resolve("package.json"),
@@ -373,6 +405,14 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 || !sourceExportsManifest.contains("\"import\": \"./src/extra.ts\"")) {
             throw new IllegalStateException("Workspace package with source exports subpaths was rewritten:\n"
                     + sourceExportsManifest);
+        }
+        String exportsOnlyManifest = Files.readString(
+                runtimeNodeModules.resolve("exports-only-package").resolve("package.json"),
+                StandardCharsets.UTF_8);
+        if (!exportsOnlyManifest.contains("\"./tooling\"")
+                || !exportsOnlyManifest.contains("\"./src/tooling.ts\"")) {
+            throw new IllegalStateException("Workspace exports-only package lost its subpath exports:\n"
+                    + exportsOnlyManifest);
         }
     }
 

@@ -11,9 +11,9 @@ const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 const LinkedHashMap = __QinJavaUtilHashMap;
 const Optional = __QinJavaUtilOptional;
 class com_subhuti_cache_SubhutiPackratCache {
-  __qin_field_cache: any = null as any;
+  __qin_field_cache: __QinJavaUtilHashMap | null = null as any;
   __qin_field_stats: com_subhuti_cache_CacheStats | null = null as any;
-  __qin_field_maxSize: number | null = null as any;
+  __qin_field_maxSize: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 0 && true) {
       this.__qin_constructor_com_subhuti_cache_SubhutiPackratCache_0_0();
@@ -38,10 +38,10 @@ class com_subhuti_cache_SubhutiPackratCache {
   __qin_constructor_com_subhuti_cache_SubhutiPackratCache_1_1(maxSize: number): void {
     ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 2 && typeof __qin_delegate_args[0] === "number" && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "number")) { return this.__qin_constructor_com_subhuti_cache_SubhutiPackratCache_2_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiPackratCache/" + __qin_delegate_args.length); })(maxSize, null);
   }
-  __qin_constructor_com_subhuti_cache_SubhutiPackratCache_2_2(maxSize: number, expireAfterMinutes: number): void {
+  __qin_constructor_com_subhuti_cache_SubhutiPackratCache_2_2(maxSize: number, expireAfterMinutes: number | null): void {
     this.__qin_field_cache = null;
     this.__qin_field_stats = null;
-    this.__qin_field_maxSize = null;
+    this.__qin_field_maxSize = 0;
     if (__qin_binary__("<=", maxSize, 0.0)) {
       throw new __QinJavaLangIllegalArgumentException(("maxSize must be positive, got: " + maxSize));
     }
@@ -55,15 +55,21 @@ class com_subhuti_cache_SubhutiPackratCache {
     }
     let value: any = this.__qin_field_cache.get(key);
     if (__qin_binary__("!=", value, null)) {
-      this.__qin_field_stats.recordHit();
+      {
+        const __qin_typed_receiver_2087: com_subhuti_cache_CacheStats = this.__qin_field_stats;
+        __qin_typed_receiver_2087.recordHit();
+      }
       return __QinJavaUtilOptional.of(value);
     } else {
-      this.__qin_field_stats.recordMiss();
+      {
+        const __qin_typed_receiver_2088: com_subhuti_cache_CacheStats = this.__qin_field_stats;
+        __qin_typed_receiver_2088.recordMiss();
+      }
       return __QinJavaUtilOptional.empty();
     }
     return null;
   }
-  put(key: any, value: any): any {
+  put(key: any, value: any): void {
     if (__qin_binary__("==", key, null)) {
       throw new __QinJavaLangIllegalArgumentException("key cannot be null");
     }
@@ -73,7 +79,7 @@ class com_subhuti_cache_SubhutiPackratCache {
     this.__qin_field_cache.put(key, value);
     return null;
   }
-  getOrCompute(key: any, computer: any): any {
+  getOrCompute(key: any, computer: QinJavaFunction): any {
     const __qin_functional_computer_1 = __qin_java_functional(computer);
     if (__qin_binary__("==", key, null)) {
       throw new __QinJavaLangIllegalArgumentException("key cannot be null");
@@ -83,11 +89,17 @@ class com_subhuti_cache_SubhutiPackratCache {
     }
     let value: any = this.__qin_field_cache.get(key);
     if (__qin_binary__("!=", value, null)) {
-      this.__qin_field_stats.recordHit();
+      {
+        const __qin_typed_receiver_2089: com_subhuti_cache_CacheStats = this.__qin_field_stats;
+        __qin_typed_receiver_2089.recordHit();
+      }
       return value;
     } else {
-      this.__qin_field_stats.recordMiss();
-      let computed: any = __qin_functional_computer_1.apply(key);
+      {
+        const __qin_typed_receiver_2090: com_subhuti_cache_CacheStats = this.__qin_field_stats;
+        __qin_typed_receiver_2090.recordMiss();
+      }
+      let computed: any = /* @qin-static-admission member=apply owner=java.util.function.Function method=apply receiver=receiver arity=1 */ __qin_functional_computer_1.apply(key);
       if (__qin_binary__("!=", computed, null)) {
         this.__qin_field_cache.put(key, computed);
       }
@@ -95,34 +107,37 @@ class com_subhuti_cache_SubhutiPackratCache {
     }
     return null;
   }
-  containsKey(key: any): any {
+  containsKey(key: any): boolean {
     return this.__qin_field_cache.containsKey(key);
   }
-  invalidate(key: any): any {
+  invalidate(key: any): void {
     this.__qin_field_cache.remove(key);
     return null;
   }
-  clear(): any {
+  clear(): void {
     this.__qin_field_cache.clear();
     return null;
   }
-  size(): any {
+  size(): number {
     return this.__qin_field_cache.size();
   }
-  getMaxSize(): any {
+  getMaxSize(): number {
     return this.__qin_field_maxSize;
   }
-  getStats(): any {
+  getStats(): com_subhuti_cache_CacheStats {
     return this.__qin_field_stats;
   }
-  getStatsReport(): any {
+  getStatsReport(): string {
     return __QinJavaLangString.format("%s, size=%d/%d", this.__qin_field_stats.getStatsReport(), this.size(), this.__qin_field_maxSize);
   }
-  resetStats(): any {
-    this.__qin_field_stats.reset();
+  resetStats(): void {
+    {
+      const __qin_typed_receiver_2091: com_subhuti_cache_CacheStats = this.__qin_field_stats;
+      __qin_typed_receiver_2091.reset();
+    }
     return null;
   }
-  toString(): any {
+  toString(): string {
     return __QinJavaLangString.format("PackratCache(size=%d/%d, hitRate=%.2f%%)", this.size(), this.__qin_field_maxSize, __qin_binary__("*", this.__qin_field_stats.getHitRate(), 100.0));
   }
 }

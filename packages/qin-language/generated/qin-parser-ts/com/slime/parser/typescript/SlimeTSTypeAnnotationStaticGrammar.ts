@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeTSTypeAnnotationStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSTypeAnnotationStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSTypeAnnotation", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Colon"), com_subhuti_parser_SubhutiStaticGrammar.call("TSType")))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSTypeAnnotation", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Colon"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSType")))).build();
   }
 }
 const SlimeTSTypeAnnotationStaticGrammar = com_slime_parser_typescript_SlimeTSTypeAnnotationStaticGrammar;

@@ -22,20 +22,21 @@ class com_slime_java_ast_JavaAstStringLiteral {
       return null;
     })();
   }
-  value(): any {
+  value(): string {
     return this.__qin_field_value;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstStringLiteral)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value);
+    const __qin_record_other: com_slime_java_ast_JavaAstStringLiteral = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstStringLiteral[", "value=", this.__qin_field_value, "]"].join("");
   }
 }

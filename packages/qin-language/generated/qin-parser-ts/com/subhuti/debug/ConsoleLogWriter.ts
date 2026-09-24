@@ -12,11 +12,11 @@ class com_subhuti_debug_ConsoleLogWriter {
       throw new Error("Unsupported Java constructor arity: ConsoleLogWriter/" + __qin_args.length);
     }
   }
-  write(message: string): any {
+  write(message: string): void {
     __QinJavaLangSystem.out.println(message);
     return null;
   }
-  close(): any {
+  close(): void {
     return null;
   }
 }

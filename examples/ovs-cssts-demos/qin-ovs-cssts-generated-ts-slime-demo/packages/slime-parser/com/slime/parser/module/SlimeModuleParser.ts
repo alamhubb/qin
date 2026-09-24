@@ -88,11 +88,14 @@ class com_slime_parser_module_SlimeModuleParser extends com_slime_parser_class__
     }), "ModuleItemList", "SlimeModuleParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ModuleItemList(): any {
-    this.ModuleItem();
-    this.Many(__qin_java_functional(() => {
+    while (!this.isEof()) {
+      let before: number = this.currentTokenIndex();
       this.ModuleItem();
-      return null;
-    }));
+      if (__qin_binary__("==", this.currentTokenIndex(), before)) {
+        this.setParseFail();
+        return null;
+      }
+    }
     return null;
   }
   ModuleItem(): any {

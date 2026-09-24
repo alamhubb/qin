@@ -55,6 +55,16 @@ public final class QinLanguageGenerateParserSmokeTestMain {
         if (!packageJsonSource.contains("\"./JavaCstToAst\"")) {
             throw new IllegalStateException("Generated package must subpath-export JavaCstToAst");
         }
+        Path javaSdkVirtualPath = outputRoot.getParent()
+                .resolve("java-sdk-js")
+                .resolve("tooling")
+                .resolve("virtual-path.js");
+        String javaSdkVirtualPathSource = Files.readString(javaSdkVirtualPath, StandardCharsets.UTF_8);
+        if (javaSdkVirtualPathSource.contains("pathOrParent.getPath()")
+                || javaSdkVirtualPathSource.contains("other.getPath()")
+                || javaSdkVirtualPathSource.contains("__qin_parent.getPath()")) {
+            throw new IllegalStateException("Generated java-sdk-js File facade must not call getPath() on guarded Object-typed values");
+        }
         System.out.println("QinLanguageGenerateParserSmokeTestMain OK " + outputs.size());
     }
 }

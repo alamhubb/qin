@@ -11,79 +11,67 @@ const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstMethodCallExpression {
   __qin_field_receiver: com_slime_java_ast_JavaAstExpression | null = null as any;
   __qin_field_methodName: string | null = null as any;
-  __qin_field___qin_arguments: any = null as any;
-  __qin_field_typeArgumentNames: any = null as any;
+  __qin_field___qin_arguments: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression> | null = null as any;
+  __qin_field_typeArgumentNames: __QinJavaUtilList<string> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_0_0();
+    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList))) {
+      const receiver: any = __qin_args[0];
+      const methodName: any = __qin_args[1];
+      const __qin_arguments: any = __qin_args[2];
+      const typeArgumentNames: any = __qin_args[3];
+      this.__qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_4_0(receiver, methodName, __qin_arguments, typeArgumentNames);
       return;
     }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
       const receiver: any = __qin_args[0];
       const methodName: any = __qin_args[1];
       const __qin_arguments: any = __qin_args[2];
       this.__qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_3_1(receiver, methodName, __qin_arguments);
       return;
     }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList)) {
-      const receiver: any = __qin_args[0];
-      const methodName: any = __qin_args[1];
-      const __qin_arguments: any = __qin_args[2];
-      const typeArgumentNames: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_4_2(receiver, methodName, __qin_arguments, typeArgumentNames);
-      return;
-    }
     throw new Error("Unsupported Java constructor overload: JavaAstMethodCallExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_4_0(receiver: com_slime_java_ast_JavaAstExpression, methodName: string, __qin_arguments: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression>, typeArgumentNames: __QinJavaUtilList<string>): void {
     this.__qin_field_receiver = null;
     this.__qin_field_methodName = null;
     this.__qin_field___qin_arguments = null;
     this.__qin_field_typeArgumentNames = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_receiver, "receiver cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_methodName, "methodName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field___qin_arguments, "arguments cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeArgumentNames, "typeArgumentNames cannot be null");
-    this.__qin_field___qin_arguments = __QinJavaUtilList.copyOf(this.__qin_field___qin_arguments);
-    this.__qin_field_typeArgumentNames = __QinJavaUtilList.copyOf(this.__qin_field_typeArgumentNames);
+    __QinJavaUtilObjects.requireNonNull(receiver, "receiver cannot be null");
+    __QinJavaUtilObjects.requireNonNull(methodName, "methodName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(__qin_arguments, "arguments cannot be null");
+    __QinJavaUtilObjects.requireNonNull(typeArgumentNames, "typeArgumentNames cannot be null");
+    __qin_arguments = __QinJavaUtilList.copyOf(__qin_arguments);
+    typeArgumentNames = __QinJavaUtilList.copyOf(typeArgumentNames);
+    this.__qin_field_receiver = receiver;
+    this.__qin_field_methodName = methodName;
+    this.__qin_field___qin_arguments = __qin_arguments;
+    this.__qin_field_typeArgumentNames = typeArgumentNames;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_3_1(receiver: com_slime_java_ast_JavaAstExpression, methodName: string, __qin_arguments: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || __qin_java_implements(__qin_delegate_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList)) { return this.__qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_4_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstMethodCallExpression/" + __qin_delegate_args.length); })(receiver, methodName, __qin_arguments, __QinJavaUtilList.of());
+  __qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_3_1(receiver: com_slime_java_ast_JavaAstExpression, methodName: string, __qin_arguments: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || __qin_java_implements(__qin_delegate_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList))) { return this.__qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_4_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstMethodCallExpression/" + __qin_delegate_args.length); })(receiver, methodName, __qin_arguments, __QinJavaUtilList.of());
   }
-  __qin_constructor_com_slime_java_ast_JavaAstMethodCallExpression_4_2(receiver: com_slime_java_ast_JavaAstExpression, methodName: string, __qin_arguments: any, typeArgumentNames: any): void {
-    this.__qin_field_receiver = null;
-    this.__qin_field_methodName = null;
-    this.__qin_field___qin_arguments = null;
-    this.__qin_field_typeArgumentNames = null;
-    (() => {
-      this.__qin_field_receiver = receiver;
-      this.__qin_field_methodName = methodName;
-      this.__qin_field___qin_arguments = __qin_arguments;
-      this.__qin_field_typeArgumentNames = typeArgumentNames;
-      return null;
-    })();
-  }
-  receiver(): any {
+  receiver(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_receiver;
   }
-  methodName(): any {
+  methodName(): string {
     return this.__qin_field_methodName;
   }
-  __qin_arguments(): any {
+  arguments(): __QinJavaUtilList<com_slime_java_ast_JavaAstExpression> {
     return this.__qin_field___qin_arguments;
   }
-  typeArgumentNames(): any {
+  typeArgumentNames(): __QinJavaUtilList<string> {
     return this.__qin_field_typeArgumentNames;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstMethodCallExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_receiver, other.__qin_field_receiver)
-      && __qin_java_values_equal__(this.__qin_field_methodName, other.__qin_field_methodName)
-      && __qin_java_values_equal__(this.__qin_field___qin_arguments, other.__qin_field___qin_arguments)
-      && __qin_java_values_equal__(this.__qin_field_typeArgumentNames, other.__qin_field_typeArgumentNames);
+    const __qin_record_other: com_slime_java_ast_JavaAstMethodCallExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_receiver, __qin_record_other.__qin_field_receiver)
+      && __qin_java_values_equal__(this.__qin_field_methodName, __qin_record_other.__qin_field_methodName)
+      && __qin_java_values_equal__(this.__qin_field___qin_arguments, __qin_record_other.__qin_field___qin_arguments)
+      && __qin_java_values_equal__(this.__qin_field_typeArgumentNames, __qin_record_other.__qin_field_typeArgumentNames);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_receiver);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_methodName);
@@ -91,7 +79,7 @@ class com_slime_java_ast_JavaAstMethodCallExpression {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeArgumentNames);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstMethodCallExpression[", "receiver=", this.__qin_field_receiver, ", ", "methodName=", this.__qin_field_methodName, ", ", "arguments=", this.__qin_field___qin_arguments, ", ", "typeArgumentNames=", this.__qin_field_typeArgumentNames, "]"].join("");
   }
 }

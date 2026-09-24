@@ -114,9 +114,13 @@ export default class CssTsParser<T extends CssTsTokenConsumer = CssTsTokenConsum
   @SubhutiRule
   PrimaryExpression(params: ExpressionParams = {} as any) {
     const expressionParams: ExpressionParams = this.expressionParamsWith(params)
-    if (this.matchIdentifierValue('css')) {
+    if (this.canStartCssExpression()) {
       return this.CssExpression(expressionParams)
     }
     return super.__qin_subhuti_raw_StandardPrimaryExpression(expressionParams)
+  }
+
+  canStartCssExpression(): boolean {
+    return this.matchIdentifierValue('css')
   }
 }

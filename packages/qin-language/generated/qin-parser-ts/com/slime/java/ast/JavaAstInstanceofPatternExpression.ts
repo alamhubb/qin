@@ -13,62 +13,51 @@ class com_slime_java_ast_JavaAstInstanceofPatternExpression {
   __qin_field_typeName: string | null = null as any;
   __qin_field_variableName: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstInstanceofPatternExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string")) {
       const value: any = __qin_args[0];
       const typeName: any = __qin_args[1];
       const variableName: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstInstanceofPatternExpression_3_1(value, typeName, variableName);
+      this.__qin_constructor_com_slime_java_ast_JavaAstInstanceofPatternExpression_3_0(value, typeName, variableName);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstInstanceofPatternExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstInstanceofPatternExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstInstanceofPatternExpression_3_0(value: com_slime_java_ast_JavaAstExpression, typeName: string, variableName: string): void {
     this.__qin_field_value = null;
     this.__qin_field_typeName = null;
     this.__qin_field_variableName = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_value, "value cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_variableName, "variableName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(value, "value cannot be null");
+    __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(variableName, "variableName cannot be null");
+    this.__qin_field_value = value;
+    this.__qin_field_typeName = typeName;
+    this.__qin_field_variableName = variableName;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstInstanceofPatternExpression_3_1(value: com_slime_java_ast_JavaAstExpression, typeName: string, variableName: string): void {
-    this.__qin_field_value = null;
-    this.__qin_field_typeName = null;
-    this.__qin_field_variableName = null;
-    (() => {
-      this.__qin_field_value = value;
-      this.__qin_field_typeName = typeName;
-      this.__qin_field_variableName = variableName;
-      return null;
-    })();
-  }
-  value(): any {
+  value(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_value;
   }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  variableName(): any {
+  variableName(): string {
     return this.__qin_field_variableName;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstInstanceofPatternExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_variableName, other.__qin_field_variableName);
+    const __qin_record_other: com_slime_java_ast_JavaAstInstanceofPatternExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_variableName, __qin_record_other.__qin_field_variableName);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_variableName);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstInstanceofPatternExpression[", "value=", this.__qin_field_value, ", ", "typeName=", this.__qin_field_typeName, ", ", "variableName=", this.__qin_field_variableName, "]"].join("");
   }
 }

@@ -43,62 +43,74 @@ class com_slime_parser_SlimeJavascriptParser extends com_slime_parser_module_Sli
   __qin_constructor_com_slime_parser_SlimeJavascriptParser_1_0(sourceCode: string): void {
     null;
   }
-  parseProgramInternal(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): any {
+  parseProgramInternal(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): com_subhuti_struct_SubhutiCst {
     if (__qin_binary__("==", sourceType, com_slime_parser_SlimeJavascriptParser$SourceType.__qin_field_MODULE)) {
-      this.executeStaticRule(com_slime_parser_SlimeJavascriptParser.__qin_field_STATIC_JAVASCRIPT_GRAMMAR, "OptionalModuleBody", this.javascriptStaticRuntime());
+      {
+        const __qin_typed_receiver_1173: com_slime_parser_SlimeJavascriptParser = this;
+        __qin_typed_receiver_1173.executeStaticRule(com_slime_parser_SlimeJavascriptParser.__qin_field_STATIC_JAVASCRIPT_GRAMMAR, "OptionalModuleBody", this.javascriptStaticRuntime());
+      }
     } else {
-      this.executeStaticRule(com_slime_parser_SlimeJavascriptParser.__qin_field_STATIC_JAVASCRIPT_GRAMMAR, "OptionalScriptBody", this.javascriptStaticRuntime());
+      {
+        const __qin_typed_receiver_1174: com_slime_parser_SlimeJavascriptParser = this;
+        __qin_typed_receiver_1174.executeStaticRule(com_slime_parser_SlimeJavascriptParser.__qin_field_STATIC_JAVASCRIPT_GRAMMAR, "OptionalScriptBody", this.javascriptStaticRuntime());
+      }
     }
     return this.getCurCst();
   }
-  Program(...__qin_args: any[]): any {
+  Program(...__qin_args: any[]): com_subhuti_struct_SubhutiCst {
     if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_parser_SlimeJavascriptParser$SourceType))) return this.__qin_overload_Program_1_0(__qin_args[0]);
     if (__qin_args.length === 0 && true) return this.__qin_overload_Program_0_1();
     throw new Error("Unsupported Java overload: Program/" + __qin_args.length);
   }
-  __qin_overload_Program_1_0(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): any {
+  __qin_overload_Program_1_0(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): com_subhuti_struct_SubhutiCst {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_Program_1_0(sourceType);
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeJavascriptParser method=__qin_subhuti_raw___qin_overload_Program_1_0 receiver=this arity=1 */ com_slime_parser_SlimeJavascriptParser.prototype.__qin_subhuti_raw___qin_overload_Program_1_0.call(this, sourceType);
     }), "Program", "SlimeJavascriptParser", __qin_subhuti_rule_cache_key([sourceType]));
   }
-  __qin_subhuti_raw___qin_overload_Program_1_0(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): any {
+  __qin_subhuti_raw___qin_overload_Program_1_0(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): com_subhuti_struct_SubhutiCst {
     return this.parseProgramInternal(sourceType);
   }
-  __qin_overload_Program_0_1(): any {
+  __qin_overload_Program_0_1(): com_subhuti_struct_SubhutiCst {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw___qin_overload_Program_0_1();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeJavascriptParser method=__qin_subhuti_raw___qin_overload_Program_0_1 receiver=this arity=0 */ com_slime_parser_SlimeJavascriptParser.prototype.__qin_subhuti_raw___qin_overload_Program_0_1.call(this);
     }), "Program", "SlimeJavascriptParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw___qin_overload_Program_0_1(): any {
+  __qin_subhuti_raw___qin_overload_Program_0_1(): com_subhuti_struct_SubhutiCst {
     return this.parseProgramInternal(com_slime_parser_SlimeJavascriptParser$SourceType.__qin_field_MODULE);
   }
-  parse(): any {
+  parse(): com_subhuti_struct_SubhutiCst {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_parse();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeJavascriptParser method=__qin_subhuti_raw_parse receiver=this arity=0 */ com_slime_parser_SlimeJavascriptParser.prototype.__qin_subhuti_raw_parse.call(this);
     }), "parse", "SlimeJavascriptParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_parse(): any {
+  __qin_subhuti_raw_parse(): com_subhuti_struct_SubhutiCst {
     return this.parseProgramInternal(com_slime_parser_SlimeJavascriptParser$SourceType.__qin_field_MODULE);
   }
-  Script(): any {
+  Script(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_Script();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeJavascriptParser method=__qin_subhuti_raw_Script receiver=this arity=0 */ com_slime_parser_SlimeJavascriptParser.prototype.__qin_subhuti_raw_Script.call(this);
     }), "Script", "SlimeJavascriptParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_Script(): any {
-    this.executeStaticRule(com_slime_parser_SlimeJavascriptParser.__qin_field_STATIC_JAVASCRIPT_GRAMMAR, "Script", this.javascriptStaticRuntime());
+  __qin_subhuti_raw_Script(): void {
+    {
+      const __qin_typed_receiver_1175: com_slime_parser_SlimeJavascriptParser = this;
+      __qin_typed_receiver_1175.executeStaticRule(com_slime_parser_SlimeJavascriptParser.__qin_field_STATIC_JAVASCRIPT_GRAMMAR, "Script", this.javascriptStaticRuntime());
+    }
     return null;
   }
-  ScriptBody(): any {
+  ScriptBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ScriptBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.SlimeJavascriptParser method=__qin_subhuti_raw_ScriptBody receiver=this arity=0 */ com_slime_parser_SlimeJavascriptParser.prototype.__qin_subhuti_raw_ScriptBody.call(this);
     }), "ScriptBody", "SlimeJavascriptParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_ScriptBody(): any {
-    this.StatementList(com_slime_parser_base_SlimeJavascriptParserBase$StatementParams.__qin_field_DEFAULT);
+  __qin_subhuti_raw_ScriptBody(): void {
+    {
+      const __qin_typed_receiver_1176: com_slime_parser_SlimeJavascriptParser = this;
+      __qin_typed_receiver_1176.StatementList(com_slime_parser_base_SlimeJavascriptParserBase$StatementParams.__qin_field_DEFAULT);
+    }
     return null;
   }
-  javascriptStaticRuntime(): any {
+  javascriptStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_SlimeJavascriptParser$JavascriptStaticRuntime(this);
   }
 }
@@ -128,15 +140,15 @@ class com_slime_parser_SlimeJavascriptParser$JavascriptStaticRuntime {
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("==", variantKey, null)) {
       if ((__QinJavaLangString.equals("ModuleBody", ruleName) || __QinJavaLangString.equals("ScriptBody", ruleName))) {
         return __qin_binary__("!=", this.__qin_field_parser.LA(lookaheadOffset), null);
@@ -144,14 +156,20 @@ class com_slime_parser_SlimeJavascriptParser$JavascriptStaticRuntime {
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported javascript static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("==", variantKey, null)) {
       if (__QinJavaLangString.equals("ModuleBody", ruleName)) {
-        this.__qin_field_parser.ModuleBody();
+        {
+          const __qin_typed_receiver_1177: com_slime_parser_SlimeJavascriptParser = this.__qin_field_parser;
+          __qin_typed_receiver_1177.ModuleBody();
+        }
         return (!this.__qin_field_parser.isParserFail());
       }
       if (__QinJavaLangString.equals("ScriptBody", ruleName)) {
-        this.__qin_field_parser.ScriptBody();
+        {
+          const __qin_typed_receiver_1178: com_slime_parser_SlimeJavascriptParser = this.__qin_field_parser;
+          __qin_typed_receiver_1178.ScriptBody();
+        }
         return (!this.__qin_field_parser.isParserFail());
       }
     }

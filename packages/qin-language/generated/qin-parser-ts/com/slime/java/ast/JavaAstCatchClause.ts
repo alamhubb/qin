@@ -10,71 +10,60 @@ const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstCatchClause {
   __qin_field_parameterTypeName: string | null = null as any;
   __qin_field_parameterName: string | null = null as any;
-  __qin_field_bodyStatements: any = null as any;
+  __qin_field_bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstCatchClause_0_0();
-      return;
-    }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
       const parameterTypeName: any = __qin_args[0];
       const parameterName: any = __qin_args[1];
       const bodyStatements: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstCatchClause_3_1(parameterTypeName, parameterName, bodyStatements);
+      this.__qin_constructor_com_slime_java_ast_JavaAstCatchClause_3_0(parameterTypeName, parameterName, bodyStatements);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstCatchClause/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstCatchClause_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstCatchClause_3_0(parameterTypeName: string, parameterName: string, bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_parameterTypeName = null;
     this.__qin_field_parameterName = null;
     this.__qin_field_bodyStatements = null;
-    if ((__qin_binary__("==", this.__qin_field_parameterTypeName, null) || __QinJavaLangString.isBlank(this.__qin_field_parameterTypeName))) {
+    if ((__qin_binary__("==", parameterTypeName, null) || __QinJavaLangString.isBlank(parameterTypeName))) {
       throw new __QinJavaLangIllegalArgumentException("parameterTypeName cannot be blank");
     }
-    if ((__qin_binary__("==", this.__qin_field_parameterName, null) || __QinJavaLangString.isBlank(this.__qin_field_parameterName))) {
+    if ((__qin_binary__("==", parameterName, null) || __QinJavaLangString.isBlank(parameterName))) {
       throw new __QinJavaLangIllegalArgumentException("parameterName cannot be blank");
     }
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_bodyStatements, "bodyStatements cannot be null");
-    this.__qin_field_parameterTypeName = this.__qin_field_parameterTypeName.trim();
-    this.__qin_field_parameterName = this.__qin_field_parameterName.trim();
-    this.__qin_field_bodyStatements = __QinJavaUtilList.copyOf(this.__qin_field_bodyStatements);
+    __QinJavaUtilObjects.requireNonNull(bodyStatements, "bodyStatements cannot be null");
+    parameterTypeName = parameterTypeName.trim();
+    parameterName = parameterName.trim();
+    bodyStatements = __QinJavaUtilList.copyOf(bodyStatements);
+    this.__qin_field_parameterTypeName = parameterTypeName;
+    this.__qin_field_parameterName = parameterName;
+    this.__qin_field_bodyStatements = bodyStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstCatchClause_3_1(parameterTypeName: string, parameterName: string, bodyStatements: any): void {
-    this.__qin_field_parameterTypeName = null;
-    this.__qin_field_parameterName = null;
-    this.__qin_field_bodyStatements = null;
-    (() => {
-      this.__qin_field_parameterTypeName = parameterTypeName;
-      this.__qin_field_parameterName = parameterName;
-      this.__qin_field_bodyStatements = bodyStatements;
-      return null;
-    })();
-  }
-  parameterTypeName(): any {
+  parameterTypeName(): string {
     return this.__qin_field_parameterTypeName;
   }
-  parameterName(): any {
+  parameterName(): string {
     return this.__qin_field_parameterName;
   }
-  bodyStatements(): any {
+  bodyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_bodyStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstCatchClause)) return false;
-    return __qin_java_values_equal__(this.__qin_field_parameterTypeName, other.__qin_field_parameterTypeName)
-      && __qin_java_values_equal__(this.__qin_field_parameterName, other.__qin_field_parameterName)
-      && __qin_java_values_equal__(this.__qin_field_bodyStatements, other.__qin_field_bodyStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstCatchClause = other;
+    return __qin_java_values_equal__(this.__qin_field_parameterTypeName, __qin_record_other.__qin_field_parameterTypeName)
+      && __qin_java_values_equal__(this.__qin_field_parameterName, __qin_record_other.__qin_field_parameterName)
+      && __qin_java_values_equal__(this.__qin_field_bodyStatements, __qin_record_other.__qin_field_bodyStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_parameterTypeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_parameterName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_bodyStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstCatchClause[", "parameterTypeName=", this.__qin_field_parameterTypeName, ", ", "parameterName=", this.__qin_field_parameterName, ", ", "bodyStatements=", this.__qin_field_bodyStatements, "]"].join("");
   }
 }

@@ -16,14 +16,14 @@ class com_subhuti_debug_ProjectRootFinder {
       throw new Error("Unsupported Java constructor arity: ProjectRootFinder/" + __qin_args.length);
     }
   }
-  static findProjectRoot(): any {
-    let currentDir: any = new __QinJavaIoFile(__QinJavaLangSystem.getProperty("user.dir"));
-    for (let i: any = 0.0; __qin_binary__("<", i, 10.0); i++) {
-      let configFile: any = new __QinJavaIoFile(currentDir, "qin.config.js");
+  static findProjectRoot(): string {
+    let currentDir: __QinJavaIoFile = new __QinJavaIoFile(__QinJavaLangSystem.getProperty("user.dir"));
+    for (let i: number = 0.0; __qin_binary__("<", i, 10.0); i++) {
+      let configFile: __QinJavaIoFile = new __QinJavaIoFile(currentDir, "qin.config.js");
       if (configFile.exists()) {
         return currentDir.getAbsolutePath();
       }
-      let parentDir: any = currentDir.getParentFile();
+      let parentDir: __QinJavaIoFile = currentDir.getParentFile();
       if ((__qin_binary__("==", parentDir, null) || parentDir.equals(currentDir))) {
         break;
       }
@@ -31,10 +31,10 @@ class com_subhuti_debug_ProjectRootFinder {
     }
     return __QinJavaLangSystem.getProperty("user.dir");
   }
-  static getDefaultLogPath(): any {
+  static getDefaultLogPath(): string {
     return (__qin_binary__("+", com_subhuti_debug_ProjectRootFinder.findProjectRoot(), __QinJavaIoFile.separator) + ".subhuti" + __QinJavaIoFile.separator + "logs" + __QinJavaIoFile.separator + com_subhuti_debug_ProjectRootFinder.getTimestamp() + ".log");
   }
-  static getTimestamp(): any {
+  static getTimestamp(): string {
     return __QinJavaTimeLocalDateTime.now().format(__QinJavaTimeFormatDateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm"));
   }
 }

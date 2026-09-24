@@ -10,13 +10,25 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.AbstractSet;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -26,31 +38,66 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Objects;
+import java.util.HexFormat;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Minimal JS-like global runtime used by JVM-emitted Qin programs.
  */
 public final class JavaEsmGlobal {
     private static final String SUBHUTI_ALTERNATIVE_CLASS_NAME = "com.subhuti.parser.Alternative";
+    private static final String SUBHUTI_MATCH_TOKEN_CLASS_NAME = "com.subhuti.struct.SubhutiMatchToken";
+    private static final String GENERATED_SUBHUTI_MATCH_TOKEN_CLASS_NAME = "com_subhuti_struct_SubhutiMatchToken";
     private static final Set<String> SLIME_PARSER_PARAM_BOUNDARY_KEYS =
             Set.of("In", "Yield", "Await", "Return", "Default");
     static final String RUNTIME_HIDDEN_KEY_PREFIX = "__qin_runtime_";
     private static final String PROTOTYPE_PARENT_KEY = RUNTIME_HIDDEN_KEY_PREFIX + "prototype_parent__";
     private static final Map<String, Object> GLOBAL_BINDINGS = new NullFriendlyConcurrentMap();
     private static final Map<String, Object> GLOBAL_OBJECT = new NullFriendlyConcurrentMap();
+    private static final Set<String> HOST_GLOBAL_OBJECT_BUILTINS = Set.of(
+            "__qin_builtin_constructor__",
+            "__qin_java_pattern_regexp__",
+            "__qin_java_regex_pattern_exec__",
+            "__qin_java_new_array__",
+            "__qin_binary__",
+            "__qin_logical__",
+            "__qin_conditional__",
+            "__qin_init_enum_value",
+            "__qin_instanceof__",
+            "__qin_cst_name_of__",
+            "__qin_cst_value_of__",
+            "__qin_cst_children_of__",
+            "__qin_cst_loc_of__",
+            "__qin_ast_type_of__",
+            "__qin_ast_body_of__",
+            "__qin_ast_expression_of__",
+            "__qin_ast_name_of__");
     private static final Map<Class<?>, Map<String, Object>> CLASS_EXPANDO_PROPERTIES = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Map<String, Object>> CLASS_PROTOTYPE_PROPERTIES = new ConcurrentHashMap<>();
+    private static final Map<Object, Map<String, Object>> INSTANCE_EXPANDO_PROPERTIES =
+            Collections.synchronizedMap(new IdentityHashMap<>());
+    private static final Map<Object, Integer> SUBHUTI_RULE_CACHE_IDENTITY_IDS =
+            Collections.synchronizedMap(new IdentityHashMap<>());
+    private static final Map<String, List<SubhutiRuleCacheValueEntry>> SUBHUTI_RULE_CACHE_VALUE_BUCKETS =
+            new ConcurrentHashMap<>();
+    private static int subhutiNextRuleCacheId = 1;
+    private static final Map<Object, GeneratedEnumMetadata> GENERATED_ENUM_METADATA =
+            Collections.synchronizedMap(new IdentityHashMap<>());
+    private static final Map<Class<?>, Map<String, Object>> GENERATED_ENUM_VALUE_CANONICALS = new ConcurrentHashMap<>();
     private static final Object FIELD_LOOKUP_MISS = new Object();
+    private static final Object CONSTRUCT_MISS = new Object();
     private static final Map<FieldLookupKey, Object> FIELD_LOOKUP_CACHE = new ConcurrentHashMap<>();
     private static final Object METHOD_LOOKUP_MISS = new Object();
     private static final Map<Class<?>, List<Method>> METHOD_CANDIDATE_CACHE = new ConcurrentHashMap<>();
     private static final Map<MethodCandidateKey, List<Method>> METHOD_CANDIDATE_BY_NAME_CACHE = new ConcurrentHashMap<>();
     private static final Map<MethodLookupKey, Object> METHOD_LOOKUP_CACHE = new ConcurrentHashMap<>();
     private static final Map<TypedMethodLookupKey, Object> TYPED_METHOD_LOOKUP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Method, MethodHandle> PROTOTYPE_SPECIAL_HANDLE_CACHE = new ConcurrentHashMap<>();
     private static final Map<Class<?>, JavaRecordInfo> JAVA_RECORD_INFO_CACHE = new ConcurrentHashMap<>();
     private static final Object UNRESOLVED_MODULE_REF = new Object();
     private static final String GENERATED_REGEX_COMPILED_PATTERN_KEY =
@@ -71,6 +118,8 @@ public final class JavaEsmGlobal {
             ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<Long> INTERPRETED_CALL_COUNT =
             ThreadLocal.withInitial(() -> 0L);
+    private static final Map<Map<String, Object>, InterpretedFunction> INTERPRETED_FUNCTION_CACHE =
+            Collections.synchronizedMap(new IdentityHashMap<>());
     private static volatile long interpretedCallCountLimit;
     private static final int MAX_INTERPRETED_CALL_DEPTH =
             Integer.getInteger("qin.runtime.maxInterpretedCallDepth", 2048);
@@ -87,8 +136,30 @@ public final class JavaEsmGlobal {
                 methodHandle(JavaEsmGlobal.class, "__qin_builtin_constructor__", Object.class));
         GLOBAL_OBJECT.put("__qin_java_pattern_regexp__",
                 methodHandle(JavaEsmGlobal.class, "__qin_java_pattern_regexp__", Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_java_regex_pattern_exec__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_regex_pattern_exec__", Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_java_new_array__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_new_array__", Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_java_utf8_decode__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_utf8_decode__", Object.class));
+        GLOBAL_OBJECT.put("__qin_java_time_now__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_time_now__"));
+        GLOBAL_OBJECT.put("__qin_java_time_from__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_time_from__", Object.class));
+        GLOBAL_OBJECT.put("__qin_java_time_format__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_time_format__", Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_binary__",
+                methodHandle(JavaEsmGlobal.class, "__qin_binary__", Object.class, Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_logical__",
+                methodHandle(JavaEsmGlobal.class, "__qin_logical__", Object.class, Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_conditional__",
+                methodHandle(JavaEsmGlobal.class, "__qin_conditional__", Object.class, Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_init_enum_value",
+                methodHandle(JavaEsmGlobal.class, "__qin_init_enum_value", Object.class, Object.class, Object.class));
         GLOBAL_OBJECT.put("__qin_instanceof__",
                 methodHandle(JavaEsmGlobal.class, "__qin_instanceof__", Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_structural_object__",
+                methodHandle(JavaEsmGlobal.class, "__qin_structural_object__", Object.class));
         for (String constructor : List.of(
                 "Array", "Object", "Map", "Set", "WeakMap", "WeakSet", "Proxy", "Promise", "Symbol",
                 "Date", "String", "Boolean", "Number",
@@ -152,14 +223,63 @@ public final class JavaEsmGlobal {
             return callable;
         }
         if (definition instanceof Map<?, ?> definitionMap) {
-            return new InterpretedFunction(castMap(definitionMap));
+            return interpretedFunction(castMap(definitionMap));
         }
         throw new IllegalArgumentException("Unsupported function definition: " + simpleName(definition));
+    }
+
+    public static Object __qin_make_function_bound__(Object definition, Object thisArg) {
+        return bindRuntimeCallableThis(__qin_make_function__(definition), thisArg);
+    }
+
+    public static Object __qin_make_function_with_lexical_this__(Object definition, Object thisArg) {
+        if (definition instanceof Map<?, ?> definitionMap
+                && isArrowFunctionDefinition(castMap(definitionMap))) {
+            LinkedHashMap<String, Object> rebound = new LinkedHashMap<>(castMap(definitionMap));
+            rebound.put("thisValue", thisArg);
+            rebound.put("__qin_arrow_lexical_this", true);
+            return interpretedFunction(rebound);
+        }
+        return __qin_make_function__(definition);
     }
 
     public static Object __qin_call_function_definition__(Object definition, Object thisArg, Object[] args) {
         Object function = bindRuntimeCallableThis(__qin_make_function__(definition), thisArg);
         return callAny(function, args == null ? new Object[0] : args);
+    }
+
+    private static InterpretedFunction interpretedFunction(Map<String, Object> definition) {
+        synchronized (INTERPRETED_FUNCTION_CACHE) {
+            InterpretedFunction cached = INTERPRETED_FUNCTION_CACHE.get(definition);
+            if (cached != null) {
+                return cached;
+            }
+            InterpretedFunction function = new InterpretedFunction(definition);
+            INTERPRETED_FUNCTION_CACHE.put(definition, function);
+            return function;
+        }
+    }
+
+    private static boolean isArrowFunctionDefinition(Map<String, Object> definition) {
+        if (Boolean.TRUE.equals(definition.get("__qin_arrow_lexical_this"))) {
+            return true;
+        }
+        Object ast = definition.get("ast");
+        if (ast instanceof Map<?, ?> rawAst) {
+            return "ArrowFunctionExpression".equals(String.valueOf(castMap(rawAst).get("type")));
+        }
+        Object astRef = definition.get("astRef");
+        if (astRef != null) {
+            return "ArrowFunctionExpression".equals(
+                    String.valueOf(QinFunctionModelRegistry.resolve(astRef).get("type")));
+        }
+        return false;
+    }
+
+    public static Object __qin_bound_method__(Object receiver, Object methodName) {
+        String name = String.valueOf(methodName);
+        return new NativeFunction(name, args ->
+                __qin_call_method_array__(receiver, name, args == null ? new Object[0] : args));
     }
 
     public static Object __qin_constant_return_function__(Object value) {
@@ -186,6 +306,982 @@ public final class JavaEsmGlobal {
 
     public static Object __qin_java_pattern_regexp__(Object source, Object flags) {
         return JavaEsmRegExp.fromJavaPattern(source, flags);
+    }
+
+    public static Object __qin_java_regex_pattern_compile__(Object source, Object flags) {
+        return Pattern.compile(String.valueOf(source), qinJavaRegexFlags(flags));
+    }
+
+    public static Object __qin_java_regex_pattern_exec__(Object pattern, Object input) {
+        Object value = unwrapExportSlotValue(pattern);
+        if (value instanceof JavaEsmRegExp regexp) {
+            return regexp.invoke("exec", new Object[]{input});
+        }
+        Matcher matcher;
+        if (value instanceof Pattern compiledPattern) {
+            matcher = compiledPattern.matcher(String.valueOf(input));
+        } else if (value instanceof InterpretedInstance interpretedInstance
+                && isGeneratedJavaUtilRegexPatternShape(interpretedInstance)) {
+            matcher = generatedJavaUtilRegexCompiledPattern(interpretedInstance).matcher(String.valueOf(input));
+        } else {
+            return null;
+        }
+        if (!matcher.find()) {
+            return null;
+        }
+        return javaUtilRegexMatchResult(matcher);
+    }
+
+    public static Object __qin_java_regex_matcher__(Object pattern, Object input) {
+        Object value = unwrapExportSlotValue(pattern);
+        if (value instanceof Pattern compiledPattern) {
+            return new JavaUtilRegexMatcherObject(compiledPattern, String.valueOf(input));
+        }
+        if (value instanceof InterpretedInstance interpretedInstance
+                && isGeneratedJavaUtilRegexPatternShape(interpretedInstance)) {
+            return new JavaUtilRegexMatcherObject(
+                    generatedJavaUtilRegexCompiledPattern(interpretedInstance),
+                    String.valueOf(input));
+        }
+        return null;
+    }
+
+    public static Object __qin_java_regex_matcher_region__(Object matcher, Object start, Object end) {
+        return requireJavaUtilRegexMatcher(matcher).region(new Object[]{start, end});
+    }
+
+    public static Object __qin_java_regex_matcher_reset__(Object matcher, Object input) {
+        return requireJavaUtilRegexMatcher(matcher).reset(new Object[]{input});
+    }
+
+    public static Object __qin_java_regex_matcher_looking_at__(Object matcher) {
+        return requireJavaUtilRegexMatcher(matcher).matchAtRegionStart(false);
+    }
+
+    public static Object __qin_java_regex_matcher_matches__(Object matcher) {
+        return requireJavaUtilRegexMatcher(matcher).matchAtRegionStart(true);
+    }
+
+    public static Object __qin_java_regex_matcher_find__(Object matcher, Object start) {
+        int from = toInt32(start);
+        return requireJavaUtilRegexMatcher(matcher).find(from < 0 ? new Object[0] : new Object[]{start});
+    }
+
+    public static Object __qin_java_regex_matcher_group__(Object matcher, Object index) {
+        return requireJavaUtilRegexMatcher(matcher).group(new Object[]{index});
+    }
+
+    public static Object __qin_java_regex_matcher_group_count__(Object matcher) {
+        return requireJavaUtilRegexMatcher(matcher).groupCount();
+    }
+
+    public static Object __qin_java_regex_matcher_start__(Object matcher) {
+        return (double) requireJavaUtilRegexMatcher(matcher).requireLastMatch().start();
+    }
+
+    public static Object __qin_java_regex_matcher_end__(Object matcher) {
+        return (double) requireJavaUtilRegexMatcher(matcher).requireLastMatch().end();
+    }
+
+    public static Object __qin_java_regex_matcher_replace_all__(Object matcher, Object replacement) {
+        return requireJavaUtilRegexMatcher(matcher).invoke("replaceAll", new Object[]{replacement});
+    }
+
+    public static Object __qin_java_regex_matcher_append_replacement__(Object matcher, Object buffer, Object replacement) {
+        return requireJavaUtilRegexMatcher(matcher).appendReplacement(new Object[]{buffer, replacement});
+    }
+
+    public static Object __qin_java_regex_matcher_append_tail__(Object matcher, Object buffer) {
+        return requireJavaUtilRegexMatcher(matcher).appendTail(new Object[]{buffer});
+    }
+
+    private static List<Object> javaUtilRegexMatchResult(Matcher matcher) {
+        List<Object> result = new ArrayList<>();
+        result.add(matcher.group());
+        for (int i = 1; i <= matcher.groupCount(); i++) {
+            result.add(matcher.group(i));
+        }
+        return result;
+    }
+
+    private static JavaUtilRegexMatcherObject requireJavaUtilRegexMatcher(Object matcher) {
+        Object value = unwrapExportSlotValue(matcher);
+        if (value instanceof JavaUtilRegexMatcherObject regexMatcher) {
+            return regexMatcher;
+        }
+        throw new IllegalArgumentException("Expected Qin Java regex matcher, got: " + simpleName(value));
+    }
+
+    public static Object __qin_java_string_hash_code__(Object value) {
+        return javaStringHashCode(String.valueOf(value));
+    }
+
+    public static Object __qin_java_identity_hash_code__(Object value) {
+        return System.identityHashCode(value);
+    }
+
+    public static Object __qin_java_value_hash_code__(Object value) {
+        return javaValueHashCode(value);
+    }
+
+    public static Object __qin_java_long_hash_code__(Object value) {
+        long longValue;
+        if (value instanceof Number number) {
+            longValue = number.longValue();
+        } else if (value instanceof CharSequence text) {
+            longValue = Long.parseLong(text.toString());
+        } else {
+            throw new IllegalArgumentException("Long.hashCode expects a numeric value, got: " + simpleName(value));
+        }
+        return (double) (int) (longValue ^ (longValue >>> 32));
+    }
+
+    public static Object __qin_java_values_equal__(Object left, Object right) {
+        return javaValuesEqual(left, right);
+    }
+
+    public static Object __qin_java_hash_key__(Object key) {
+        return generatedJavaHashSetKey(key);
+    }
+
+    public static Object __qin_java_hash_key_equals__(Object left, Object right) {
+        return generatedJavaHashSetKeyEquals(left, right);
+    }
+
+    public static Object __qin_subhuti_identity_rule_cache_id(Object value) {
+        return (double) subhutiIdentityRuleCacheId(value);
+    }
+
+    public static Object __qin_subhuti_value_rule_cache_id(Object value) {
+        return (double) subhutiValueRuleCacheId(value);
+    }
+
+    public static Object __qin_subhuti_rule_cache_key(Object args) {
+        List<Object> values = subhutiRuleCacheArgumentValues(args);
+        if (values.isEmpty()) {
+            return "";
+        }
+        List<String> parts = new ArrayList<>(values.size());
+        for (Object value : values) {
+            parts.add(formatSubhutiRuleCacheValue(value));
+        }
+        return "[" + String.join(", ", parts) + "]";
+    }
+
+    public static Object __qin_direct_method_function__(Object target, Object methodName, Object boundArguments) {
+        return new DirectMethodFunction(
+                target,
+                String.valueOf(methodName),
+                directMethodBoundArguments(boundArguments));
+    }
+
+    public static Object __qin_java_functional(Object value) {
+        Object callable = unwrapExportSlotValue(value);
+        if (callable == null
+                || callable instanceof DirectMethodFunction
+                || callable instanceof JavaFunctionalAdapter) {
+            return callable;
+        }
+        Object marker = __qin_member_get__(callable, "__qinJavaFunctional");
+        if (truthy(marker)) {
+            return callable;
+        }
+        return new JavaFunctionalAdapter(callable);
+    }
+
+    public static Object __qin_token_name_of__(Object token) {
+        return generatedTokenTextHelper(token, "getTokenName", "tokenName", "name");
+    }
+
+    public static Object __qin_token_value_of__(Object token) {
+        return generatedTokenTextHelper(token, "getTokenValue", "tokenValue", "value");
+    }
+
+    public static Object __qin_token_has_line_break_before__(Object token) {
+        if (token == null) {
+            return false;
+        }
+        Object methodValue = tryCallJavaLikeMethod(token, "hasLineBreakBefore");
+        if (methodValue != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return truthy(methodValue);
+        }
+        return truthy(__qin_member_get__(token, "lineBreakBefore"));
+    }
+
+    public static Object __qin_token_index_of__(Object token) {
+        if (token == null) {
+            return "";
+        }
+        Object methodValue = tryCallJavaLikeMethod(token, "getIndex");
+        if (methodValue != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return String.valueOf(methodValue);
+        }
+        Object propertyValue = __qin_member_get__(token, "index");
+        return propertyValue == null ? "" : String.valueOf(propertyValue);
+    }
+
+    public static Object __qin_cst_name_of__(Object cst) {
+        Object value = resolveGeneratedAccessorValue(generatedCstFieldOrMember(cst, "name"), cst);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    public static Object __qin_cst_value_of__(Object cst) {
+        Object value = resolveGeneratedAccessorValue(generatedCstFieldOrMember(cst, "value"), cst);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    public static Object __qin_cst_children_of__(Object cst) {
+        return resolveGeneratedAccessorValue(generatedCstFieldOrMember(cst, "children"), cst);
+    }
+
+    public static Object __qin_cst_loc_of__(Object cst) {
+        return resolveGeneratedAccessorValue(generatedCstFieldOrMember(cst, "loc"), cst);
+    }
+
+    public static Object __qin_ast_type_of__(Object ast) {
+        Object value = resolveGeneratedAccessorValue(generatedAstFieldOrMember(ast, "type"), ast);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Enum<?> enumValue) {
+            return enumValue.name();
+        }
+        GeneratedEnumMetadata metadata = GENERATED_ENUM_METADATA.get(value);
+        if (metadata != null) {
+            return metadata.name();
+        }
+        Object generatedEnumName = __qin_member_get__(value, "__qinEnumName");
+        if (generatedEnumName != null) {
+            return String.valueOf(generatedEnumName);
+        }
+        Object name = tryCallJavaLikeMethod(value, "name");
+        return name == INTERPRETED_INSTANCE_COMPATIBILITY_MISS ? String.valueOf(value) : String.valueOf(name);
+    }
+
+    public static Object __qin_ast_body_of__(Object ast) {
+        return resolveGeneratedAccessorValue(generatedAstFieldOrMember(ast, "body"), ast);
+    }
+
+    public static Object __qin_ast_expression_of__(Object ast) {
+        return resolveGeneratedAccessorValue(generatedAstFieldOrMember(ast, "expression"), ast);
+    }
+
+    public static Object __qin_ast_name_of__(Object ast) {
+        return resolveGeneratedAccessorValue(generatedAstFieldOrMember(ast, "name"), ast);
+    }
+
+    private static Object generatedCstFieldOrMember(Object cst, String fieldName) {
+        if (cst instanceof InterpretedInstance interpretedInstance
+                && isGeneratedSubhutiCstShape(interpretedInstance)) {
+            return generatedSubhutiCstField(interpretedInstance, fieldName);
+        }
+        Object qinFieldValue = __qin_member_get__(cst, "__qin_field_" + fieldName);
+        if (qinFieldValue != null) {
+            return qinFieldValue;
+        }
+        Object qinInternalFieldValue = __qin_member_get__(cst, "__qin_field___qin_" + fieldName);
+        if (qinInternalFieldValue != null) {
+            return qinInternalFieldValue;
+        }
+        Object internalFieldValue = __qin_member_get__(cst, "___qin_" + fieldName);
+        if (internalFieldValue != null) {
+            return internalFieldValue;
+        }
+        return __qin_member_get__(cst, fieldName);
+    }
+
+    private static Object resolveGeneratedAccessorValue(Object value, Object receiver) {
+        Object current = value;
+        for (int i = 0; i < 4; i++) {
+            Object resolved = JavaEsmObject.resolveStoredPropertyValue(current, receiver);
+            if (resolved == current) {
+                return current;
+            }
+            current = resolved;
+        }
+        return current;
+    }
+
+    private static Object generatedAstFieldOrMember(Object ast, String fieldName) {
+        Object qinFieldValue = __qin_member_get__(ast, "__qin_field_" + fieldName);
+        if (qinFieldValue != null) {
+            return qinFieldValue;
+        }
+        Object qinInternalFieldValue = __qin_member_get__(ast, "__qin_field___qin_" + fieldName);
+        if (qinInternalFieldValue != null) {
+            return qinInternalFieldValue;
+        }
+        Object internalFieldValue = __qin_member_get__(ast, "___qin_" + fieldName);
+        if (internalFieldValue != null) {
+            return internalFieldValue;
+        }
+        Object memberValue = __qin_member_get__(ast, fieldName);
+        if (memberValue != null) {
+            if (isRuntimeCallableValue(memberValue)) {
+                Object accessorValue = tryCallJavaLikeMethod(ast, fieldName);
+                if (accessorValue != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return accessorValue;
+                }
+            }
+            return memberValue;
+        }
+        Object javaLikeValue = tryCallJavaLikeMethod(ast, fieldName);
+        if (javaLikeValue != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return javaLikeValue;
+        }
+        return null;
+    }
+
+    public static Object __qin_collection_size__(Object collection) {
+        if (collection == null) {
+            return 0.0d;
+        }
+        if (collection instanceof JavaEsmArrayObject arrayObject) {
+            return (double) arrayObject.size();
+        }
+        if (collection instanceof List<?> list) {
+            return (double) list.size();
+        }
+        if (collection instanceof CharSequence text) {
+            return (double) text.length();
+        }
+        if (collection instanceof Collection<?> javaCollection) {
+            return (double) javaCollection.size();
+        }
+        if (collection instanceof JavaEsmSetObject setObject) {
+            return (double) setObject.size;
+        }
+        if (collection instanceof JavaEsmMapObject mapObject) {
+            return (double) mapObject.size;
+        }
+        if (collection instanceof Map<?, ?> map) {
+            return (double) map.size();
+        }
+        if (collection.getClass().isArray()) {
+            return (double) Array.getLength(collection);
+        }
+        Object size = tryCallJavaLikeMethod(collection, "size");
+        if (size != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return size;
+        }
+        throw new IllegalArgumentException("Unsupported generated collection size target: " + simpleName(collection));
+    }
+
+    public static int __qin_static_length__(Object collection) {
+        Object size = __qin_collection_size__(collection);
+        if (size instanceof Number number) {
+            return number.intValue();
+        }
+        return Integer.parseInt(String.valueOf(size));
+    }
+
+    public static String __qin_java_utf8_decode__(Object bytes) {
+        return new String(qinJavaDigestBytes(bytes), StandardCharsets.UTF_8);
+    }
+
+    public static Object[] __qin_java_io_bytes__(Object value) {
+        byte[] bytes = qinJavaDigestBytes(value);
+        Object[] result = new Object[bytes.length];
+        for (int i = 0; i < bytes.length; i++) {
+            result[i] = (double) (bytes[i] & 0xff);
+        }
+        return result;
+    }
+
+    public static Object[] __qin_java_io_concat__(Object left, Object right) {
+        Object[] leftValues = __qin_collection_to_array__(left);
+        Object[] rightValues = __qin_collection_to_array__(right);
+        Object[] result = Arrays.copyOf(leftValues, leftValues.length + rightValues.length);
+        System.arraycopy(rightValues, 0, result, leftValues.length, rightValues.length);
+        return result;
+    }
+
+    public static int __qin_java_io_count__(Object value) {
+        return __qin_collection_to_array__(value).length;
+    }
+
+    public static Object __qin_java_time_now__() {
+        return LocalDateTime.now();
+    }
+
+    public static Object __qin_java_time_from__(Object value) {
+        value = __qin_value__(value);
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime;
+        }
+        if (value instanceof Number number) {
+            return LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(number.longValue()),
+                    ZoneId.systemDefault());
+        }
+        if (value instanceof CharSequence text && !text.isEmpty()) {
+            try {
+                return LocalDateTime.parse(text);
+            } catch (RuntimeException ignored) {
+                try {
+                    return LocalDateTime.ofInstant(
+                            Instant.ofEpochMilli(Long.parseLong(text.toString())),
+                            ZoneId.systemDefault());
+                } catch (RuntimeException ignoredAgain) {
+                    return LocalDateTime.now();
+                }
+            }
+        }
+        return LocalDateTime.now();
+    }
+
+    public static String __qin_java_time_format__(Object value, Object pattern) {
+        LocalDateTime dateTime = (LocalDateTime) __qin_java_time_from__(value);
+        String patternText = pattern == null || String.valueOf(pattern).isEmpty()
+                ? "yyyy-MM-dd'T'HH:mm:ss"
+                : String.valueOf(pattern);
+        return dateTime.format(DateTimeFormatter.ofPattern(patternText));
+    }
+
+    public static Object __qin_collection_is_empty__(Object collection) {
+        if (collection == null) {
+            return true;
+        }
+        if (collection instanceof JavaEsmArrayObject arrayObject) {
+            return arrayObject.isEmpty();
+        }
+        if (collection instanceof List<?> list) {
+            return list.isEmpty();
+        }
+        if (collection instanceof Collection<?> javaCollection) {
+            return javaCollection.isEmpty();
+        }
+        if (collection instanceof JavaEsmSetObject setObject) {
+            return setObject.size == 0;
+        }
+        if (collection instanceof JavaEsmMapObject mapObject) {
+            return mapObject.size == 0;
+        }
+        if (collection instanceof Map<?, ?> map) {
+            return map.isEmpty();
+        }
+        if (collection.getClass().isArray()) {
+            return Array.getLength(collection) == 0;
+        }
+        Object empty = tryCallJavaLikeMethod(collection, "isEmpty");
+        if (empty != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return empty;
+        }
+        throw new IllegalArgumentException("Unsupported generated collection empty target: " + simpleName(collection));
+    }
+
+    public static Object __qin_collection_get__(Object collection, Object index) {
+        if (collection == null) {
+            throw new IllegalArgumentException("Generated collection get target cannot be null");
+        }
+        int numericIndex = toIndex(index);
+        if (collection instanceof JavaEsmArrayObject arrayObject) {
+            return arrayObject.memberGet(index);
+        }
+        if (collection instanceof List<?> list) {
+            return JavaEsmArray.memberGet(list, index);
+        }
+        if (collection instanceof CharSequence text) {
+            return numericIndex >= 0 && numericIndex < text.length()
+                    ? String.valueOf(text.charAt(numericIndex))
+                    : null;
+        }
+        if (collection.getClass().isArray()) {
+            return numericIndex >= 0 && numericIndex < Array.getLength(collection)
+                    ? Array.get(collection, numericIndex)
+                    : null;
+        }
+        if (collection instanceof JavaEsmMapObject mapObject) {
+            return mapObject.get(index);
+        }
+        if (collection instanceof Map<?, ?> map) {
+            return map.get(index);
+        }
+        Object value = tryCallJavaLikeMethod(collection, "get", index);
+        if (value != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return value;
+        }
+        throw new IllegalArgumentException("Unsupported generated collection get target: " + simpleName(collection));
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Object __qin_collection_add__(Object collection, Object value) {
+        if (collection == null) {
+            throw new IllegalArgumentException("Generated collection add target cannot be null");
+        }
+        if (collection instanceof Collection javaCollection) {
+            javaCollection.add(value);
+            return true;
+        }
+        Object added = tryCallJavaLikeMethod(collection, "add", value);
+        if (added != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return added;
+        }
+        Object pushed = tryCallJavaLikeMethod(collection, "push", value);
+        if (pushed != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return true;
+        }
+        throw new IllegalArgumentException("Unsupported generated collection add target: " + simpleName(collection));
+    }
+
+    public static Object[] __qin_array_append__(Object collection, Object value) {
+        Object[] source = __qin_collection_to_array__(collection);
+        Object[] result = Arrays.copyOf(source, source.length + 1);
+        result[source.length] = value;
+        return result;
+    }
+
+    public static Object[] __qin_array_prepend__(Object collection, Object value) {
+        Object[] source = __qin_collection_to_array__(collection);
+        Object[] result = new Object[source.length + 1];
+        result[0] = value;
+        System.arraycopy(source, 0, result, 1, source.length);
+        return result;
+    }
+
+    public static Object[] __qin_array_remove_at__(Object collection, Object index) {
+        Object[] source = __qin_collection_to_array__(collection);
+        int numericIndex = toIndex(index);
+        if (numericIndex < 0 || numericIndex >= source.length) {
+            return source;
+        }
+        Object[] result = new Object[source.length - 1];
+        for (int sourceIndex = 0, targetIndex = 0; sourceIndex < source.length; sourceIndex++) {
+            if (sourceIndex != numericIndex) {
+                result[targetIndex++] = source[sourceIndex];
+            }
+        }
+        return result;
+    }
+
+    public static Object[] __qin_array_slice__(Object collection, Object start, Object end) {
+        Object[] source = __qin_collection_to_array__(collection);
+        int numericStart = Math.max(0, toIndex(start));
+        int numericEnd = Math.min(source.length, toIndex(end));
+        if (numericEnd <= numericStart) {
+            return new Object[0];
+        }
+        return Arrays.copyOfRange(source, numericStart, numericEnd);
+    }
+
+    public static Object[] __qin_array_sort__(Object collection, Object comparator) {
+        Object[] values = __qin_collection_to_array__(collection);
+        Arrays.sort(values, qinArraySortComparator(comparator));
+        if (collection != null && collection.getClass().isArray()) {
+            int length = Math.min(Array.getLength(collection), values.length);
+            for (int index = 0; index < length; index++) {
+                Array.set(collection, index, values[index]);
+            }
+        } else if (collection instanceof List<?> list) {
+            @SuppressWarnings("unchecked")
+            List<Object> mutable = (List<Object>) list;
+            mutable.clear();
+            mutable.addAll(Arrays.asList(values));
+        }
+        return values;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Comparator<Object> qinArraySortComparator(Object comparator) {
+        Object unwrapped = unwrapExportSlotValue(comparator);
+        if (unwrapped == null) {
+            return JavaEsmGlobal::compareJavaArrayFacadeItems;
+        }
+        if (unwrapped instanceof Comparator<?> javaComparator) {
+            return (left, right) -> ((Comparator<Object>) javaComparator).compare(left, right);
+        }
+        return (left, right) -> qinArraySortComparatorResult(callRuntimeCallable(unwrapped, left, right));
+    }
+
+    private static int qinArraySortComparatorResult(Object result) {
+        if (result instanceof Number number) {
+            return Double.compare(number.doubleValue(), 0.0d);
+        }
+        if (result instanceof String text) {
+            try {
+                return Double.compare(Double.parseDouble(text.trim()), 0.0d);
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return isRuntimeTruthy(result) ? 1 : 0;
+    }
+
+    public static Object[] __qin_collection_to_array__(Object collection) {
+        if (collection == null) {
+            return new Object[0];
+        }
+        if (collection instanceof Collection<?> javaCollection) {
+            return javaCollection.toArray();
+        }
+        if (collection instanceof Map<?, ?> map) {
+            return map.entrySet().toArray();
+        }
+        if (collection.getClass().isArray()) {
+            int length = Array.getLength(collection);
+            Object[] values = new Object[length];
+            for (int i = 0; i < length; i++) {
+                values[i] = Array.get(collection, i);
+            }
+            return values;
+        }
+        Object value = tryCallJavaLikeMethod(collection, "toArray");
+        if (value instanceof Object[] values) {
+            return values;
+        }
+        if (value instanceof Collection<?> values) {
+            return values.toArray();
+        }
+        if (value != INTERPRETED_INSTANCE_COMPATIBILITY_MISS && value != null && value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            Object[] values = new Object[length];
+            for (int i = 0; i < length; i++) {
+                values[i] = Array.get(value, i);
+            }
+            return values;
+        }
+        throw new IllegalArgumentException("Unsupported generated collection toArray target: " + simpleName(collection));
+    }
+
+    public static Object __qin_collection_contains__(Object collection, Object value) {
+        if (collection == null) {
+            return false;
+        }
+        if (collection instanceof JavaEsmSetObject setObject) {
+            return setObject.has(value);
+        }
+        if (collection instanceof JavaEsmMapObject mapObject) {
+            return mapObject.has(value);
+        }
+        if (collection instanceof List<?> list) {
+            for (Object entry : list) {
+                if (generatedJavaHashSetKeyEquals(entry, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (collection instanceof Collection<?> javaCollection) {
+            for (Object entry : javaCollection) {
+                if (generatedJavaHashSetKeyEquals(entry, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (collection instanceof Map<?, ?> map) {
+            return map.containsKey(value);
+        }
+        if (collection.getClass().isArray()) {
+            int length = Array.getLength(collection);
+            for (int i = 0; i < length; i++) {
+                if (generatedJavaHashSetKeyEquals(Array.get(collection, i), value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        Object contains = tryCallJavaLikeMethod(collection, "contains", value);
+        if (contains != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return contains;
+        }
+        throw new IllegalArgumentException("Unsupported generated collection contains target: " + simpleName(collection));
+    }
+
+    public static double __qin_java_lang_string_length__(Object value) {
+        return javaLangStringValue(value, "length").length();
+    }
+
+    public static boolean __qin_java_lang_string_equals__(Object left, Object right) {
+        javaLangStringRequireNonNull(left, "equals");
+        return String.valueOf(left).equals(String.valueOf(right));
+    }
+
+    public static boolean __qin_java_lang_string_contains__(Object value, Object part) {
+        return javaLangStringValue(value, "contains").contains(String.valueOf(part));
+    }
+
+    public static boolean __qin_java_lang_string_is_empty__(Object value) {
+        return javaLangStringValue(value, "isEmpty").isEmpty();
+    }
+
+    public static boolean __qin_java_lang_string_is_blank__(Object value) {
+        return javaLangStringValue(value, "isBlank").isBlank();
+    }
+
+    public static double __qin_java_lang_string_hash_code__(Object value) {
+        return javaLangStringValue(value, "hashCode").hashCode();
+    }
+
+    public static String __qin_java_lang_string_value_of__(Object value) {
+        return String.valueOf(value);
+    }
+
+    public static boolean __qin_java_lang_string_starts_with__(Object value, Object prefix) {
+        return javaLangStringValue(value, "startsWith").startsWith(String.valueOf(prefix));
+    }
+
+    public static boolean __qin_java_lang_string_ends_with__(Object value, Object suffix) {
+        return javaLangStringValue(value, "endsWith").endsWith(String.valueOf(suffix));
+    }
+
+    public static String __qin_java_lang_string_char_at__(Object value, Object index) {
+        return String.valueOf(javaLangStringValue(value, "charAt").charAt(javaLangStringIndex(index)));
+    }
+
+    public static double __qin_java_lang_string_char_code_at__(Object value, Object index) {
+        String text = javaLangStringValue(value, "charCodeAt");
+        int charIndex = javaLangStringIndex(index);
+        return charIndex < 0 || charIndex >= text.length() ? Double.NaN : text.charAt(charIndex);
+    }
+
+    public static byte[] __qin_java_lang_string_get_bytes__(Object value, Object charset) {
+        Charset resolvedCharset = charset instanceof Charset typedCharset ? typedCharset : StandardCharsets.UTF_8;
+        return javaLangStringValue(value, "getBytes").getBytes(resolvedCharset);
+    }
+
+    public static boolean __qin_java_lang_string_region_matches__(
+            Object value,
+            Object toffset,
+            Object other,
+            Object ooffset,
+            Object len) {
+        return javaLangStringValue(value, "regionMatches").regionMatches(
+                javaLangStringIndex(toffset),
+                String.valueOf(other),
+                javaLangStringIndex(ooffset),
+                javaLangStringIndex(len));
+    }
+
+    public static Object __qin_java_lang_string_method__(Object value, Object methodName, Object[] args) {
+        String name = String.valueOf(methodName);
+        return JavaEsmString.invoke(javaLangStringValue(value, name), name, args == null ? new Object[0] : args);
+    }
+
+    public static String __qin_java_lang_string_substring__(Object value, Object start, Object end) {
+        String text = javaLangStringValue(value, "substring");
+        int startIndex = javaLangStringIndex(start);
+        if (end == null) {
+            return text.substring(startIndex);
+        }
+        return text.substring(startIndex, javaLangStringIndex(end));
+    }
+
+    public static String __qin_java_lang_string_format__(Object formatText, Object[] values) {
+        String format = javaLangStringValue(formatText, "format");
+        return String.format(format, javaLangStringFormatArguments(format, values == null ? new Object[0] : values));
+    }
+
+    private static String javaLangStringValue(Object value, String methodName) {
+        javaLangStringRequireNonNull(value, methodName);
+        return String.valueOf(value);
+    }
+
+    private static void javaLangStringRequireNonNull(Object value, String methodName) {
+        if (value == null) {
+            throw new NullPointerException(methodName + "()");
+        }
+    }
+
+    public static String __qin_string__(Object value) {
+        return jsString(value);
+    }
+
+    public static String __qin_java_io_file_separator__() {
+        Object configured = GLOBAL_OBJECT.get("__qinJavaFileSeparator");
+        String separator = configured == null ? "/" : jsString(configured);
+        return separator.isEmpty() ? "/" : separator;
+    }
+
+    public static int __qin_java_io_file_separator_char_code__() {
+        String separator = __qin_java_io_file_separator__();
+        return separator.isEmpty() ? 47 : separator.charAt(0);
+    }
+
+    public static boolean __qin_java_io_file_is_separator_code__(Object code) {
+        int value = fileCharCode(code);
+        return value == 47 || value == 92;
+    }
+
+    public static String __qin_java_io_file_drive_prefix__(Object path) {
+        String text = jsString(path == null ? "" : path);
+        if (text.length() < 2 || text.charAt(1) != ':') {
+            return "";
+        }
+        char code = text.charAt(0);
+        boolean upper = code >= 'A' && code <= 'Z';
+        boolean lower = code >= 'a' && code <= 'z';
+        return upper || lower ? text.substring(0, 2) : "";
+    }
+
+    public static String __qin_java_io_file_join__(Object parent, Object child) {
+        String separator = __qin_java_io_file_separator__();
+        String left = jsString(parent == null ? "" : parent);
+        String right = jsString(child == null ? "" : child);
+        if (left.isEmpty()) {
+            return right;
+        }
+        if (right.isEmpty()) {
+            return left;
+        }
+        int lastCode = left.charAt(left.length() - 1);
+        return __qin_java_io_file_is_separator_code__(lastCode)
+                ? left + right
+                : left + separator + right;
+    }
+
+    public static String __qin_java_io_file_normalize__(Object path) {
+        String text = jsString(path == null ? "" : path);
+        if (text.isEmpty()) {
+            return text;
+        }
+        String separator = __qin_java_io_file_separator__();
+        char separatorChar = separator.isEmpty() ? '/' : separator.charAt(0);
+        StringBuilder normalized = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            int code = text.charAt(i);
+            normalized.append(__qin_java_io_file_is_separator_code__(code) ? separatorChar : text.charAt(i));
+        }
+        String normalizedText = normalized.toString();
+        String prefix = __qin_java_io_file_drive_prefix__(normalizedText);
+        String rest = prefix.isEmpty() ? normalizedText : normalizedText.substring(prefix.length());
+        boolean absolute = rest.startsWith(separator);
+        List<String> parts = new ArrayList<>();
+        StringBuilder part = new StringBuilder();
+        for (int i = 0; i <= rest.length(); i++) {
+            boolean atEnd = i == rest.length();
+            char ch = atEnd ? 0 : rest.charAt(i);
+            if (!atEnd && ch != separatorChar) {
+                part.append(ch);
+                continue;
+            }
+            String segment = part.toString();
+            if (segment.isEmpty() || ".".equals(segment)) {
+                part.setLength(0);
+                continue;
+            }
+            if ("..".equals(segment)) {
+                if (!parts.isEmpty() && !"..".equals(parts.get(parts.size() - 1))) {
+                    parts.remove(parts.size() - 1);
+                } else if (!absolute) {
+                    parts.add(segment);
+                }
+                part.setLength(0);
+                continue;
+            }
+            parts.add(segment);
+            part.setLength(0);
+        }
+        String body = String.join(separator, parts);
+        return prefix + (absolute ? separator : "") + body;
+    }
+
+    public static boolean __qin_java_io_file_configured_exists__(Object path) {
+        String normalized = __qin_java_io_file_normalize__(path);
+        Object hook = GLOBAL_OBJECT.get("__qinJavaFileExists");
+        if (hook != null && isRuntimeCallable(hook)) {
+            return truthy(callAny(hook, new Object[]{normalized}));
+        }
+        Object files = GLOBAL_OBJECT.get("__qinJavaExistingFiles");
+        if (files == null) {
+            return false;
+        }
+        String raw = jsString(path);
+        if (files instanceof Collection<?> collection) {
+            return collection.contains(normalized) || collection.contains(raw);
+        }
+        if (files instanceof Map<?, ?> map) {
+            return map.containsKey(normalized) || map.containsKey(raw);
+        }
+        Class<?> filesClass = files.getClass();
+        if (filesClass.isArray()) {
+            int length = Array.getLength(files);
+            for (int i = 0; i < length; i++) {
+                Object candidate = Array.get(files, i);
+                if (Objects.equals(candidate, normalized) || Objects.equals(candidate, raw)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static int fileCharCode(Object code) {
+        if (code instanceof Number number) {
+            return number.intValue();
+        }
+        Double number = asNumber(code);
+        return number == null ? 0 : number.intValue();
+    }
+
+    private static int javaLangStringIndex(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        Double number = asNumber(value);
+        if (number == null) {
+            throw new IllegalArgumentException("String index must be numeric: " + value);
+        }
+        return number.intValue();
+    }
+
+    private static Object[] javaLangStringFormatArguments(String format, Object[] values) {
+        Object[] normalized = new Object[values.length];
+        int valueIndex = 0;
+        int normalizedIndex = 0;
+        for (int i = 0; i < format.length(); i++) {
+            if (format.charAt(i) != '%' || i + 1 >= format.length()) {
+                continue;
+            }
+            i++;
+            if (format.charAt(i) == '%') {
+                continue;
+            }
+            while (i < format.length() && !isJavaLangStringFormatConversion(format.charAt(i))) {
+                i++;
+            }
+            if (i >= format.length()) {
+                break;
+            }
+            char conversion = Character.toLowerCase(format.charAt(i));
+            if (conversion == 'n') {
+                continue;
+            }
+            if (valueIndex >= values.length) {
+                break;
+            }
+            normalized[normalizedIndex++] = normalizeJavaLangStringFormatArgument(conversion, values[valueIndex++]);
+        }
+        if (normalizedIndex == values.length) {
+            return normalized;
+        }
+        return Arrays.copyOf(normalized, normalizedIndex);
+    }
+
+    private static boolean isJavaLangStringFormatConversion(char value) {
+        return "bBhHsScCdoxXeEfgGaAtTn%".indexOf(value) >= 0;
+    }
+
+    private static Object normalizeJavaLangStringFormatArgument(char conversion, Object value) {
+        return switch (conversion) {
+            case 'c' -> {
+                if (value instanceof Number number) {
+                    yield (char) number.intValue();
+                }
+                String text = String.valueOf(value);
+                yield text.isEmpty() ? '\0' : text.charAt(0);
+            }
+            case 'd', 'o', 'x' -> {
+                Double number = asNumber(value);
+                yield number == null ? 0L : number.longValue();
+            }
+            case 'e', 'f', 'g', 'a' -> {
+                Double number = asNumber(value);
+                yield number == null ? Double.NaN : number;
+            }
+            case 's' -> String.valueOf(value);
+            default -> value;
+        };
     }
 
     public static String __qin_string_replace__(String target, Object search, Object replacement) {
@@ -220,8 +1316,84 @@ public final class JavaEsmGlobal {
             case "isFinite" -> methodHandle(JavaEsmGlobal.class, "isFinite", Object.class);
             case "__qin_builtin_constructor__" ->
                     methodHandle(JavaEsmGlobal.class, "__qin_builtin_constructor__", Object.class);
+            case "__qin_binary__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_binary__", Object.class, Object.class, Object.class);
+            case "__qin_collection_size__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_collection_size__", Object.class);
+            case "__qin_collection_is_empty__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_collection_is_empty__", Object.class);
+            case "__qin_collection_get__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_collection_get__", Object.class, Object.class);
+            case "__qin_collection_contains__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_collection_contains__", Object.class, Object.class);
             case "__qin_java_pattern_regexp__" ->
                     methodHandle(JavaEsmGlobal.class, "__qin_java_pattern_regexp__", Object.class, Object.class);
+            case "__qin_java_utf8_decode__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_utf8_decode__", Object.class);
+            case "__qin_java_time_now__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_time_now__");
+            case "__qin_java_time_from__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_time_from__", Object.class);
+            case "__qin_java_time_format__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_time_format__", Object.class, Object.class);
+            case "__qin_java_regex_pattern_compile__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_regex_pattern_compile__", Object.class, Object.class);
+            case "__qin_java_regex_matcher__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_regex_matcher__", Object.class, Object.class);
+            case "__qin_java_string_hash_code__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_string_hash_code__", Object.class);
+            case "__qin_java_identity_hash_code__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_identity_hash_code__", Object.class);
+            case "__qin_java_value_hash_code__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_value_hash_code__", Object.class);
+            case "__qin_java_long_hash_code__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_long_hash_code__", Object.class);
+            case "__qin_bound_method__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_bound_method__", Object.class, Object.class);
+            case "__qin_java_values_equal__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_values_equal__", Object.class, Object.class);
+            case "__qin_java_hash_key__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_hash_key__", Object.class);
+            case "__qin_java_hash_key_equals__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_hash_key_equals__", Object.class, Object.class);
+            case "__qin_subhuti_identity_rule_cache_id" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_subhuti_identity_rule_cache_id", Object.class);
+            case "__qin_subhuti_value_rule_cache_id" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_subhuti_value_rule_cache_id", Object.class);
+            case "__qin_subhuti_rule_cache_key" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_subhuti_rule_cache_key", Object.class);
+            case "__qin_direct_method_function__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_direct_method_function__", Object.class, Object.class, Object.class);
+            case "__qin_java_functional" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_functional", Object.class);
+            case "__qin_java_new_array__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_new_array__", Object.class, Object.class);
+            case "__qin_token_name_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_token_name_of__", Object.class);
+            case "__qin_token_value_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_token_value_of__", Object.class);
+            case "__qin_token_has_line_break_before__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_token_has_line_break_before__", Object.class);
+            case "__qin_token_index_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_token_index_of__", Object.class);
+            case "__qin_cst_name_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_cst_name_of__", Object.class);
+            case "__qin_cst_value_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_cst_value_of__", Object.class);
+            case "__qin_cst_children_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_cst_children_of__", Object.class);
+            case "__qin_cst_loc_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_cst_loc_of__", Object.class);
+            case "__qin_ast_type_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_ast_type_of__", Object.class);
+            case "__qin_ast_body_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_ast_body_of__", Object.class);
+            case "__qin_ast_expression_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_ast_expression_of__", Object.class);
+            case "__qin_ast_name_of__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_ast_name_of__", Object.class);
+            case "__qin_init_enum_value" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_init_enum_value", Object.class, Object.class, Object.class);
             case "globalthis" -> methodHandle(NodeHostRuntime.class, "globalThis");
             case "node:fs.default" -> NodeHostRuntime.fsNamespace();
             case "node:path.default" -> NodeHostRuntime.pathNamespace();
@@ -287,8 +1459,41 @@ public final class JavaEsmGlobal {
             case "Infinity" -> Double.POSITIVE_INFINITY;
             case "NaN" -> Double.NaN;
             case "undefined" -> null;
-            default -> null;
+            default -> {
+                yield tryResolveGlobalClass(globalName);
+            }
         };
+    }
+
+    private static Object tryResolveGlobalClass(String globalName) {
+        ClassLoader callerLoader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                .walk(frames -> frames
+                        .map(StackWalker.StackFrame::getDeclaringClass)
+                        .filter(clazz -> clazz != JavaEsmGlobal.class)
+                        .map(Class::getClassLoader)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse(null));
+        if (callerLoader != null) {
+            try {
+                return Class.forName(globalName, false, callerLoader);
+            } catch (ClassNotFoundException ignored) {
+                // Fall through.
+            }
+        }
+        ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+        if (contextLoader != null) {
+            try {
+                return Class.forName(globalName, false, contextLoader);
+            } catch (ClassNotFoundException ignored) {
+                // Fall through.
+            }
+        }
+        try {
+            return Class.forName(globalName);
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        }
     }
 
     private static Object qinWebRootDecorator(Object[] args) {
@@ -366,14 +1571,18 @@ public final class JavaEsmGlobal {
         }
         Object value = resolveRuntimeJsImport(module, imported);
         GLOBAL_BINDINGS.put(local, value);
-        GLOBAL_OBJECT.put(local, value);
+        if (!HOST_GLOBAL_OBJECT_BUILTINS.contains(local)) {
+            GLOBAL_OBJECT.put(local, value);
+        }
         return value;
     }
 
     public static Object __qin_bind_global__(Object name, Object value) {
         String key = String.valueOf(name);
         GLOBAL_BINDINGS.put(key, value);
-        GLOBAL_OBJECT.put(key, value);
+        if (!HOST_GLOBAL_OBJECT_BUILTINS.contains(key)) {
+            GLOBAL_OBJECT.put(key, value);
+        }
         return value;
     }
 
@@ -495,6 +1704,23 @@ public final class JavaEsmGlobal {
         return null;
     }
 
+    public static Object __qin_static_export_member_get__(String slotName, String propertyName) {
+        if (slotName == null
+                || !slotName.startsWith("__qesm_m")
+                || !slotName.contains("_e_")
+                || propertyName == null
+                || propertyName.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Static export member access requires a generated ESM slot and fixed property name");
+        }
+        Object exported = __qin_export_get__(__qin_global__(slotName));
+        if (!(exported instanceof Map<?, ?> map)) {
+            throw new IllegalStateException(
+                    "Static export slot does not contain a Qin object literal: " + slotName);
+        }
+        return map.get(propertyName);
+    }
+
     public static Object __qin_value__(Object value) {
         return unwrapExportSlotValue(value);
     }
@@ -588,6 +1814,115 @@ public final class JavaEsmGlobal {
         return optionalCallMethod(target, methodName, args);
     }
 
+    public static Object __qin_init_enum_value(Object value, Object name, Object ordinal) {
+        __qin_member_set__(value, "__qinEnumName", name == null ? "" : String.valueOf(name));
+        __qin_member_set__(value, "__qinEnumOrdinal", ordinal);
+        GENERATED_ENUM_METADATA.put(value, new GeneratedEnumMetadata(name == null ? "" : String.valueOf(name), ordinal));
+        if (value instanceof InterpretedInstance) {
+            return value;
+        }
+        String key = String.valueOf(name) + "::" + String.valueOf(ordinal);
+        Object existing = GENERATED_ENUM_VALUE_CANONICALS
+                .computeIfAbsent(value.getClass(), ignored -> new ConcurrentHashMap<>())
+                .putIfAbsent(key, value);
+        return existing == null ? value : existing;
+    }
+
+    public static String __qin_enum_name__(Object value) {
+        if (value instanceof Enum<?> enumValue) {
+            return enumValue.name();
+        }
+        GeneratedEnumMetadata metadata = GENERATED_ENUM_METADATA.get(value);
+        if (metadata == null) {
+            throw new IllegalArgumentException("Missing generated enum metadata for name(): " + value);
+        }
+        return metadata.name();
+    }
+
+    public static double __qin_enum_ordinal__(Object value) {
+        if (value instanceof Enum<?> enumValue) {
+            return enumValue.ordinal();
+        }
+        GeneratedEnumMetadata metadata = GENERATED_ENUM_METADATA.get(value);
+        if (metadata == null) {
+            throw new IllegalArgumentException("Missing generated enum metadata for ordinal(): " + value);
+        }
+        Double ordinal = asNumber(metadata.ordinal());
+        if (ordinal == null) {
+            throw new IllegalArgumentException("Generated enum ordinal is not numeric: " + metadata.ordinal());
+        }
+        return ordinal;
+    }
+
+    public static Object __qin_enum_value_of__(Object enumClass, Object name) {
+        if (!(enumClass instanceof Class<?> ownerClass)) {
+            throw new IllegalArgumentException("Enum valueOf target must be a Class: " + enumClass);
+        }
+        String expectedName = String.valueOf(name);
+        if (ownerClass.isEnum()) {
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            Object value = Enum.valueOf((Class) ownerClass, expectedName);
+            return value;
+        }
+        for (Field field : ownerClass.getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+            try {
+                if (!field.canAccess(null)) {
+                    field.setAccessible(true);
+                }
+                Object candidate = field.get(null);
+                if (candidate != null
+                        && Objects.equals(__qin_member_get__(candidate, "__qinEnumName"), expectedName)) {
+                    return candidate;
+                }
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalArgumentException(
+                        "Cannot inspect generated enum field: " + ownerClass.getName() + "." + field.getName(),
+                        error);
+            }
+        }
+        throw new IllegalArgumentException("Unknown generated enum value: " + ownerClass.getName() + "." + expectedName);
+    }
+
+    public static Object[] __qin_enum_values__(Object enumClass) {
+        if (!(enumClass instanceof Class<?> ownerClass)) {
+            throw new IllegalArgumentException("Enum values target must be a Class: " + enumClass);
+        }
+        if (ownerClass.isEnum()) {
+            return ownerClass.getEnumConstants();
+        }
+        List<Object> values = new ArrayList<>();
+        for (Field field : ownerClass.getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
+            try {
+                if (!field.canAccess(null)) {
+                    field.setAccessible(true);
+                }
+                Object candidate = field.get(null);
+                Object ordinal = candidate == null ? null : __qin_member_get__(candidate, "__qinEnumOrdinal");
+                if (ordinal instanceof Number) {
+                    values.add(candidate);
+                }
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalArgumentException(
+                        "Cannot inspect generated enum field: " + ownerClass.getName() + "." + field.getName(),
+                        error);
+            }
+        }
+        values.sort((left, right) -> Double.compare(
+                ((Number) __qin_member_get__(left, "__qinEnumOrdinal")).doubleValue(),
+                ((Number) __qin_member_get__(right, "__qinEnumOrdinal")).doubleValue()));
+        return values.toArray();
+    }
+
+    public static double __qin_number__(Object value) {
+        return toJsNumber(value);
+    }
+
     public static Object __qin_binary__(Object operator, Object left, Object right) {
         String op = String.valueOf(operator);
         Double leftNumber = asNumber(left);
@@ -595,9 +1930,7 @@ public final class JavaEsmGlobal {
         return switch (op) {
             case "+" -> left instanceof String || right instanceof String
                     ? jsString(left) + jsString(right)
-                    : leftNumber != null && rightNumber != null
-                            ? leftNumber + rightNumber
-                            : jsString(left) + jsString(right);
+                    : toJsNumber(left) + toJsNumber(right);
             case "-" -> jsNumericOperand(left) - jsNumericOperand(right);
             case "*" -> jsNumericOperand(left) * jsNumericOperand(right);
             case "/" -> jsNumericOperand(left) / jsNumericOperand(right);
@@ -626,6 +1959,16 @@ public final class JavaEsmGlobal {
         return jsInstanceOf(value, constructor);
     }
 
+    public static boolean __qin_structural_object__(Object value) {
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            return isStructuralParamsInterpretedInstance(interpretedInstance);
+        }
+        return value instanceof Map<?, ?>;
+    }
+
     private static boolean jsInstanceOf(Object value, Object constructor) {
         if (constructor == null) {
             traceInstanceOfFailure(value, constructor);
@@ -633,9 +1976,17 @@ public final class JavaEsmGlobal {
         }
         constructor = unwrapExportSlotValue(constructor);
         if (constructor instanceof String builtinName) {
+            Boolean generatedJavaSdkAliasInstance = generatedJavaSdkAliasInstanceOf(value, builtinName);
+            if (generatedJavaSdkAliasInstance != null) {
+                return generatedJavaSdkAliasInstance;
+            }
             return jsBuiltinInstanceOf(value, builtinName);
         }
         if (constructor instanceof InterpretedFunction interpretedFunction) {
+            if (isSubhutiMatchTokenClassName(interpretedFunction.classDebugName())
+                    && isSubhutiMatchTokenShapeObject(value)) {
+                return true;
+            }
             if (value instanceof JavaRuntimeThrowable throwable) {
                 return throwable.isInstanceOf(interpretedFunction.classDebugName());
             }
@@ -643,11 +1994,27 @@ public final class JavaEsmGlobal {
                     && runtimeObject.isGeneratedClassInstance(interpretedFunction.classDebugName())) {
                 return true;
             }
+            Boolean generatedJavaSdkAliasInstance = generatedJavaSdkAliasInstanceOf(
+                    value,
+                    interpretedFunction.classDebugName());
+            if (generatedJavaSdkAliasInstance != null) {
+                return generatedJavaSdkAliasInstance;
+            }
             Object prototype = interpretedFunction.get("prototype");
             return value instanceof InterpretedInstance instance && instance.hasPrototypeObject(prototype);
         }
         if (constructor instanceof Class<?> clazz) {
-            return value != null && clazz.isInstance(value);
+            if (value != null && clazz.isInstance(value)) {
+                return true;
+            }
+            if (isSubhutiMatchTokenType(clazz) && isSubhutiMatchTokenShapeObject(value)) {
+                return true;
+            }
+            Boolean generatedJavaSdkAliasInstance = generatedJavaSdkAliasInstanceOf(value, clazz);
+            if (generatedJavaSdkAliasInstance != null) {
+                return generatedJavaSdkAliasInstance;
+            }
+            return false;
         }
         if (constructor instanceof NativeFunction || constructor instanceof QinCallable || constructor instanceof Method) {
             return false;
@@ -683,6 +2050,95 @@ public final class JavaEsmGlobal {
                     isErrorObjectInstance(value, builtinName);
             default -> false;
         };
+    }
+
+    private static Boolean generatedJavaSdkAliasInstanceOf(Object value, Class<?> constructorClass) {
+        if (constructorClass == null) {
+            return null;
+        }
+        return generatedJavaSdkAliasInstanceOf(value, constructorClass.getSimpleName());
+    }
+
+    private static Boolean generatedJavaSdkAliasInstanceOf(Object value, String constructorSimpleName) {
+        String aliasName = generatedJavaSdkAliasName(constructorSimpleName);
+        if (aliasName == null) {
+            return null;
+        }
+        String valueClassAliasName = generatedJavaSdkAliasName(value == null ? null : value.getClass().getSimpleName());
+        if (aliasName.equals(valueClassAliasName)) {
+            return Boolean.TRUE;
+        }
+        if (isGeneratedJavaSetAliasName(aliasName) && isGeneratedJavaSetLikeRuntimeObject(value)) {
+            return Boolean.TRUE;
+        }
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            if (interpretedInstance.constructorFunction instanceof InterpretedFunction function) {
+                String valueAliasName = generatedJavaSdkAliasName(function.classDebugName());
+                if (aliasName.equals(valueAliasName)) {
+                    return Boolean.TRUE;
+                }
+            }
+            if (isGeneratedJavaSetAliasName(aliasName) && isGeneratedJavaSetLike(interpretedInstance)) {
+                return Boolean.TRUE;
+            }
+            return null;
+        }
+        return switch (aliasName) {
+            case "__QinJavaUtilArrayList", "__QinJavaUtilUnmodifiableList" -> value instanceof List<?>;
+            case "__QinJavaUtilHashSet", "__QinJavaUtilTreeSet", "__QinJavaUtilUnmodifiableSet" ->
+                    value instanceof Set<?>;
+            case "__QinJavaUtilHashMap", "__QinJavaUtilLinkedHashMap", "__QinJavaUtilIdentityHashMap",
+                    "__QinJavaUtilUnmodifiableMap" -> value instanceof Map<?, ?>;
+            case "__QinJavaUtilArrayDeque" -> value instanceof ArrayDeque<?>;
+            default -> null;
+        };
+    }
+
+    private static String generatedJavaSdkAliasName(String constructorName) {
+        if (constructorName == null) {
+            return null;
+        }
+        String[] aliases = {
+                "__QinJavaUtilArrayList",
+                "__QinJavaUtilUnmodifiableList",
+                "__QinJavaUtilHashSet",
+                "__QinJavaUtilTreeSet",
+                "__QinJavaUtilUnmodifiableSet",
+                "__QinJavaUtilHashMap",
+                "__QinJavaUtilLinkedHashMap",
+                "__QinJavaUtilIdentityHashMap",
+                "__QinJavaUtilUnmodifiableMap",
+                "__QinJavaUtilArrayDeque"
+        };
+        for (String alias : aliases) {
+            if (constructorName.equals(alias) || constructorName.endsWith(alias)) {
+                return alias;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isGeneratedJavaSetAliasName(String aliasName) {
+        return "__QinJavaUtilHashSet".equals(aliasName)
+                || "__QinJavaUtilTreeSet".equals(aliasName)
+                || "__QinJavaUtilUnmodifiableSet".equals(aliasName);
+    }
+
+    private static boolean isGeneratedJavaSetLikeRuntimeObject(Object value) {
+        if (!(value instanceof QinRuntimeObject runtimeObject)) {
+            return false;
+        }
+        return runtimeObject.has("contains")
+                && runtimeObject.has("size")
+                && runtimeObject.has("isEmpty")
+                && runtimeObject.has("toArray");
+    }
+
+    private static boolean isGeneratedJavaSetLike(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.methods.containsKey("contains")
+                && interpretedInstance.methods.containsKey("size")
+                && interpretedInstance.methods.containsKey("isEmpty")
+                && interpretedInstance.methods.containsKey("toArray");
     }
 
     private static boolean isErrorObjectInstance(Object value, String constructorName) {
@@ -739,6 +2195,9 @@ public final class JavaEsmGlobal {
             double rightValue = rightNumber.doubleValue();
             return !Double.isNaN(leftValue) && !Double.isNaN(rightValue) && leftValue == rightValue;
         }
+        if (generatedJavaEnumValueEquals(left, right)) {
+            return true;
+        }
         return sameValueZero(left, right);
     }
 
@@ -789,8 +2248,8 @@ public final class JavaEsmGlobal {
         String op = String.valueOf(operator);
         return switch (op) {
             case "!" -> !truthy(argument);
-            case "+" -> requireNumber(asNumber(argument), op);
-            case "-" -> -requireNumber(asNumber(argument), op);
+            case "+" -> toJsNumber(argument);
+            case "-" -> -toJsNumber(argument);
             case "~" -> (double) ~toInt32(argument);
             case "typeof" -> typeOf(argument);
             case "void" -> null;
@@ -835,11 +2294,18 @@ public final class JavaEsmGlobal {
         if (target instanceof JavaEsmMapObject mapObject && Objects.equals(property, JavaEsmSymbol.iterator())) {
             return new NativeFunction("Map.Symbol.iterator", args -> mapObject.entries().iterator());
         }
+        if (target instanceof List<?> list && "__items".equals(propertyKey(property))) {
+            return list;
+        }
         if (target instanceof List<?> list && Objects.equals(property, JavaEsmSymbol.iterator())) {
             return new NativeFunction("Array.Symbol.iterator", args -> list.iterator());
         }
         if (target instanceof Map<?, ?> map) {
             String key = propertyKey(property);
+            Object javaMapMethod = javaMapNativeMethod(map, key);
+            if (javaMapMethod != BUILTIN_MISS) {
+                return javaMapMethod;
+            }
             Map<String, Object> cast = castMap(map);
             if (cast.containsKey(key) && !isRuntimeHiddenObjectKey(key)) {
                 return normalizeRuntimeMemberValue(JavaEsmObject.resolveStoredPropertyValue(cast.get(key), target));
@@ -883,6 +2349,34 @@ public final class JavaEsmGlobal {
             return index >= 0 && index < Array.getLength(target) ? Array.get(target, index) : null;
         }
         String name = String.valueOf(property);
+        if ("length".equals(name)) {
+            Object generatedCollectionLength = generatedJavaCollectionFacadeLength(target);
+            if (generatedCollectionLength != FIELD_LOOKUP_MISS) {
+                return generatedCollectionLength;
+            }
+        }
+        if ((target instanceof DirectMethodFunction || target instanceof JavaFunctionalAdapter)
+                && "__qinJavaFunctional".equals(name)) {
+            return true;
+        }
+        Object expandoValue = instanceExpandoProperty(target, name);
+        if (expandoValue != BUILTIN_MISS) {
+            return normalizeRuntimeMemberValue(expandoValue);
+        }
+        Object classPrototypeValue = classPrototypeProperty(target.getClass(), name);
+        if (classPrototypeValue != BUILTIN_MISS) {
+            return normalizeRuntimeMemberValue(classPrototypeValue);
+        }
+        if (name.startsWith("__qin_field_")) {
+            Object generatedFieldValue = tryReadFieldOrMiss(target, name);
+            if (generatedFieldValue != FIELD_LOOKUP_MISS) {
+                return generatedFieldValue;
+            }
+        }
+        Object getterValue = tryReadPropertyGetter(target, name);
+        if (getterValue != FIELD_LOOKUP_MISS) {
+            return getterValue;
+        }
         Method method = findCompatibleMethod(target instanceof Class<?> clazz ? clazz : target.getClass(), name, 0, target instanceof Class<?>);
         if (method != null) {
             return method;
@@ -890,21 +2384,200 @@ public final class JavaEsmGlobal {
         return tryReadField(target, name);
     }
 
+    private static Object generatedJavaCollectionFacadeLength(Object target) {
+        if (target == null
+                || target instanceof String
+                || target instanceof Number
+                || target instanceof Boolean
+                || target instanceof Character
+                || target instanceof Class<?>) {
+            return FIELD_LOOKUP_MISS;
+        }
+        String simpleName = target.getClass().getSimpleName();
+        if (!simpleName.startsWith("__QinJavaUtil")) {
+            return FIELD_LOOKUP_MISS;
+        }
+        Method sizeMethod = findCompatibleMethod(target.getClass(), "size", 0, false);
+        if (sizeMethod == null) {
+            return FIELD_LOOKUP_MISS;
+        }
+        try {
+            return sizeMethod.invoke(target);
+        } catch (IllegalAccessException e) {
+            return FIELD_LOOKUP_MISS;
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalArgumentException("Failed to read generated Java collection length", cause);
+        }
+    }
+
+    private static Object tryReadPropertyGetter(Object target, String name) {
+        if (target instanceof Class<?>) {
+            return FIELD_LOOKUP_MISS;
+        }
+        String capitalized = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        Object value = tryInvokeZeroArgumentGetter(target, "get" + capitalized);
+        if (value != FIELD_LOOKUP_MISS) {
+            return value;
+        }
+        return tryInvokeZeroArgumentGetter(target, "is" + capitalized);
+    }
+
+    private static Object tryInvokeZeroArgumentGetter(Object target, String getterName) {
+        for (Method method : candidateMethods(target.getClass(), getterName, 0, false)) {
+            if (Modifier.isStatic(method.getModifiers()) || method.getParameterCount() != 0) {
+                continue;
+            }
+            try {
+                return method.invoke(target);
+            } catch (IllegalAccessException | IllegalArgumentException ignored) {
+                // Try the next compatible getter.
+            } catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                if (cause instanceof Error error) {
+                    throw error;
+                }
+                throw new IllegalArgumentException("Failed to read property via getter: " + getterName, cause);
+            }
+        }
+        return FIELD_LOOKUP_MISS;
+    }
+
     private static Object classMirrorMember(Class<?> clazz, String name) {
-        return switch (name) {
-            case "name", "simpleName" -> clazz.getSimpleName();
-            case "getName" -> new NativeFunction("Class.getName", args -> clazz.getName());
-            case "getSimpleName" -> new NativeFunction("Class.getSimpleName", args -> clazz.getSimpleName());
-            case "isInstance" -> new NativeFunction("Class.isInstance", args ->
-                    args.length > 0 && args[0] != null && clazz.isInstance(args[0]));
-            case "toString" -> new NativeFunction("Class.toString", args -> clazz.toString());
-            default -> BUILTIN_MISS;
-        };
+        switch (name) {
+            case "name":
+            case "simpleName":
+                return clazz.getSimpleName();
+            case "prototype":
+                return classPrototypeProperties(clazz);
+            case "getName":
+                return new NativeFunction("Class.getName", args -> clazz.getName());
+            case "getSimpleName":
+                return new NativeFunction("Class.getSimpleName", args -> clazz.getSimpleName());
+            case "isInstance":
+                return new NativeFunction("Class.isInstance", args ->
+                        args.length > 0 && args[0] != null && clazz.isInstance(args[0]));
+            case "toString":
+                return new NativeFunction("Class.toString", args -> clazz.toString());
+            default:
+                Map<String, Object> properties = CLASS_EXPANDO_PROPERTIES.get(clazz);
+                Object staticFieldValue = tryReadFieldOrMiss(clazz, name);
+                if (staticFieldValue != FIELD_LOOKUP_MISS && staticFieldValue != null) {
+                    return staticFieldValue;
+                }
+                Object staticGetterValue = tryInvokeStaticPropertyGetter(clazz, name);
+                if (staticGetterValue != FIELD_LOOKUP_MISS) {
+                    return staticGetterValue;
+                }
+                if (properties != null && properties.containsKey(propertyKey(name))) {
+                    return properties.get(propertyKey(name));
+                }
+                return staticFieldValue == FIELD_LOOKUP_MISS ? BUILTIN_MISS : null;
+        }
+    }
+
+    private static Object tryInvokeStaticPropertyGetter(Class<?> clazz, String name) {
+        if (name == null || isRuntimeHiddenObjectKey(name)) {
+            return FIELD_LOOKUP_MISS;
+        }
+        Method method = findCompatibleMethod(clazz, name, 0, true);
+        if (method == null || method.getReturnType() == Void.TYPE || method.getParameterCount() != 0) {
+            return FIELD_LOOKUP_MISS;
+        }
+        try {
+            return method.invoke(null);
+        } catch (IllegalAccessException | IllegalArgumentException ignored) {
+            return FIELD_LOOKUP_MISS;
+        } catch (InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error fatal) {
+                throw fatal;
+            }
+            throw new IllegalArgumentException("Failed to read static property getter: "
+                    + clazz.getName() + "." + name, cause);
+        }
+    }
+
+    private static Object classPrototypeProperty(Class<?> clazz, String name) {
+        Map<String, Object> properties = CLASS_PROTOTYPE_PROPERTIES.get(clazz);
+        if (properties == null) {
+            properties = classPrototypeProperties(clazz);
+        }
+        if (properties == null || isRuntimeHiddenObjectKey(name)) {
+            return BUILTIN_MISS;
+        }
+        IdentityHashMap<Object, Boolean> seen = new IdentityHashMap<>();
+        Object prototype = properties;
+        while (prototype instanceof Map<?, ?> rawPrototype && !seen.containsKey(prototype)) {
+            seen.put(prototype, Boolean.TRUE);
+            Map<String, Object> prototypeMap = castMap(rawPrototype);
+            if (prototypeMap.containsKey(name)) {
+                return normalizeRuntimeMemberValue(
+                        JavaEsmObject.resolveStoredPropertyValue(prototypeMap.get(name), null));
+            }
+            prototype = prototypeMap.get(PROTOTYPE_PARENT_KEY);
+        }
+        return BUILTIN_MISS;
+    }
+
+    private static Map<String, Object> classPrototypeProperties(Class<?> clazz) {
+        Map<String, Object> existing = CLASS_PROTOTYPE_PROPERTIES.get(clazz);
+        if (existing != null) {
+            return existing;
+        }
+        Map<String, Object> properties = new NullFriendlyConcurrentMap();
+        properties.put("constructor", clazz);
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null && superclass != Object.class) {
+            properties.put(PROTOTYPE_PARENT_KEY, classPrototypeProperties(superclass));
+        }
+        for (Method method : declaredPrototypeMethods(clazz)) {
+            properties.putIfAbsent(method.getName(), new PrototypeMethodCallable(method));
+        }
+        Map<String, Object> previous = CLASS_PROTOTYPE_PROPERTIES.putIfAbsent(clazz, properties);
+        return previous == null ? properties : previous;
+    }
+
+    private static List<Method> declaredPrototypeMethods(Class<?> clazz) {
+        List<Method> methods = new ArrayList<>();
+        for (Method method : clazz.getDeclaredMethods()) {
+            int modifiers = method.getModifiers();
+            if (Modifier.isStatic(modifiers)
+                    || (!Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers))
+                    || method.isBridge()
+                    || method.isSynthetic()
+                    || isRuntimeHiddenObjectKey(method.getName())) {
+                continue;
+            }
+            try {
+                method.setAccessible(true);
+            } catch (RuntimeException ignored) {
+                continue;
+            }
+            methods.add(method);
+        }
+        return List.copyOf(methods);
     }
 
     private static Object normalizeRuntimeMemberValue(Object value) {
+        Object resolved = JavaEsmObject.resolveStoredPropertyValue(value);
+        if (resolved != value) {
+            return normalizeRuntimeMemberValue(resolved);
+        }
         if (isFunctionDefinition(value)) {
-            return new InterpretedFunction(castMap((Map<?, ?>) value));
+            return interpretedFunction(castMap((Map<?, ?>) value));
         }
         return value;
     }
@@ -927,6 +2600,14 @@ public final class JavaEsmGlobal {
             return value;
         }
         if (target instanceof Class<?> clazz) {
+            if (tryWriteField(clazz, propertyKey(property), value)) {
+                Map<String, Object> properties = CLASS_EXPANDO_PROPERTIES.get(clazz);
+                if (properties != null) {
+                    properties.remove(propertyKey(property));
+                }
+                return value;
+            }
+            traceStaticFieldCoercion("expando-fallback", clazz, propertyKey(property), value, null, null);
             CLASS_EXPANDO_PROPERTIES
                     .computeIfAbsent(clazz, ignored -> new NullFriendlyConcurrentMap())
                     .put(propertyKey(property), value);
@@ -943,11 +2624,38 @@ public final class JavaEsmGlobal {
             List<Object> mutable = (List<Object>) list;
             return JavaEsmArray.memberSet(mutable, property, value);
         }
+        if (target == null) {
+            throw new IllegalArgumentException(
+                    "Cannot set member on null target: property=" + property + ", value=" + summarizeRuntimeValue(value));
+        }
         String name = String.valueOf(property);
         if (tryWriteField(target, name, value)) {
+            traceMemberSet(target, name, value, "field");
             return value;
         }
-        throw new IllegalArgumentException("Unsupported member set target: " + simpleName(target));
+        if (tryWritePropertySetter(target, name, value)) {
+            traceMemberSet(target, name, value, "setter");
+            return value;
+        }
+        instanceExpandoProperties(target).put(name, value);
+        traceMemberSet(target, name, value, "instance-expando");
+        return value;
+    }
+
+    private static Object instanceExpandoProperty(Object target, String name) {
+        synchronized (INSTANCE_EXPANDO_PROPERTIES) {
+            Map<String, Object> properties = INSTANCE_EXPANDO_PROPERTIES.get(target);
+            if (properties == null || !properties.containsKey(name) || isRuntimeHiddenObjectKey(name)) {
+                return BUILTIN_MISS;
+            }
+            return properties.get(name);
+        }
+    }
+
+    private static Map<String, Object> instanceExpandoProperties(Object target) {
+        synchronized (INSTANCE_EXPANDO_PROPERTIES) {
+            return INSTANCE_EXPANDO_PROPERTIES.computeIfAbsent(target, ignored -> new NullFriendlyConcurrentMap());
+        }
     }
 
     static Object __qin_define_own_property__(Object target, Object property, Object value) {
@@ -1018,6 +2726,459 @@ public final class JavaEsmGlobal {
             result.add(segment);
         }
         return result;
+    }
+
+    public static boolean __qin_array_is_array__(Object value) {
+        return value instanceof JavaEsmArrayObject
+                || value instanceof List<?>
+                || (value != null && value.getClass().isArray());
+    }
+
+    public static String __qin_array_join__(Object collection, Object separator) {
+        Object arrayLike = collection instanceof List<?> ? collection : JavaEsmArray.from(collection);
+        if (!(arrayLike instanceof List<?> list)) {
+            return "";
+        }
+        return String.valueOf(JavaEsmArray.invoke(list, "join", new Object[] { separator }));
+    }
+
+    public static Object[] __qin_to_object_array__(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Object[] array) {
+            return array;
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.toArray();
+        }
+        Class<?> valueClass = value.getClass();
+        if (valueClass.isArray()) {
+            int length = Array.getLength(value);
+            Object[] array = new Object[length];
+            for (int i = 0; i < length; i++) {
+                array[i] = Array.get(value, i);
+            }
+            return array;
+        }
+        throw new IllegalArgumentException("Expected array-like value, got: " + simpleName(value));
+    }
+
+    public static boolean __qin_java_collections_add_all__(Object target, Object values) {
+        if (!(target instanceof Collection<?> collection)) {
+            throw new IllegalArgumentException("Collections.addAll target must be a Collection, got: " + simpleName(target));
+        }
+        @SuppressWarnings("unchecked")
+        Collection<Object> writable = (Collection<Object>) collection;
+        Object[] array = tryQinToObjectArray(values);
+        if (array == null) {
+            return writable.add(values);
+        }
+        boolean changed = false;
+        for (Object value : array) {
+            if (writable.add(value)) {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private static Object[] tryQinToObjectArray(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Object[] array) {
+            return array;
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.toArray();
+        }
+        Class<?> valueClass = value.getClass();
+        if (valueClass.isArray()) {
+            int length = Array.getLength(value);
+            Object[] array = new Object[length];
+            for (int i = 0; i < length; i++) {
+                array[i] = Array.get(value, i);
+            }
+            return array;
+        }
+        return null;
+    }
+
+    public static Stream<?> __qin_java_arrays_stream__(Object value) {
+        if (value == null) {
+            return Stream.empty();
+        }
+        return qinJavaArraysItems(value).stream();
+    }
+
+    public static Object __qin_java_new_array__(Object arrayType, Object lengthValue) {
+        int length = Math.max(toInt(lengthValue), 0);
+        Class<?> arrayClass = javaArrayClass(String.valueOf(arrayType));
+        if (!arrayClass.isArray()) {
+            throw new IllegalArgumentException("Java array constructor method reference requires array type: "
+                    + arrayType);
+        }
+        return Array.newInstance(arrayClass.getComponentType(), length);
+    }
+
+    public static java.util.function.IntFunction<Object> __qin_java_array_int_function__(Object arrayType) {
+        String descriptor = String.valueOf(arrayType);
+        Class<?> arrayClass = javaArrayClass(descriptor);
+        if (!arrayClass.isArray()) {
+            throw new IllegalArgumentException("Java array constructor IntFunction requires array type: "
+                    + arrayType);
+        }
+        return length -> Array.newInstance(arrayClass.getComponentType(), Math.max(length, 0));
+    }
+
+    private static Class<?> javaArrayClass(String arrayType) {
+        if (arrayType == null || arrayType.isBlank()) {
+            return Object[].class;
+        }
+        if (arrayType.startsWith("[")) {
+            return loadClass(arrayType);
+        }
+        int dimensions = 0;
+        String componentName = arrayType.trim();
+        while (componentName.endsWith("[]")) {
+            dimensions++;
+            componentName = componentName.substring(0, componentName.length() - 2);
+        }
+        if (dimensions == 0) {
+            throw new IllegalArgumentException("Expected Java array type, got: " + arrayType);
+        }
+        Class<?> componentClass = javaNamedComponentClass(componentName);
+        return Array.newInstance(componentClass, new int[dimensions]).getClass();
+    }
+
+    private static Class<?> javaNamedComponentClass(String componentName) {
+        return switch (componentName) {
+            case "boolean" -> boolean.class;
+            case "byte" -> byte.class;
+            case "short" -> short.class;
+            case "int" -> int.class;
+            case "long" -> long.class;
+            case "float" -> float.class;
+            case "double" -> double.class;
+            case "char" -> char.class;
+            case "void" -> void.class;
+            default -> loadClass(componentName);
+        };
+    }
+
+    private static Class<?> loadClass(String binaryName) {
+        ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+        if (contextLoader != null) {
+            try {
+                return Class.forName(binaryName, false, contextLoader);
+            } catch (ClassNotFoundException ignored) {
+                // Fall through.
+            }
+        }
+        try {
+            return Class.forName(binaryName);
+        } catch (ClassNotFoundException error) {
+            throw new IllegalArgumentException("Unknown Java class: " + binaryName, error);
+        }
+    }
+
+    public static String __qin_java_arrays_to_string__(Object value) {
+        List<Object> items = value == null ? null : qinJavaArraysItems(value);
+        return items == null ? "null" : items.toString();
+    }
+
+    public static ArrayList<Object> __qin_java_arrays_as_list_array__(Object value) {
+        return new ArrayList<>(value == null ? List.of() : qinJavaArraysItems(value));
+    }
+
+    public static double __qin_java_lang_number_double_value__(Object value) {
+        return requireNumber(asNumber(value), "Number.doubleValue");
+    }
+
+    public static double __qin_java_lang_number_float_value__(Object value) {
+        return (float) requireNumber(asNumber(value), "Number.floatValue").doubleValue();
+    }
+
+    public static double __qin_java_lang_number_long_value__(Object value) {
+        return requireNumber(asNumber(value), "Number.longValue").longValue();
+    }
+
+    public static double __qin_java_lang_number_int_value__(Object value) {
+        return requireNumber(asNumber(value), "Number.intValue").intValue();
+    }
+
+    public static double __qin_java_lang_number_short_value__(Object value) {
+        return requireNumber(asNumber(value), "Number.shortValue").shortValue();
+    }
+
+    public static double __qin_java_lang_number_byte_value__(Object value) {
+        return requireNumber(asNumber(value), "Number.byteValue").byteValue();
+    }
+
+    public static double __qin_java_lang_number_value_of__(Object value) {
+        return requireNumber(asNumber(value), "Number.valueOf");
+    }
+
+    public static Object[] __qin_java_arrays_copy_of__(Object value, Object newLength) {
+        int targetLength = Math.max(toInt(newLength), 0);
+        List<Object> items = value == null ? List.of() : qinJavaArraysItems(value);
+        Object[] result = new Object[targetLength];
+        int copyLength = Math.min(targetLength, items.size());
+        for (int i = 0; i < copyLength; i++) {
+            result[i] = items.get(i);
+        }
+        return result;
+    }
+
+    public static void __qin_java_arrays_fill__(Object value, Object fillValue) {
+        if (value == null) {
+            return;
+        }
+        if (value instanceof List<?> list) {
+            @SuppressWarnings("unchecked")
+            List<Object> mutable = (List<Object>) list;
+            Collections.fill(mutable, fillValue);
+            return;
+        }
+        if (value.getClass().isArray()) {
+            Class<?> componentType = value.getClass().getComponentType();
+            Object coercedFillValue = componentType == null ? fillValue : coerceArgument(fillValue, componentType);
+            int length = Array.getLength(value);
+            for (int index = 0; index < length; index++) {
+                Array.set(value, index, coercedFillValue);
+            }
+            return;
+        }
+        List<Object> mutable = generatedJavaMutableListValues(value);
+        if (mutable != null) {
+            Collections.fill(mutable, fillValue);
+            return;
+        }
+        throw new IllegalArgumentException("Expected mutable array/list-like value for Arrays.fill, got: "
+                + simpleName(value));
+    }
+
+    public static void __qin_java_arrays_sort__(Object value, Object fromIndex, Object toIndex) {
+        if (value == null) {
+            return;
+        }
+        int length = qinJavaArraysLength(value);
+        int from = Math.min(Math.max(toInt(fromIndex), 0), length);
+        int to = Math.min(Math.max(toInt(toIndex), from), length);
+        if (to - from <= 1) {
+            return;
+        }
+        if (value instanceof List<?> list) {
+            @SuppressWarnings("unchecked")
+            List<Object> mutable = (List<Object>) list;
+            mutable.subList(from, to).sort(JavaEsmGlobal::compareJavaArrayFacadeItems);
+            return;
+        }
+        if (value.getClass().isArray()) {
+            List<Object> sorted = new ArrayList<>(to - from);
+            for (int index = from; index < to; index++) {
+                sorted.add(Array.get(value, index));
+            }
+            sorted.sort(JavaEsmGlobal::compareJavaArrayFacadeItems);
+            for (int index = 0; index < sorted.size(); index++) {
+                Array.set(value, from + index, sorted.get(index));
+            }
+            return;
+        }
+        List<Object> mutable = generatedJavaMutableListValues(value);
+        if (mutable != null) {
+            int boundedTo = Math.min(to, mutable.size());
+            int boundedFrom = Math.min(from, boundedTo);
+            mutable.subList(boundedFrom, boundedTo).sort(JavaEsmGlobal::compareJavaArrayFacadeItems);
+            return;
+        }
+        throw new IllegalArgumentException("Expected mutable array/list-like value for Arrays.sort, got: "
+                + simpleName(value));
+    }
+
+    public static void __qin_java_security_message_digest_update__(MessageDigest digest, Object value) {
+        Objects.requireNonNull(digest, "MessageDigest cannot be null").update(qinJavaDigestBytes(value));
+    }
+
+    public static byte[] __qin_java_security_message_digest_digest__(MessageDigest digest, Object value) {
+        MessageDigest checkedDigest = Objects.requireNonNull(digest, "MessageDigest cannot be null");
+        if (value != null) {
+            checkedDigest.update(qinJavaDigestBytes(value));
+        }
+        return checkedDigest.digest();
+    }
+
+    public static String __qin_java_util_hex_format_format_hex__(HexFormat format, Object bytes) {
+        return Objects.requireNonNull(format, "HexFormat cannot be null").formatHex(qinJavaDigestBytes(bytes));
+    }
+
+    private static byte[] qinJavaDigestBytes(Object value) {
+        value = __qin_value__(value);
+        if (value == null) {
+            return new byte[0];
+        }
+        if (value instanceof byte[] bytes) {
+            return bytes;
+        }
+        if (value instanceof Number number) {
+            return new byte[] {(byte) number.intValue()};
+        }
+        if (value instanceof Character character) {
+            return new byte[] {(byte) (character & 0xff)};
+        }
+        if (value instanceof CharSequence text) {
+            return text.toString().getBytes(StandardCharsets.UTF_8);
+        }
+        if (value instanceof Iterable<?> iterable) {
+            List<Byte> bytes = new ArrayList<>();
+            for (Object item : iterable) {
+                bytes.add(qinJavaDigestByte(item));
+            }
+            byte[] result = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++) {
+                result[i] = bytes.get(i);
+            }
+            return result;
+        }
+        Class<?> valueClass = value.getClass();
+        if (valueClass.isArray()) {
+            int length = Array.getLength(value);
+            byte[] result = new byte[length];
+            for (int i = 0; i < length; i++) {
+                result[i] = qinJavaDigestByte(Array.get(value, i));
+            }
+            return result;
+        }
+        return String.valueOf(value).getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static byte qinJavaDigestByte(Object value) {
+        value = __qin_value__(value);
+        if (value instanceof Number number) {
+            return (byte) number.intValue();
+        }
+        if (value instanceof Character character) {
+            return (byte) (character & 0xff);
+        }
+        if (value instanceof CharSequence text) {
+            try {
+                return (byte) ((int) Double.parseDouble(text.toString()) & 0xff);
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    public static double __qin_java_stream_sum__(Object value) {
+        if (value == null) {
+            return 0.0d;
+        }
+        if (value instanceof java.util.stream.IntStream stream) {
+            return stream.sum();
+        }
+        if (value instanceof java.util.stream.LongStream stream) {
+            return stream.sum();
+        }
+        if (value instanceof java.util.stream.DoubleStream stream) {
+            return stream.sum();
+        }
+        if (value instanceof Stream<?> stream) {
+            return stream.mapToDouble(JavaEsmGlobal::numericStreamValue).sum();
+        }
+        return qinJavaArraysItems(value).stream().mapToDouble(JavaEsmGlobal::numericStreamValue).sum();
+    }
+
+    public static Stream<?> __qin_java_stream_boxed__(Object value) {
+        if (value == null) {
+            return Stream.empty();
+        }
+        if (value instanceof Stream<?> stream) {
+            return stream;
+        }
+        if (value instanceof java.util.stream.IntStream stream) {
+            return stream.boxed();
+        }
+        if (value instanceof java.util.stream.LongStream stream) {
+            return stream.boxed();
+        }
+        if (value instanceof java.util.stream.DoubleStream stream) {
+            return stream.boxed();
+        }
+        return qinJavaArraysItems(value).stream();
+    }
+
+    private static double numericStreamValue(Object value) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value == null) {
+            return 0.0d;
+        }
+        Double number = asNumber(value);
+        return number == null ? 0.0d : number;
+    }
+
+    private static int qinJavaArraysLength(Object value) {
+        if (value instanceof Collection<?> collection) {
+            return collection.size();
+        }
+        if (value != null && value.getClass().isArray()) {
+            return Array.getLength(value);
+        }
+        List<Object> mutable = generatedJavaMutableListValues(value);
+        if (mutable != null) {
+            return mutable.size();
+        }
+        return qinJavaArraysItems(value).size();
+    }
+
+    private static int compareJavaArrayFacadeItems(Object left, Object right) {
+        if (left == right) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+            return Double.compare(leftNumber.doubleValue(), rightNumber.doubleValue());
+        }
+        return String.valueOf(left).compareTo(String.valueOf(right));
+    }
+
+    private static List<Object> qinJavaArraysItems(Object value) {
+        if (value instanceof Collection<?> collection) {
+            return new ArrayList<>(collection);
+        }
+        if (value instanceof Iterable<?> iterable) {
+            List<Object> items = new ArrayList<>();
+            for (Object item : iterable) {
+                items.add(item);
+            }
+            return items;
+        }
+        if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            List<Object> items = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                items.add(Array.get(value, i));
+            }
+            return items;
+        }
+        Iterable<?> generatedCollectionIterable = generatedJavaCollectionFacadeIterable(value);
+        if (generatedCollectionIterable != null) {
+            List<Object> items = new ArrayList<>();
+            for (Object item : generatedCollectionIterable) {
+                items.add(item);
+            }
+            return items;
+        }
+        throw new IllegalArgumentException("Expected array/collection-like value for Arrays.stream, got: "
+                + simpleName(value));
     }
 
     public static Object __qin_new__(Object callee) {
@@ -1100,7 +3261,9 @@ public final class JavaEsmGlobal {
     static boolean isRuntimeCallable(Object value) {
         value = unwrapExportSlotValue(value);
         return value instanceof QinCallable
+                || value instanceof JavaFunctionalAdapter
                 || value instanceof Method
+                || value instanceof PrototypeMethodCallable
                 || isFunctionDefinition(value)
                 || isBuiltinCallableName(value)
                 || isJavaBooleanCompanion(value);
@@ -1125,7 +3288,15 @@ public final class JavaEsmGlobal {
             return interpretedFunction.bindThis(thisArg);
         }
         if (isFunctionDefinition(callable)) {
-            return new InterpretedFunction(castMap((Map<?, ?>) callable)).bindThis(thisArg);
+            return interpretedFunction(castMap((Map<?, ?>) callable)).bindThis(thisArg);
+        }
+        if (callable instanceof Method method) {
+            return new NativeFunction(method.getName(), args ->
+                    invokeMethodCallable(thisArg, method, args == null ? new Object[0] : args));
+        }
+        if (callable instanceof PrototypeMethodCallable prototypeMethod) {
+            return new NativeFunction(prototypeMethod.method().getName(), args ->
+                    invokePrototypeMethodCallable(thisArg, prototypeMethod, args == null ? new Object[0] : args));
         }
         return callable;
     }
@@ -1147,8 +3318,35 @@ public final class JavaEsmGlobal {
         if (callable instanceof QinCallable qinCallable) {
             return qinCallable.call(args);
         }
+        Method functionalMethod = functionalInterfaceMethodForCallable(callable);
+        if (functionalMethod != null) {
+            try {
+                Object[] invokeArgs = functionalMethod.isVarArgs()
+                        ? adaptVarArgs(args, functionalMethod.getParameterTypes(), functionalMethod.getGenericParameterTypes())
+                        : coerceArguments(args, functionalMethod.getParameterTypes(), functionalMethod.getGenericParameterTypes());
+                return functionalMethod.invoke(callable, invokeArgs);
+            } catch (IllegalAccessException error) {
+                throw new IllegalArgumentException(
+                        "Failed to invoke functional callable"
+                                + reflectionFailureSummary(error),
+                        error);
+            } catch (InvocationTargetException error) {
+                Throwable cause = invocationCause(error);
+                throw new IllegalArgumentException(
+                        "Failed to invoke functional callable"
+                                + reflectionFailureSummary(cause),
+                        cause);
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException(
+                        "Failed to adapt functional callable arguments: "
+                                + simpleName(callable)
+                                + "/"
+                                + (args == null ? 0 : args.length),
+                        error);
+            }
+        }
         if (isFunctionDefinition(callable)) {
-            return new InterpretedFunction(castMap((Map<?, ?>) callable)).call(args);
+            return interpretedFunction(castMap((Map<?, ?>) callable)).call(args);
         }
         if (callable instanceof String builtinName) {
             Object result = callBuiltinFunction(builtinName, args);
@@ -1161,6 +3359,9 @@ public final class JavaEsmGlobal {
         }
         if (callable instanceof Method method) {
             return invokeMethodCallable(null, method, args);
+        }
+        if (callable instanceof PrototypeMethodCallable prototypeMethod) {
+            return invokePrototypeMethodCallable(null, prototypeMethod, args);
         }
         throw new IllegalArgumentException("Unsupported callable: " + simpleName(callable));
     }
@@ -1227,6 +3428,246 @@ public final class JavaEsmGlobal {
             }
             return method.bindThis(interpretedInstance).call(args);
         });
+    }
+
+    private static boolean isGeneratedJavaTreeSetShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__items")
+                && interpretedInstance.fields.containsKey("__comparator")
+                && interpretedInstance.methods.containsKey("__compare")
+                && interpretedInstance.methods.containsKey("__findIndex")
+                && interpretedInstance.methods.containsKey("__insertionIndex")
+                && interpretedInstance.methods.containsKey("contains")
+                && interpretedInstance.methods.containsKey("add")
+                && interpretedInstance.methods.containsKey("toArray");
+    }
+
+    private static Object generatedJavaTreeSetNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedJavaTreeSetShape(interpretedInstance)
+                || !Set.of(
+                "contains",
+                "add",
+                "addAll",
+                "retainAll",
+                "remove",
+                "first",
+                "last",
+                "size",
+                "isEmpty",
+                "clear",
+                "toArray").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("__QinJavaUtilTreeSet." + name, args -> tryCallGeneratedJavaTreeSetFastPath(
+                interpretedInstance,
+                name,
+                args));
+    }
+
+    private static Object tryCallGeneratedJavaTreeSetFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedJavaTreeSetShape(interpretedInstance)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "contains" -> args.length == 1
+                    ? generatedJavaTreeSetFindIndex(interpretedInstance, args[0]) >= 0
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "add" -> args.length == 1
+                    ? generatedJavaTreeSetAdd(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "addAll" -> {
+                if (args.length != 1) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                boolean changed = false;
+                for (Object value : generatedJavaTreeSetValues(args[0])) {
+                    changed = generatedJavaTreeSetAdd(interpretedInstance, value) || changed;
+                }
+                yield changed;
+            }
+            case "retainAll" -> {
+                if (args.length != 1) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                List<Object> retained = generatedJavaTreeSetValues(args[0]);
+                List<Object> items = generatedJavaTreeSetItems(interpretedInstance);
+                boolean changed = false;
+                Iterator<Object> iterator = items.iterator();
+                while (iterator.hasNext()) {
+                    Object value = iterator.next();
+                    if (!generatedJavaTreeSetContainsEquivalent(interpretedInstance, retained, value)) {
+                        iterator.remove();
+                        changed = true;
+                    }
+                }
+                yield changed;
+            }
+            case "remove" -> {
+                if (args.length != 1) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                int index = generatedJavaTreeSetFindIndex(interpretedInstance, args[0]);
+                if (index < 0) {
+                    yield false;
+                }
+                generatedJavaTreeSetItems(interpretedInstance).remove(index);
+                yield true;
+            }
+            case "first" -> {
+                if (args.length != 0) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                List<Object> items = generatedJavaTreeSetItems(interpretedInstance);
+                if (items.isEmpty()) {
+                    throw new NoSuchElementException("java.util.NoSuchElementException");
+                }
+                yield items.get(0);
+            }
+            case "last" -> {
+                if (args.length != 0) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                List<Object> items = generatedJavaTreeSetItems(interpretedInstance);
+                if (items.isEmpty()) {
+                    throw new NoSuchElementException("java.util.NoSuchElementException");
+                }
+                yield items.get(items.size() - 1);
+            }
+            case "size" -> args.length == 0
+                    ? generatedJavaTreeSetItems(interpretedInstance).size()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "isEmpty" -> args.length == 0
+                    ? generatedJavaTreeSetItems(interpretedInstance).isEmpty()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "clear" -> {
+                if (args.length != 0) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                generatedJavaTreeSetItems(interpretedInstance).clear();
+                yield null;
+            }
+            case "toArray" -> args.length == 0
+                    ? new ArrayList<>(generatedJavaTreeSetItems(interpretedInstance))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> generatedJavaTreeSetItems(InterpretedInstance interpretedInstance) {
+        Object items = interpretedInstance.fields.get("__items");
+        if (items instanceof List<?> list) {
+            return (List<Object>) list;
+        }
+        ArrayList<Object> initialized = new ArrayList<>();
+        interpretedInstance.fields.put("__items", initialized);
+        return initialized;
+    }
+
+    private static boolean generatedJavaTreeSetAdd(InterpretedInstance interpretedInstance, Object value) {
+        if (generatedJavaTreeSetFindIndex(interpretedInstance, value) >= 0) {
+            return false;
+        }
+        generatedJavaTreeSetItems(interpretedInstance).add(
+                generatedJavaTreeSetInsertionIndex(interpretedInstance, value),
+                value);
+        return true;
+    }
+
+    private static int generatedJavaTreeSetFindIndex(InterpretedInstance interpretedInstance, Object value) {
+        List<Object> items = generatedJavaTreeSetItems(interpretedInstance);
+        for (int index = 0; index < items.size(); index++) {
+            if (generatedJavaTreeSetCompare(interpretedInstance, items.get(index), value) == 0) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static int generatedJavaTreeSetInsertionIndex(InterpretedInstance interpretedInstance, Object value) {
+        List<Object> items = generatedJavaTreeSetItems(interpretedInstance);
+        int index = 0;
+        while (index < items.size() && generatedJavaTreeSetCompare(interpretedInstance, items.get(index), value) < 0) {
+            index++;
+        }
+        return index;
+    }
+
+    private static int generatedJavaTreeSetCompare(
+            InterpretedInstance interpretedInstance,
+            Object left,
+            Object right) {
+        Object comparator = interpretedInstance.fields.get("__comparator");
+        if (comparator != null) {
+            Object result = INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            if (isRuntimeCallableValue(comparator)) {
+                result = callAny(comparator, left, right);
+            } else if (hasCallableMember(comparator, "compare")) {
+                result = callMethod(comparator, "compare", left, right);
+            }
+            if (result instanceof Number number) {
+                return Double.compare(number.doubleValue(), 0.0d);
+            }
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return truthy(result) ? 1 : 0;
+            }
+        }
+        return generatedJavaTreeSetCompareValues(left, right);
+    }
+
+    private static int generatedJavaTreeSetCompareValues(Object left, Object right) {
+        if (left == right) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+            return Double.compare(leftNumber.doubleValue(), rightNumber.doubleValue());
+        }
+        if (left instanceof Boolean leftBoolean && right instanceof Boolean rightBoolean) {
+            return Boolean.compare(leftBoolean, rightBoolean);
+        }
+        return String.valueOf(left).compareTo(String.valueOf(right));
+    }
+
+    private static boolean generatedJavaTreeSetContainsEquivalent(
+            InterpretedInstance interpretedInstance,
+            List<Object> values,
+            Object value) {
+        for (Object candidate : values) {
+            if (generatedJavaTreeSetCompare(interpretedInstance, candidate, value) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void traceMemberSet(Object target, String name, Object value, String path) {
+        if (!Boolean.getBoolean("qin.member.set.trace")) {
+            return;
+        }
+        System.err.println("[JavaEsmGlobal] member set path=" + path
+                + " target=" + summarizeRuntimeValue(target)
+                + " property=" + name
+                + " value=" + summarizeRuntimeValue(value));
+    }
+
+    private static List<Object> generatedJavaTreeSetValues(Object value) {
+        if (value instanceof InterpretedInstance interpretedInstance
+                && isGeneratedJavaTreeSetShape(interpretedInstance)) {
+            return new ArrayList<>(generatedJavaTreeSetItems(interpretedInstance));
+        }
+        Object arrayLike = JavaEsmArray.from(value);
+        if (arrayLike instanceof List<?> list) {
+            return new ArrayList<>(list);
+        }
+        return List.of();
     }
 
     private static Object tryCallGeneratedJavaHashMapFastPath(
@@ -1614,6 +4055,40 @@ public final class JavaEsmGlobal {
                 && interpretedInstance.methods.containsKey("matcher")
                 && interpretedInstance.methods.containsKey("pattern")
                 && interpretedInstance.methods.containsKey("flags");
+    }
+
+    private static Object tryCallGeneratedJavaUtilRegexPatternClassFastPath(
+            Object target,
+            String name,
+            Object[] args) {
+        if (!"matcher".equals(name)
+                || args.length != 1
+                || target == null
+                || target instanceof Class<?>
+                || !"__QinJavaUtilRegexPattern".equals(target.getClass().getSimpleName())) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Object nativePattern = readGeneratedRegexPatternField(target, "__nativePattern");
+        if (nativePattern instanceof Pattern pattern) {
+            return new JavaUtilRegexMatcherObject(pattern, String.valueOf(args[0]));
+        }
+        Object source = readGeneratedRegexPatternField(target, "__source");
+        if (source == FIELD_LOOKUP_MISS) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Object flags = readGeneratedRegexPatternField(target, "__flags");
+        Pattern pattern = Pattern.compile(
+                String.valueOf(source),
+                flags == FIELD_LOOKUP_MISS ? 0 : qinJavaRegexFlags(flags));
+        return new JavaUtilRegexMatcherObject(pattern, String.valueOf(args[0]));
+    }
+
+    private static Object readGeneratedRegexPatternField(Object target, String sourceName) {
+        Object value = tryReadFieldOrMiss(target, "__qin_field_" + sourceName);
+        if (value != FIELD_LOOKUP_MISS) {
+            return value;
+        }
+        return tryReadFieldOrMiss(target, sourceName);
     }
 
     private static Object generatedJavaUtilRegexPatternNativeMethod(
@@ -2032,6 +4507,10 @@ public final class JavaEsmGlobal {
 
     private static int generatedJavaUtilRegexPatternFlags(InterpretedInstance interpretedInstance) {
         Object flags = generatedJavaUtilRegexPatternFlagsValue(interpretedInstance);
+        return qinJavaRegexFlags(flags);
+    }
+
+    private static int qinJavaRegexFlags(Object flags) {
         return flags instanceof Number number ? number.intValue() : toInt32(flags);
     }
 
@@ -2229,9 +4708,7 @@ public final class JavaEsmGlobal {
     }
 
     private static Object generatedSubhutiCstField(InterpretedInstance interpretedInstance, String name) {
-        return JavaEsmObject.resolveStoredPropertyValue(
-                interpretedInstance.fields.get("__qin_field_" + name),
-                interpretedInstance);
+        return generatedAccessorDescriptorValue(__qin_member_get__(interpretedInstance, "__qin_field_" + name));
     }
 
     private static Object generatedSubhutiCstSetField(
@@ -2395,13 +4872,27 @@ public final class JavaEsmGlobal {
 
     private static Object generatedJavaHashSetField(InterpretedInstance interpretedInstance, String name) {
         if (interpretedInstance.fields.containsKey(name)) {
-            return interpretedInstance.fields.get(name);
+            return generatedAccessorDescriptorValue(__qin_member_get__(interpretedInstance, name));
         }
         String qinFieldName = "__qin_field_" + name;
         if (interpretedInstance.fields.containsKey(qinFieldName)) {
-            return interpretedInstance.fields.get(qinFieldName);
+            return generatedAccessorDescriptorValue(__qin_member_get__(interpretedInstance, qinFieldName));
         }
         return null;
+    }
+
+    private static Object generatedAccessorDescriptorValue(Object value) {
+        if (value instanceof Map<?, ?> descriptorMap && descriptorMap.containsKey("value")) {
+            Object descriptorValue = descriptorMap.get("value");
+            if (descriptorValue != null && !generatedAccessorDescriptorText(descriptorValue)) {
+                return descriptorValue;
+            }
+        }
+        return value;
+    }
+
+    private static boolean generatedAccessorDescriptorText(Object value) {
+        return value instanceof String text && text.startsWith("{__qin_accessor_descriptor=");
     }
 
     private static void generatedJavaHashSetPutSize(InterpretedInstance interpretedInstance, double size) {
@@ -2782,6 +5273,230 @@ public final class JavaEsmGlobal {
         return values;
     }
 
+    private static List<Map.Entry<Object, Object>> generatedJavaHashMapEntries(
+            InterpretedInstance interpretedInstance) {
+        List<Map.Entry<Object, Object>> entries = new ArrayList<>();
+        JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
+        if (buckets == null) {
+            return entries;
+        }
+        for (Object bucket : buckets.values()) {
+            if (!(bucket instanceof List<?> list)) {
+                continue;
+            }
+            for (Object entry : list) {
+                entries.add(new AbstractMap.SimpleImmutableEntry<>(
+                        generatedJavaHashMapEntryKey(entry),
+                        generatedJavaHashMapEntryValue(entry)));
+            }
+        }
+        return entries;
+    }
+
+    private static boolean isGeneratedJavaArrayDeque(InterpretedInstance interpretedInstance) {
+        if (interpretedInstance.constructorFunction instanceof InterpretedFunction function
+                && "__QinJavaUtilArrayDeque".equals(function.classDebugName())) {
+            return true;
+        }
+        return interpretedInstance.methods.containsKey("addLast")
+                && interpretedInstance.methods.containsKey("removeFirst")
+                && interpretedInstance.methods.containsKey("peekLast")
+                && interpretedInstance.methods.containsKey("__values");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> generatedJavaArrayDequeItems(InterpretedInstance interpretedInstance) {
+        Object items = interpretedInstance.fields.get("__items");
+        if (items instanceof List<?> list) {
+            return (List<Object>) list;
+        }
+        if (items != null && items.getClass().isArray()) {
+            List<Object> values = new ArrayList<>();
+            int length = Array.getLength(items);
+            for (int index = 0; index < length; index++) {
+                values.add(Array.get(items, index));
+            }
+            interpretedInstance.fields.put("__items", values);
+            return values;
+        }
+        List<Object> values = new ArrayList<>();
+        interpretedInstance.fields.put("__items", values);
+        return values;
+    }
+
+    private static void requireGeneratedJavaArrayDequeArgCount(String methodName, Object[] args, int expected) {
+        if (args.length != expected) {
+            throw new IllegalArgumentException(methodName + " expects exactly " + expected + " argument(s)");
+        }
+    }
+
+    private static void requireGeneratedJavaArrayDequeArgRange(String methodName, Object[] args, int min, int max) {
+        if (args.length < min || args.length > max) {
+            throw new IllegalArgumentException(methodName + " expects between " + min + " and " + max
+                    + " argument(s)");
+        }
+    }
+
+    private static Object tryCallGeneratedJavaArrayDequeFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedJavaArrayDeque(interpretedInstance)
+                || !Set.of(
+                        "__values",
+                        "add",
+                        "addLast",
+                        "addFirst",
+                        "offer",
+                        "push",
+                        "removeFirst",
+                        "removeLast",
+                        "remove",
+                        "pop",
+                        "poll",
+                        "pollFirst",
+                        "pollLast",
+                        "peek",
+                        "peekFirst",
+                        "peekLast",
+                        "getFirst",
+                        "getLast",
+                        "size",
+                        "isEmpty",
+                        "clear",
+                        "contains",
+                        "toArray").contains(name)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        List<Object> items = generatedJavaArrayDequeItems(interpretedInstance);
+        return switch (name) {
+            case "__values" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.__values", args, 0);
+                yield items;
+            }
+            case "add", "addLast", "offer" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque." + name, args, 1);
+                items.add(args[0]);
+                yield "add".equals(name) || "offer".equals(name) ? Boolean.TRUE : null;
+            }
+            case "addFirst", "push" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque." + name, args, 1);
+                items.add(0, args[0]);
+                yield null;
+            }
+            case "removeFirst", "remove", "pop" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque." + name, args, 0);
+                if (items.isEmpty()) {
+                    throw new IllegalArgumentException("java.util.NoSuchElementException");
+                }
+                yield items.remove(0);
+            }
+            case "removeLast" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.removeLast", args, 0);
+                if (items.isEmpty()) {
+                    throw new IllegalArgumentException("java.util.NoSuchElementException");
+                }
+                yield items.remove(items.size() - 1);
+            }
+            case "poll", "pollFirst" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque." + name, args, 0);
+                yield items.isEmpty() ? null : items.remove(0);
+            }
+            case "pollLast" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.pollLast", args, 0);
+                yield items.isEmpty() ? null : items.remove(items.size() - 1);
+            }
+            case "peek", "peekFirst" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque." + name, args, 0);
+                yield items.isEmpty() ? null : items.get(0);
+            }
+            case "peekLast" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.peekLast", args, 0);
+                yield items.isEmpty() ? null : items.get(items.size() - 1);
+            }
+            case "getFirst" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.getFirst", args, 0);
+                if (items.isEmpty()) {
+                    throw new IllegalArgumentException("java.util.NoSuchElementException");
+                }
+                yield items.get(0);
+            }
+            case "getLast" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.getLast", args, 0);
+                if (items.isEmpty()) {
+                    throw new IllegalArgumentException("java.util.NoSuchElementException");
+                }
+                yield items.get(items.size() - 1);
+            }
+            case "size" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.size", args, 0);
+                yield items.size();
+            }
+            case "isEmpty" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.isEmpty", args, 0);
+                yield items.isEmpty();
+            }
+            case "clear" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.clear", args, 0);
+                items.clear();
+                yield null;
+            }
+            case "contains" -> {
+                requireGeneratedJavaArrayDequeArgCount("ArrayDeque.contains", args, 1);
+                boolean found = false;
+                for (Object item : items) {
+                    if (sameValueZero(item, args[0])) {
+                        found = true;
+                        break;
+                    }
+                }
+                yield found;
+            }
+            case "toArray" -> {
+                requireGeneratedJavaArrayDequeArgRange("ArrayDeque.toArray", args, 0, 1);
+                yield new ArrayList<>(items);
+            }
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static Object generatedJavaArrayDequeNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedJavaArrayDeque(interpretedInstance)
+                || !Set.of(
+                        "__values",
+                        "add",
+                        "addLast",
+                        "addFirst",
+                        "offer",
+                        "push",
+                        "removeFirst",
+                        "removeLast",
+                        "remove",
+                        "pop",
+                        "poll",
+                        "pollFirst",
+                        "pollLast",
+                        "peek",
+                        "peekFirst",
+                        "peekLast",
+                        "getFirst",
+                        "getLast",
+                        "size",
+                        "isEmpty",
+                        "clear",
+                        "contains",
+                        "toArray").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("__QinJavaUtilArrayDeque." + name, args -> {
+            Object callResult = tryCallGeneratedJavaArrayDequeFastPath(interpretedInstance, name, args);
+            if (callResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return callResult;
+            }
+            throw new IllegalArgumentException("Unsupported generated Java ArrayDeque method: " + name);
+        });
+    }
+
     private static InterpretedInstance generatedJavaArrayList(List<Object> values) {
         InterpretedInstance list = new InterpretedInstance(Map.of(), Map.of());
         list.fields.put("__items", new ArrayList<>(values));
@@ -2803,10 +5518,41 @@ public final class JavaEsmGlobal {
     @SuppressWarnings("unchecked")
     private static List<Object> generatedJavaMutableListValues(Object value) {
         if (value instanceof InterpretedInstance interpretedInstance) {
-            return interpretedInstance.interpretedJavaListItems();
+            List<Object> items = interpretedInstance.interpretedJavaListItems();
+            traceGeneratedListExtraction(value, items, "interpreted-instance");
+            return items;
         }
         if (value instanceof List<?> list) {
-            return (List<Object>) list;
+            List<Object> items = (List<Object>) list;
+            traceGeneratedListExtraction(value, items, "java-list");
+            return items;
+        }
+        if (value != null
+                && !(value instanceof String)
+                && !(value instanceof Number)
+                && !(value instanceof Boolean)
+                && !(value instanceof Character)
+                && !(value instanceof Class<?>)) {
+            Object items = tryReadField(value, "__items");
+            if (items instanceof List<?> list) {
+                List<Object> result = (List<Object>) list;
+                traceGeneratedListExtraction(value, result, "field-__items");
+                return result;
+            }
+            Object getterItems = tryReadPropertyGetter(value, "__items");
+            if (getterItems instanceof List<?> list) {
+                List<Object> result = (List<Object>) list;
+                traceGeneratedListExtraction(value, result, "getter-__items");
+                return result;
+            }
+            Object expandoItems = instanceExpandoProperty(value, "__items");
+            if (expandoItems instanceof List<?> list) {
+                List<Object> result = (List<Object>) list;
+                traceGeneratedListExtraction(value, result, "instance-expando-__items");
+                return result;
+            }
+            traceGeneratedListExtraction(value, null, "field-__items-miss:" + summarizeRuntimeValue(items)
+                    + "; getter-__items-miss:" + summarizeRuntimeValue(getterItems));
         }
         return null;
     }
@@ -2871,8 +5617,310 @@ public final class JavaEsmGlobal {
         return "hash:" + javaValueHashCode(value);
     }
 
+    private static Object[] directMethodBoundArguments(Object boundArguments) {
+        if (boundArguments == null) {
+            return new Object[0];
+        }
+        List<Object> values = generatedJavaMutableListValues(boundArguments);
+        if (values != null) {
+            return values.toArray();
+        }
+        if (boundArguments.getClass().isArray()) {
+            int length = Array.getLength(boundArguments);
+            Object[] result = new Object[length];
+            for (int index = 0; index < length; index++) {
+                result[index] = Array.get(boundArguments, index);
+            }
+            return result;
+        }
+        return new Object[]{boundArguments};
+    }
+
+    private static Object[] trimExtraArgumentsForFixedArity(Method method, Object[] args) {
+        Object[] safeArgs = args == null ? new Object[0] : args;
+        if (method == null || method.isVarArgs()) {
+            return safeArgs;
+        }
+        int parameterCount = method.getParameterCount();
+        if (safeArgs.length <= parameterCount) {
+            return safeArgs;
+        }
+        return Arrays.copyOf(safeArgs, parameterCount);
+    }
+
+    private static String generatedTokenTextHelper(
+            Object token,
+            String primaryMethodName,
+            String primaryPropertyName,
+            String fallbackPropertyName) {
+        if (token == null) {
+            return "";
+        }
+        Object primaryMethodValue = tryCallJavaLikeMethod(token, primaryMethodName);
+        if (primaryMethodValue != INTERPRETED_INSTANCE_COMPATIBILITY_MISS && primaryMethodValue != null) {
+            return String.valueOf(primaryMethodValue);
+        }
+        Object propertyMethodValue = tryCallJavaLikeMethod(token, primaryPropertyName);
+        if (propertyMethodValue != INTERPRETED_INSTANCE_COMPATIBILITY_MISS && propertyMethodValue != null) {
+            return String.valueOf(propertyMethodValue);
+        }
+        Object primaryPropertyValue = __qin_member_get__(token, primaryPropertyName);
+        if (primaryPropertyValue != null) {
+            return String.valueOf(primaryPropertyValue);
+        }
+        Object fallbackPropertyValue = __qin_member_get__(token, fallbackPropertyName);
+        return fallbackPropertyValue == null ? "" : String.valueOf(fallbackPropertyValue);
+    }
+
     private static boolean generatedJavaHashSetKeyEquals(Object left, Object right) {
         return javaValuesEqual(left, right);
+    }
+
+    private record DirectMethodFunction(Object target, String methodName, Object[] boundArguments)
+            implements QinCallable, JavaFunctionalObject {
+        @Override
+        public Object call(Object... callArguments) {
+            return invoke(callArguments);
+        }
+
+        public Object get() {
+            return invoke(new Object[0]);
+        }
+
+        public void run() {
+            invoke(new Object[0]);
+        }
+
+        public Object execute() {
+            return invoke(new Object[0]);
+        }
+
+        public Object apply(Object value) {
+            return invoke(new Object[]{value});
+        }
+
+        public Object apply(Object left, Object right) {
+            return invoke(new Object[]{left, right});
+        }
+
+        public Object apply(Object... callArguments) {
+            return invoke(callArguments);
+        }
+
+        public void accept(Object value) {
+            invoke(new Object[]{value});
+        }
+
+        public void accept(Object left, Object right) {
+            invoke(new Object[]{left, right});
+        }
+
+        public Object accept(Object... callArguments) {
+            invoke(callArguments);
+            return null;
+        }
+
+        public boolean test(Object value) {
+            return truthy(invoke(new Object[]{value}));
+        }
+
+        public boolean test(Object left, Object right) {
+            return truthy(invoke(new Object[]{left, right}));
+        }
+
+        public boolean test(Object... callArguments) {
+            return truthy(invoke(callArguments));
+        }
+
+        public Object compare(Object left, Object right) {
+            return invoke(new Object[]{left, right});
+        }
+
+        private Object invoke(Object[] callArguments) {
+            Object[] effectiveCallArguments = callArguments == null ? new Object[0] : callArguments;
+            Object[] merged = Arrays.copyOf(boundArguments, boundArguments.length + effectiveCallArguments.length);
+            System.arraycopy(effectiveCallArguments, 0, merged, boundArguments.length, effectiveCallArguments.length);
+            return callMethod(target, methodName, merged);
+        }
+    }
+
+    private record JavaFunctionalAdapter(Object callable) implements QinCallable, JavaFunctionalObject {
+        @Override
+        public Object call(Object... callArguments) {
+            return callAny(callable, callArguments == null ? new Object[0] : callArguments);
+        }
+
+        public Object get() {
+            return call();
+        }
+
+        public void run() {
+            call();
+        }
+
+        public Object execute() {
+            return call();
+        }
+
+        public Object apply(Object value) {
+            return call(value);
+        }
+
+        public Object apply(Object left, Object right) {
+            return call(left, right);
+        }
+
+        public Object apply(Object... callArguments) {
+            return call(callArguments);
+        }
+
+        public void accept(Object value) {
+            call(value);
+        }
+
+        public void accept(Object left, Object right) {
+            call(left, right);
+        }
+
+        public Object accept(Object... callArguments) {
+            call(callArguments);
+            return null;
+        }
+
+        public boolean test(Object value) {
+            return truthy(call(value));
+        }
+
+        public boolean test(Object left, Object right) {
+            return truthy(call(left, right));
+        }
+
+        public boolean test(Object... callArguments) {
+            return truthy(call(callArguments));
+        }
+
+        public Object compare(Object left, Object right) {
+            return call(left, right);
+        }
+    }
+
+    private record SubhutiRuleCacheValueEntry(Object value, int id) {
+    }
+
+    private static List<Object> subhutiRuleCacheArgumentValues(Object args) {
+        Object value = unwrapExportSlotValue(args);
+        if (value == null) {
+            return List.of();
+        }
+        if (value instanceof List<?> list) {
+            return new ArrayList<>(list);
+        }
+        Class<?> valueClass = value.getClass();
+        if (valueClass.isArray()) {
+            int length = Array.getLength(value);
+            List<Object> values = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                values.add(Array.get(value, i));
+            }
+            return values;
+        }
+        if (value instanceof Iterable<?> iterable) {
+            List<Object> values = new ArrayList<>();
+            for (Object item : iterable) {
+                values.add(item);
+            }
+            return values;
+        }
+        return List.of(value);
+    }
+
+    private static String formatSubhutiRuleCacheValue(Object rawValue) {
+        Object value = unwrapExportSlotValue(rawValue);
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof CharSequence) {
+            return value.toString();
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return jsString(value);
+        }
+        if (value instanceof List<?> list) {
+            List<String> parts = new ArrayList<>(list.size());
+            for (Object item : list) {
+                parts.add(formatSubhutiRuleCacheValue(item));
+            }
+            return "[" + String.join(", ", parts) + "]";
+        }
+        Class<?> valueClass = value.getClass();
+        if (valueClass.isArray()) {
+            int length = Array.getLength(value);
+            List<String> parts = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                parts.add(formatSubhutiRuleCacheValue(Array.get(value, i)));
+            }
+            return "[" + String.join(", ", parts) + "]";
+        }
+        String type = isRuntimeCallableValue(value) ? "function" : "object";
+        if (hasSubhutiValueRuleCacheSemantics(value)) {
+            return type + "#value:" + subhutiValueRuleCacheId(value);
+        }
+        return type + "#identity:" + subhutiIdentityRuleCacheId(value);
+    }
+
+    private static int subhutiIdentityRuleCacheId(Object value) {
+        synchronized (SUBHUTI_RULE_CACHE_IDENTITY_IDS) {
+            Integer existing = SUBHUTI_RULE_CACHE_IDENTITY_IDS.get(value);
+            if (existing != null) {
+                return existing;
+            }
+            int id = nextSubhutiRuleCacheId();
+            SUBHUTI_RULE_CACHE_IDENTITY_IDS.put(value, id);
+            return id;
+        }
+    }
+
+    private static int subhutiValueRuleCacheId(Object value) {
+        String hash = String.valueOf(__qin_java_hash_key__(value));
+        List<SubhutiRuleCacheValueEntry> bucket = SUBHUTI_RULE_CACHE_VALUE_BUCKETS.computeIfAbsent(
+                hash,
+                ignored -> Collections.synchronizedList(new ArrayList<>()));
+        synchronized (bucket) {
+            for (SubhutiRuleCacheValueEntry entry : bucket) {
+                if (generatedJavaHashSetKeyEquals(entry.value(), value)) {
+                    return entry.id();
+                }
+            }
+            int id = nextSubhutiRuleCacheId();
+            bucket.add(new SubhutiRuleCacheValueEntry(value, id));
+            return id;
+        }
+    }
+
+    private static synchronized int nextSubhutiRuleCacheId() {
+        return subhutiNextRuleCacheId++;
+    }
+
+    private static boolean hasSubhutiValueRuleCacheSemantics(Object value) {
+        if (value == null) {
+            return false;
+        }
+        Class<?> ownerClass = value instanceof Class<?> clazz ? clazz : value.getClass();
+        return declaresNonObjectMethod(ownerClass, "hashCode", 0)
+                || declaresNonObjectMethod(ownerClass, "equals", 1);
+    }
+
+    private static boolean declaresNonObjectMethod(Class<?> ownerClass, String name, int parameterCount) {
+        for (Class<?> current = ownerClass;
+                current != null && current != Object.class;
+                current = current.getSuperclass()) {
+            for (Method method : current.getDeclaredMethods()) {
+                if (method.getName().equals(name) && method.getParameterCount() == parameterCount) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static Object javaValueHashCode(Object value) {
@@ -3013,19 +6061,43 @@ public final class JavaEsmGlobal {
         if (target instanceof InterpretedInstance interpretedInstance) {
             Object method = interpretedInstance.getMethod(name);
             if (method != null) {
-                return callAny(method, args);
+                return callRuntimeMethodValue(interpretedInstance, method, args);
             }
             Object value = interpretedInstance.get(name);
             if (isRuntimeCallableValue(value)) {
-                return callAny(value, args);
+                return callRuntimeMethodValue(interpretedInstance, value, args);
             }
             return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Object directJavaMethod = tryCallDirectJavaNoArgMethod(target, name, args);
+        if (directJavaMethod != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return directJavaMethod;
         }
         Object value = __qin_member_get__(target, name);
         if (isRuntimeCallableValue(value)) {
             return callAny(bindRuntimeCallableThis(value, target), args);
         }
         return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static Object tryCallDirectJavaNoArgMethod(Object target, String name, Object[] args) {
+        if (target == null || args.length != 0 || target instanceof Map<?, ?> || target instanceof QinRuntimeObject) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Method method = findCompatibleMethod(
+                target instanceof Class<?> clazz ? clazz : target.getClass(),
+                name,
+                0,
+                target instanceof Class<?>);
+        if (method == null) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        try {
+            return method.invoke(target instanceof Class<?> ? null : target);
+        } catch (IllegalAccessException | InvocationTargetException error) {
+            throw new IllegalArgumentException("Failed to invoke Java-like method: "
+                    + target.getClass().getName() + "." + name, error);
+        }
     }
 
     private static int javaStringHashCode(String value) {
@@ -3203,6 +6275,14 @@ public final class JavaEsmGlobal {
                     + interpretedCallStackSnapshot());
         }
         String name = String.valueOf(methodName);
+        Object generatedNoArgResult = tryCallGeneratedJsNoArgMethod(target, name, args);
+        if (generatedNoArgResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return generatedNoArgResult;
+        }
+        Object generatedRegexPatternClassResult = tryCallGeneratedJavaUtilRegexPatternClassFastPath(target, name, args);
+        if (generatedRegexPatternClassResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return generatedRegexPatternClassResult;
+        }
         if (target instanceof InterpretedInstance interpretedInstance) {
             Object generatedCaffeineResult = tryCallGeneratedCaffeineCacheFastPath(
                     interpretedInstance,
@@ -3218,12 +6298,26 @@ public final class JavaEsmGlobal {
             if (generatedHashSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                 return generatedHashSetResult;
             }
+            Object generatedTreeSetResult = tryCallGeneratedJavaTreeSetFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedTreeSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedTreeSetResult;
+            }
             Object generatedHashMapResult = tryCallGeneratedJavaHashMapFastPath(
                     interpretedInstance,
                     name,
                     args);
             if (generatedHashMapResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                 return generatedHashMapResult;
+            }
+            Object generatedArrayDequeResult = tryCallGeneratedJavaArrayDequeFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedArrayDequeResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedArrayDequeResult;
             }
             Object generatedSubhutiCstResult = tryCallGeneratedSubhutiCstFastPath(
                     interpretedInstance,
@@ -3294,6 +6388,64 @@ public final class JavaEsmGlobal {
         if (target instanceof JavaEsmMapObject mapObject && Objects.equals(methodName, JavaEsmSymbol.iterator())) {
             return mapObject.entries().iterator();
         }
+        if (target instanceof Constructor<?> constructor) {
+            Object javaConstructorResult = tryCallJavaConstructorReflectionFastPath(constructor, name, args);
+            if (javaConstructorResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return javaConstructorResult;
+            }
+        }
+        if (target instanceof Class<?> clazz) {
+            Object javaClassResult = tryCallJavaClassReflectionFastPath(clazz, name, args);
+            if (javaClassResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return javaClassResult;
+            }
+        }
+        if (target instanceof CharSequence text
+                && "String".contentEquals(text)
+                && JavaEsmString.supportsStatic(name)) {
+            return JavaEsmString.invokeStatic(name, args);
+        }
+        if (target instanceof Method method && "apply".equals(name)) {
+            Object receiver = args.length > 0 ? args[0] : null;
+            Object[] applyArgs = args.length > 1 ? runtimeSpreadValuesToArray(args[1]) : new Object[0];
+            return callRuntimeMethodValue(receiver, method, applyArgs);
+        }
+        if (target instanceof Method method && "call".equals(name)) {
+            Object receiver = args.length > 0 ? args[0] : null;
+            Object[] callArgs = args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new Object[0];
+            return callRuntimeMethodValue(receiver, method, callArgs);
+        }
+        if (target instanceof Method method && "bind".equals(name)) {
+            Object receiver = args.length > 0 ? args[0] : null;
+            Object[] boundArgs = args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new Object[0];
+            return new NativeFunction(method.getName() + ".bound", callArgs -> {
+                Object[] combined = Arrays.copyOf(boundArgs, boundArgs.length + callArgs.length);
+                System.arraycopy(callArgs, 0, combined, boundArgs.length, callArgs.length);
+                return callRuntimeMethodValue(receiver, method, trimExtraArgumentsForFixedArity(method, combined));
+            });
+        }
+        if (target instanceof PrototypeMethodCallable prototypeMethod && "apply".equals(name)) {
+            Object receiver = args.length > 0 ? args[0] : null;
+            Object[] applyArgs = args.length > 1 ? runtimeSpreadValuesToArray(args[1]) : new Object[0];
+            return invokePrototypeMethodCallable(receiver, prototypeMethod, applyArgs);
+        }
+        if (target instanceof PrototypeMethodCallable prototypeMethod && "call".equals(name)) {
+            Object receiver = args.length > 0 ? args[0] : null;
+            Object[] callArgs = args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new Object[0];
+            return invokePrototypeMethodCallable(receiver, prototypeMethod, callArgs);
+        }
+        if (target instanceof PrototypeMethodCallable prototypeMethod && "bind".equals(name)) {
+            Object receiver = args.length > 0 ? args[0] : null;
+            Object[] boundArgs = args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new Object[0];
+            return new NativeFunction(prototypeMethod.method().getName() + ".bound", callArgs -> {
+                Object[] combined = Arrays.copyOf(boundArgs, boundArgs.length + callArgs.length);
+                System.arraycopy(callArgs, 0, combined, boundArgs.length, callArgs.length);
+                return invokePrototypeMethodCallable(
+                        receiver,
+                        prototypeMethod,
+                        trimExtraArgumentsForFixedArity(prototypeMethod.method(), combined));
+            });
+        }
         if (target instanceof List<?> list && Objects.equals(methodName, JavaEsmSymbol.iterator())) {
             return list.iterator();
         }
@@ -3302,6 +6454,34 @@ public final class JavaEsmGlobal {
         }
         if (target instanceof List<?> list && JavaEsmArray.supports(name)) {
             return JavaEsmArray.invoke(list, name, args);
+        }
+        if (target instanceof Collection<?> collection) {
+            Object javaCollectionResult = tryCallJavaCollectionFastPath(collection, name, args);
+            if (javaCollectionResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return javaCollectionResult;
+            }
+        }
+        if (target.getClass().isArray() && JavaEsmArray.supports(name)) {
+            Object arrayLike = JavaEsmArray.from(target);
+            if (arrayLike instanceof List<?> list) {
+                return JavaEsmArray.invoke(list, name, args);
+            }
+        }
+        if (target instanceof Map.Entry<?, ?> mapEntry) {
+            Object mapEntryResult = tryCallJavaMapEntryFastPath(mapEntry, name, args);
+            if (mapEntryResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return mapEntryResult;
+            }
+        }
+        if (target instanceof Map<?, ?> map) {
+            Object mapEntryRecordResult = tryCallGeneratedMapEntryRecordFastPath(map, name, args);
+            if (mapEntryRecordResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return mapEntryRecordResult;
+            }
+            Object javaMapResult = tryCallJavaMapFastPath(map, name, args);
+            if (javaMapResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return javaMapResult;
+            }
         }
         if (target instanceof QinRuntimeObject runtimeObject) {
             if (target instanceof InterpretedInstance interpretedInstance) {
@@ -3319,12 +6499,26 @@ public final class JavaEsmGlobal {
                 if (generatedHashSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                     return generatedHashSetResult;
                 }
+                Object generatedTreeSetResult = tryCallGeneratedJavaTreeSetFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedTreeSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedTreeSetResult;
+                }
                 Object generatedHashMapResult = tryCallGeneratedJavaHashMapFastPath(
                         interpretedInstance,
                         name,
                         args);
                 if (generatedHashMapResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                     return generatedHashMapResult;
+                }
+                Object generatedArrayDequeResult = tryCallGeneratedJavaArrayDequeFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedArrayDequeResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedArrayDequeResult;
                 }
                 Object generatedSubhutiCstResult = tryCallGeneratedSubhutiCstFastPath(
                         interpretedInstance,
@@ -3442,11 +6636,9 @@ public final class JavaEsmGlobal {
             return callable.call("apply".equals(name) ? args : new Object[0]);
         }
         if (target instanceof Map<?, ?> map) {
-            if (isModuleNamespaceMap(map)) {
-                Object recoveredReceiverResult = tryCallRecoveredInstanceReceiver(name, args);
-                if (recoveredReceiverResult != RECOVERED_RECEIVER_MISS) {
-                    return recoveredReceiverResult;
-                }
+            Object mapEntryRecordResult = tryCallGeneratedMapEntryRecordFastPath(map, name, args);
+            if (mapEntryRecordResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return mapEntryRecordResult;
             }
             Object javaUtilObjectsResult = tryCallJavaUtilObjectsMapMethod(map, name, args);
             if (javaUtilObjectsResult != BUILTIN_MISS) {
@@ -3455,6 +6647,12 @@ public final class JavaEsmGlobal {
             Object javaLangStringResult = tryCallJavaLangStringMapMethod(map, name, args);
             if (javaLangStringResult != BUILTIN_MISS) {
                 return javaLangStringResult;
+            }
+            if (isModuleNamespaceMap(map)) {
+                Object recoveredReceiverResult = tryCallRecoveredInstanceReceiver(name, args);
+                if (recoveredReceiverResult != RECOVERED_RECEIVER_MISS) {
+                    return recoveredReceiverResult;
+                }
             }
             Object value = JavaEsmObject.resolveStoredPropertyValue(castMap(map).get(propertyKey(methodName)));
             if (value != null) {
@@ -3478,11 +6676,19 @@ public final class JavaEsmGlobal {
                 return recoveredReceiverResult;
             }
         }
+        Object generatedUnmodifiableMapResult = tryCallGeneratedJavaUnmodifiableMapFacadeFastPath(target, name, args);
+        if (generatedUnmodifiableMapResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return generatedUnmodifiableMapResult;
+        }
         if (target instanceof Class<?> clazz) {
             Object classMethodResult = tryCallJavaClassInstanceMethod(clazz, name, args);
             if (classMethodResult != BUILTIN_MISS) {
                 return classMethodResult;
             }
+        }
+        Object javaObjectIntrinsicResult = tryCallJavaObjectIntrinsicMethod(target, name, args);
+        if (javaObjectIntrinsicResult != BUILTIN_MISS) {
+            return javaObjectIntrinsicResult;
         }
         Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
         boolean staticOnly = target instanceof Class<?>;
@@ -3506,9 +6712,294 @@ public final class JavaEsmGlobal {
                             + "; parameterTypes=" + Arrays.toString(method.getParameterTypes())
                             + "; args=" + describeArgs(args),
                     error);
-        } catch (IllegalAccessException | InvocationTargetException error) {
-            throw new IllegalArgumentException("Failed to invoke method: " + ownerClass.getName() + "." + name, error);
+        } catch (IllegalAccessException error) {
+            throw new IllegalArgumentException(
+                    "Failed to invoke method: "
+                            + ownerClass.getName()
+                            + "."
+                            + name
+                            + reflectionFailureSummary(error),
+                    error);
+        } catch (InvocationTargetException error) {
+            Throwable cause = invocationCause(error);
+            throw new IllegalArgumentException(
+                    "Failed to invoke method: "
+                            + ownerClass.getName()
+                            + "."
+                            + name
+                            + reflectionFailureSummary(cause),
+                    cause);
         }
+    }
+
+    private static Object tryCallJavaObjectIntrinsicMethod(Object target, String name, Object[] args) {
+        return switch (name) {
+            case "equals" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield target == args[0] || target.equals(args[0]);
+            }
+            case "hashCode" -> {
+                if (args.length != 0) {
+                    yield BUILTIN_MISS;
+                }
+                yield target.hashCode();
+            }
+            case "toString" -> {
+                if (args.length != 0) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(target);
+            }
+            default -> BUILTIN_MISS;
+        };
+    }
+
+    private static Object tryCallGeneratedJsNoArgMethod(Object target, String name, Object[] args) {
+        if (args.length != 0 || target instanceof InterpretedInstance || target instanceof Map<?, ?>) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
+        if (!isGeneratedJsClass(ownerClass)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Method method = findCompatibleMethod(ownerClass, name, 0, target instanceof Class<?>);
+        if (method == null) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        try {
+            if (method.isVarArgs()) {
+                return method.invoke(target instanceof Class<?> ? null : target, (Object) new Object[0]);
+            }
+            return method.invoke(target instanceof Class<?> ? null : target);
+        } catch (IllegalAccessException | InvocationTargetException error) {
+            throw new IllegalArgumentException("Failed to invoke generated JS no-arg method: "
+                    + ownerClass.getName() + "." + name, error);
+        }
+    }
+
+    private static Object tryCallJavaClassReflectionFastPath(Class<?> clazz, String name, Object[] args) {
+        if (("getDeclaredConstructor".equals(name) || "getConstructor".equals(name)) && args.length == 0) {
+            try {
+                Constructor<?> constructor = "getConstructor".equals(name)
+                        ? clazz.getConstructor()
+                        : clazz.getDeclaredConstructor();
+                constructor.setAccessible(true);
+                return constructor;
+            } catch (ReflectiveOperationException error) {
+                if (isGeneratedJsClass(clazz)) {
+                    Constructor<?> generatedConstructor = generatedJsClassConstructorForArity(clazz, args.length);
+                    if (generatedConstructor != null) {
+                        generatedConstructor.setAccessible(true);
+                        return generatedConstructor;
+                    }
+                }
+                throw new IllegalArgumentException(
+                    "Failed to resolve constructor: " + clazz.getName() + "." + name + "/" + args.length,
+                    error);
+            }
+        }
+        return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static Constructor<?> generatedJsClassConstructorForArity(Class<?> clazz, int arity) {
+        Constructor<?> best = null;
+        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+            if (constructor.isVarArgs() || constructor.getParameterCount() < arity) {
+                continue;
+            }
+            if (best == null || constructor.getParameterCount() < best.getParameterCount()) {
+                best = constructor;
+            }
+        }
+        return best;
+    }
+
+    private static Object tryCallJavaConstructorReflectionFastPath(
+            Constructor<?> constructor,
+            String name,
+            Object[] args) {
+        if (!"newInstance".equals(name)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        try {
+            constructor.setAccessible(true);
+            if (isGeneratedJsClass(constructor.getDeclaringClass())) {
+                if (constructor.getParameterCount() == 1
+                        && constructor.getParameterTypes()[0].isArray()
+                        && Object.class.equals(constructor.getParameterTypes()[0].getComponentType())) {
+                    return constructor.newInstance((Object) args);
+                }
+                Object[] paddedArgs = Arrays.copyOf(args, constructor.getParameterCount());
+                return constructor.newInstance(coerceArguments(paddedArgs, constructor.getParameterTypes()));
+            }
+            Object[] adaptedArgs = constructor.isVarArgs()
+                    ? adaptVarArgs(args, constructor.getParameterTypes(), constructor.getGenericParameterTypes())
+                    : coerceArguments(args, constructor.getParameterTypes());
+            return constructor.newInstance(adaptedArgs);
+        } catch (ReflectiveOperationException | IllegalArgumentException error) {
+            throw new IllegalArgumentException(
+                    "Failed to invoke constructor: " + constructor + "/" + args.length,
+                    error);
+        }
+    }
+
+    private static Object tryCallJavaCollectionFastPath(Collection<?> collection, String name, Object[] args) {
+        return switch (name) {
+            case "isEmpty" -> args.length == 0
+                    ? collection.isEmpty()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "size" -> args.length == 0
+                    ? collection.size()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "contains" -> args.length == 1
+                    ? collection.contains(args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "iterator" -> args.length == 0
+                    ? collection.iterator()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object tryCallJavaMapFastPath(Map<?, ?> map, String name, Object[] args) {
+        Map<Object, Object> mutableView = (Map<Object, Object>) map;
+        return switch (name) {
+            case "get" -> args.length == 1 ? mutableView.get(args[0]) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getOrDefault" -> args.length == 2
+                    ? mutableView.getOrDefault(args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "containsKey" -> args.length == 1
+                    ? mutableView.containsKey(args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "put" -> args.length == 2
+                    ? mutableView.put(args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "putIfAbsent" -> args.length == 2
+                    ? mutableView.putIfAbsent(args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "remove" -> args.length == 1 ? mutableView.remove(args[0]) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "values" -> args.length == 0 ? new ArrayList<>(mutableView.values()) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "keySet", "keys" -> args.length == 0
+                    ? new ArrayList<>(mutableView.keySet())
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "entrySet" -> args.length == 0
+                    ? new ArrayList<>(mutableView.entrySet())
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "size" -> args.length == 0 ? (double) mutableView.size() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "isEmpty" -> args.length == 0 ? mutableView.isEmpty() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "clear" -> {
+                if (args.length != 0) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                mutableView.clear();
+                yield null;
+            }
+            case "forEach" -> {
+                if (args.length != 1) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                for (Map.Entry<Object, Object> entry : mutableView.entrySet()) {
+                    callAny(args[0], entry.getKey(), entry.getValue());
+                }
+                yield null;
+            }
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static Object tryCallGeneratedMapEntryRecordFastPath(Map<?, ?> map, String name, Object[] args) {
+        if (args.length != 0) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        if ("getKey".equals(name) && hasGeneratedMapEntrySlot(map, "0", "0.0")) {
+            return generatedMapEntrySlot(map, "0", "0.0");
+        }
+        if ("getValue".equals(name) && hasGeneratedMapEntrySlot(map, "1", "1.0")) {
+            return generatedMapEntrySlot(map, "1", "1.0");
+        }
+        return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static Object javaMapNativeMethod(Map<?, ?> map, String name) {
+        return switch (name) {
+            case "get",
+                    "getOrDefault",
+                    "containsKey",
+                    "put",
+                    "putIfAbsent",
+                    "remove",
+                    "values",
+                    "keySet",
+                    "keys",
+                    "entrySet",
+                    "size",
+                    "isEmpty",
+                    "clear",
+                    "forEach" ->
+                    new NativeFunction("java.util.Map." + name, args -> {
+                        Object result = tryCallJavaMapFastPath(map, name, args);
+                        if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                            return result;
+                        }
+                        throw new IllegalArgumentException("Unsupported Java Map method call: "
+                                + name + "/" + args.length);
+                    });
+            default -> BUILTIN_MISS;
+        };
+    }
+
+    private static Object tryCallJavaMapEntryFastPath(Map.Entry<?, ?> entry, String name, Object[] args) {
+        if (args.length != 0) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "getKey" -> entry.getKey();
+            case "getValue" -> entry.getValue();
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean hasGeneratedMapEntrySlot(Map<?, ?> map, String integerKey, String generatedKey) {
+        return map.containsKey(integerKey) || map.containsKey(generatedKey);
+    }
+
+    private static Object generatedMapEntrySlot(Map<?, ?> map, String integerKey, String generatedKey) {
+        return map.containsKey(integerKey) ? map.get(integerKey) : map.get(generatedKey);
+    }
+
+    private static Object tryCallGeneratedJavaUnmodifiableMapFacadeFastPath(Object target, String name, Object[] args) {
+        if (target == null || !"__QinJavaUtilUnmodifiableMap".equals(target.getClass().getSimpleName())) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Object source = tryReadField(target, "__source");
+        if (source == INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Map<Object, Object> map = runtimeMapCopy(JavaEsmObject.resolveStoredPropertyValue(source));
+        return switch (name) {
+            case "get" -> args.length == 1 ? map.get(args[0]) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getOrDefault" -> args.length == 2
+                    ? map.getOrDefault(args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "containsKey" -> args.length == 1
+                    ? map.containsKey(args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "values" -> args.length == 0
+                    ? new ArrayList<>(map.values())
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "keySet", "keys" -> args.length == 0
+                    ? new ArrayList<>(map.keySet())
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "entrySet" -> args.length == 0
+                    ? new ArrayList<>(map.entrySet())
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "size" -> args.length == 0 ? (double) map.size() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "isEmpty" -> args.length == 0 ? map.isEmpty() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
     }
 
     private static Object tryCallJavaClassInstanceMethod(Class<?> clazz, String name, Object[] args) {
@@ -3662,6 +7153,24 @@ public final class JavaEsmGlobal {
                     yield BUILTIN_MISS;
                 }
                 yield String.valueOf(args[0]).hashCode();
+            }
+            case "regionMatches" -> {
+                if (args.length == 5) {
+                    yield String.valueOf(args[0]).regionMatches(
+                            toInt(args[1]),
+                            String.valueOf(args[2]),
+                            toInt(args[3]),
+                            toInt(args[4]));
+                }
+                if (args.length == 6) {
+                    yield String.valueOf(args[0]).regionMatches(
+                            Boolean.TRUE.equals(args[1]),
+                            toInt(args[2]),
+                            String.valueOf(args[3]),
+                            toInt(args[4]),
+                            toInt(args[5]));
+                }
+                yield BUILTIN_MISS;
             }
             case "startsWith" -> {
                 if (args.length != 2) {
@@ -3830,6 +7339,132 @@ public final class JavaEsmGlobal {
         return expressionParams;
     }
 
+    private static Object coerceSlimeParserParams(Object value, Class<?> parameterType) {
+        if (!isSlimeParserParamsType(parameterType) || parameterType.isInstance(value) || !canReadStructuralParams(value)) {
+            return BUILTIN_MISS;
+        }
+        Map<String, Object> map = structuralParamsMap(value);
+        String typeName = parameterType.getName();
+        try {
+            if (typeName.endsWith("$ExpressionParams")) {
+                return newSlimeParserParams(
+                        parameterType,
+                        truthy(readStructuralParam(map, true, "In", "in", "__qin_in")),
+                        truthy(readStructuralParam(map, false, "Yield", "yield", "__qin_yield")),
+                        truthy(readStructuralParam(map, false, "Await", "await", "__qin_await")));
+            }
+            if (typeName.endsWith("$StatementParams")) {
+                return newSlimeParserParams(
+                        parameterType,
+                        truthy(readStructuralParam(map, false, "Yield", "yield", "__qin_yield")),
+                        truthy(readStructuralParam(map, false, "Await", "await", "__qin_await")),
+                        truthy(readStructuralParam(map, false, "Return", "ReturnAllowed", "returnAllowed")));
+            }
+            if (typeName.endsWith("$DeclarationParams")) {
+                return newSlimeParserParams(
+                        parameterType,
+                        truthy(readStructuralParam(map, false, "Yield", "yield", "__qin_yield")),
+                        truthy(readStructuralParam(map, false, "Await", "await", "__qin_await")),
+                        truthy(readStructuralParam(map, false, "Default", "IsDefault", "isDefault", "default")));
+            }
+            if (typeName.endsWith("$TemplateLiteralParams")) {
+                return newSlimeParserParams(
+                        parameterType,
+                        truthy(readStructuralParam(map, true, "In", "in", "__qin_in")),
+                        truthy(readStructuralParam(map, false, "Yield", "yield", "__qin_yield")),
+                        truthy(readStructuralParam(map, false, "Await", "await", "__qin_await")),
+                        truthy(readStructuralParam(map, false, "Tagged", "tagged")));
+            }
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Failed to coerce structural parser params to "
+                    + parameterType.getName(), error);
+        }
+        return BUILTIN_MISS;
+    }
+
+    public static Object __qin_coerce_slime_parser_params__(Object value, Class<?> parameterType) {
+        if (!isSlimeParserParamsType(parameterType) || parameterType.isInstance(value)) {
+            return value;
+        }
+        if (value == null) {
+            try {
+                return newSlimeParserParams(parameterType);
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalArgumentException("Failed to create default parser params for "
+                        + parameterType.getName(), error);
+            }
+        }
+        Object coerced = coerceSlimeParserParams(value, parameterType);
+        return coerced == BUILTIN_MISS ? value : coerced;
+    }
+
+    private static Object newSlimeParserParams(Class<?> parameterType, Object... args)
+            throws ReflectiveOperationException {
+        for (Constructor<?> constructor : parameterType.getDeclaredConstructors()) {
+            if (constructor.isVarArgs() && constructor.getParameterCount() == 1) {
+                constructor.setAccessible(true);
+                return constructor.newInstance((Object) args);
+            }
+        }
+        Class<?>[] booleanTypes = new Class<?>[args.length];
+        Arrays.fill(booleanTypes, boolean.class);
+        Constructor<?> constructor = parameterType.getDeclaredConstructor(booleanTypes);
+        constructor.setAccessible(true);
+        return constructor.newInstance(args);
+    }
+
+    private static boolean canReadStructuralParams(Object value) {
+        if (value == null) {
+            return false;
+        }
+        value = unwrapExportSlotValue(value);
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            return isStructuralParamsInterpretedInstance(interpretedInstance);
+        }
+        if (value instanceof Map<?, ?> map) {
+            return map.containsKey("Yield")
+                    || map.containsKey("yield")
+                    || map.containsKey("__qin_yield")
+                    || map.containsKey("Await")
+                    || map.containsKey("await")
+                    || map.containsKey("__qin_await");
+        }
+        return hasZeroArgMethod(value.getClass(), "__qin_yield")
+                && hasZeroArgMethod(value.getClass(), "__qin_await");
+    }
+
+    private static Map<String, Object> structuralParamsMap(Object value) {
+        value = unwrapExportSlotValue(value);
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            return structuralParamsMap(interpretedInstance);
+        }
+        if (value instanceof Map<?, ?> map) {
+            return new LinkedHashMap<>(castMap(map));
+        }
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("In", readJavaStructuralParam(value, true, "__qin_in", "in"));
+        map.put("Yield", readJavaStructuralParam(value, false, "__qin_yield", "yield"));
+        map.put("Await", readJavaStructuralParam(value, false, "__qin_await", "await"));
+        map.put("Return", readJavaStructuralParam(value, false, "returnAllowed"));
+        map.put("Default", readJavaStructuralParam(value, false, "isDefault"));
+        map.put("Tagged", readJavaStructuralParam(value, false, "tagged"));
+        return map;
+    }
+
+    private static Object readJavaStructuralParam(Object value, Object defaultValue, String... methodNames) {
+        for (String methodName : methodNames) {
+            Method method = findCompatibleMethod(value.getClass(), methodName, new Object[0], false);
+            if (method != null) {
+                return invokeMethodCallable(value, method, new Object[0]);
+            }
+        }
+        return defaultValue;
+    }
+
+    private static boolean hasZeroArgMethod(Class<?> ownerClass, String name) {
+        return findCompatibleMethod(ownerClass, name, new Object[0], false) != null;
+    }
+
     private static Object readStructuralParam(Map<String, Object> map, Object defaultValue, String... keys) {
         for (String key : keys) {
             if (map.containsKey(key)) {
@@ -3937,12 +7572,107 @@ public final class JavaEsmGlobal {
             return interpretedFunction.bindThis(receiver).call(callArgs);
         }
         if (isFunctionDefinition(value)) {
-            return new InterpretedFunction(castMap((Map<?, ?>) value)).bindThis(receiver).call(callArgs);
+            return interpretedFunction(castMap((Map<?, ?>) value)).bindThis(receiver).call(callArgs);
         }
         if (value instanceof Method method) {
             return invokeMethodCallable(receiver, method, callArgs);
         }
+        if (value instanceof PrototypeMethodCallable prototypeMethod) {
+            return invokePrototypeMethodCallable(receiver, prototypeMethod, callArgs);
+        }
         return callAny(value, callArgs);
+    }
+
+    private static Object callJavaSuperMethodOrMiss(
+            Object receiver,
+            Object property,
+            Object[] args,
+            Map<String, Object> definition) {
+        receiver = unwrapExportSlotValue(receiver);
+        if (receiver == null || receiver instanceof InterpretedInstance) {
+            return BUILTIN_MISS;
+        }
+        Class<?> receiverClass;
+        boolean staticOnly = false;
+        if (receiver instanceof Class<?> clazz) {
+            receiverClass = clazz;
+            staticOnly = true;
+        } else {
+            receiverClass = receiver.getClass();
+        }
+        Class<?> lexicalOwnerClass = resolveJavaSuperLexicalOwnerClass(receiverClass, definition);
+        Class<?> superClass = (lexicalOwnerClass == null ? receiverClass : lexicalOwnerClass).getSuperclass();
+        if (superClass == null || superClass == Object.class) {
+            return BUILTIN_MISS;
+        }
+        Object[] safeArgs = args == null ? new Object[0] : args;
+        Method method = findCompatibleMethod(superClass, propertyKey(property), safeArgs, staticOnly);
+        if (method == null) {
+            return BUILTIN_MISS;
+        }
+        return invokePrototypeMethodCallable(receiver, new PrototypeMethodCallable(method), safeArgs);
+    }
+
+    private static Class<?> resolveJavaSuperLexicalOwnerClass(
+            Class<?> receiverClass,
+            Map<String, Object> definition) {
+        if (definition == null) {
+            return null;
+        }
+        String ownerClassName = javaSuperLexicalOwnerName(definition);
+        if (ownerClassName == null || ownerClassName.isBlank()) {
+            return null;
+        }
+        try {
+            ClassLoader loader = receiverClass.getClassLoader();
+            Class<?> ownerClass = loader == null
+                    ? Class.forName(ownerClassName)
+                    : Class.forName(ownerClassName, false, loader);
+            if (ownerClass.isAssignableFrom(receiverClass) || receiverClass == Class.class) {
+                return ownerClass;
+            }
+        } catch (ClassNotFoundException ignored) {
+            // Generated local classes may only be named by their source/debug
+            // owner, so fall through to hierarchy matching below.
+        }
+        for (Class<?> current = receiverClass; current != null && current != Object.class; current = current.getSuperclass()) {
+            if (matchesJavaSuperLexicalOwnerName(current, ownerClassName)) {
+                return current;
+            }
+        }
+        return null;
+    }
+
+    private static String javaSuperLexicalOwnerName(Map<String, Object> definition) {
+        Object ownerClassName = definition.get("ownerClassName");
+        if (ownerClassName instanceof String owner && !owner.isBlank() && !"null".equals(owner)) {
+            return owner;
+        }
+        Object rawDebugNode = definition.get("debugNode");
+        if (!(rawDebugNode instanceof String debugNode)) {
+            return null;
+        }
+        int lastDot = debugNode.lastIndexOf('.');
+        if (lastDot <= 0) {
+            return null;
+        }
+        return debugNode.substring(0, lastDot);
+    }
+
+    private static boolean matchesJavaSuperLexicalOwnerName(Class<?> candidate, String ownerClassName) {
+        if (candidate == null || ownerClassName == null || ownerClassName.isBlank()) {
+            return false;
+        }
+        String binaryName = candidate.getName();
+        String simpleName = candidate.getSimpleName();
+        if (ownerClassName.equals(binaryName) || ownerClassName.equals(simpleName)) {
+            return true;
+        }
+        String flattenedBinaryName = binaryName.replace('.', '_').replace('$', '_');
+        String flattenedOwnerName = ownerClassName.replace('.', '_').replace('$', '_');
+        return flattenedOwnerName.equals(flattenedBinaryName)
+                || flattenedBinaryName.endsWith("_" + flattenedOwnerName)
+                || flattenedOwnerName.endsWith("_" + simpleName);
     }
 
     private static Object invokeMethodCallable(Object receiver, Method method, Object[] args) {
@@ -3957,8 +7687,11 @@ public final class JavaEsmGlobal {
                     ? adaptVarArgs(args, method.getParameterTypes(), method.getGenericParameterTypes())
                     : coerceArguments(args, method.getParameterTypes(), method.getGenericParameterTypes());
             return method.invoke(target, invokeArgs);
-        } catch (IllegalAccessException | InvocationTargetException error) {
-            throw new IllegalArgumentException("Failed to invoke method callable", error);
+        } catch (IllegalAccessException error) {
+            throw new IllegalArgumentException("Failed to invoke method callable" + reflectionFailureSummary(error), error);
+        } catch (InvocationTargetException error) {
+            Throwable cause = invocationCause(error);
+            throw new IllegalArgumentException("Failed to invoke method callable" + reflectionFailureSummary(cause), cause);
         }
     }
 
@@ -3977,6 +7710,54 @@ public final class JavaEsmGlobal {
             }
         }
         return null;
+    }
+
+    private static Object invokePrototypeMethodCallable(
+            Object receiver,
+            PrototypeMethodCallable prototypeMethod,
+            Object[] args) {
+        Method method = prototypeMethod.method();
+        if (Modifier.isStatic(method.getModifiers())) {
+            return invokeMethodCallable(receiver, method, args);
+        }
+        Object target = resolveMethodCallableReceiver(receiver, method);
+        if (target == null) {
+            throw new IllegalArgumentException("Unbound Java prototype method callable: "
+                    + method.getDeclaringClass().getName() + "." + method.getName());
+        }
+        try {
+            MethodHandle handle = prototypeSpecialHandle(method);
+            if (isObjectArrayVarArgsMethod(method)) {
+                return handle.asFixedArity().invoke(target, args);
+            }
+            Object[] invokeArgs = method.isVarArgs()
+                    ? adaptVarArgs(args, method.getParameterTypes(), method.getGenericParameterTypes())
+                    : coerceArguments(args, method.getParameterTypes(), method.getGenericParameterTypes());
+            return handle.bindTo(target).invokeWithArguments(invokeArgs);
+        } catch (Throwable error) {
+            throw new IllegalArgumentException(
+                    "Failed to invoke prototype method callable" + reflectionFailureSummary(error),
+                    error);
+        }
+    }
+
+    private static MethodHandle prototypeSpecialHandle(Method method) {
+        return PROTOTYPE_SPECIAL_HANDLE_CACHE.computeIfAbsent(method, key -> {
+            try {
+                MethodHandles.Lookup lookup =
+                        MethodHandles.privateLookupIn(key.getDeclaringClass(), MethodHandles.lookup());
+                return lookup.unreflectSpecial(key, key.getDeclaringClass());
+            } catch (IllegalAccessException error) {
+                throw new IllegalArgumentException("Failed to prepare prototype method callable", error);
+            }
+        });
+    }
+
+    private static boolean isObjectArrayVarArgsMethod(Method method) {
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        return method.isVarArgs()
+                && parameterTypes.length == 1
+                && parameterTypes[0] == Object[].class;
     }
 
     private static Method findCompatibleMethod(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
@@ -3998,6 +7779,15 @@ public final class JavaEsmGlobal {
         Object cached = TYPED_METHOD_LOOKUP_CACHE.get(cacheKey);
         if (cached != null) {
             return cached == METHOD_LOOKUP_MISS ? null : (Method) cached;
+        }
+        if (staticOnly && !isGeneratedOverloadImplementationName(name)) {
+            Method generatedOverload = findCompatibleGeneratedStaticOverload(ownerClass, name, args);
+            if (generatedOverload != null) {
+                if (isValueInsensitiveCompatibility(generatedOverload)) {
+                    TYPED_METHOD_LOOKUP_CACHE.put(cacheKey, generatedOverload);
+                }
+                return generatedOverload;
+            }
         }
         Method varArgsCandidate = null;
         boolean varArgsCandidateCacheable = false;
@@ -4027,6 +7817,44 @@ public final class JavaEsmGlobal {
             TYPED_METHOD_LOOKUP_CACHE.put(cacheKey, METHOD_LOOKUP_MISS);
         }
         return varArgsCandidate;
+    }
+
+    private static Method findCompatibleGeneratedStaticOverload(Class<?> ownerClass, String name, Object[] args) {
+        if (ownerClass == null || name == null || name.isBlank() || args == null) {
+            return null;
+        }
+        String prefix = "__qin_overload_" + name + "_" + args.length + "_";
+        Method selected = null;
+        int selectedIndex = Integer.MAX_VALUE;
+        for (Method method : candidateMethods(ownerClass)) {
+            if (!Modifier.isStatic(method.getModifiers())
+                    || !method.getName().startsWith(prefix)
+                    || !isCompatibleArity(method, args.length)
+                    || !areCompatibleArguments(args, method)) {
+                continue;
+            }
+            int overloadIndex = generatedOverloadImplementationIndex(method.getName(), prefix);
+            if (selected == null || overloadIndex < selectedIndex) {
+                selected = method;
+                selectedIndex = overloadIndex;
+            }
+        }
+        return selected;
+    }
+
+    private static boolean isGeneratedOverloadImplementationName(String name) {
+        return name != null && name.startsWith("__qin_overload_");
+    }
+
+    private static int generatedOverloadImplementationIndex(String methodName, String prefix) {
+        if (methodName == null || prefix == null || !methodName.startsWith(prefix)) {
+            return Integer.MAX_VALUE;
+        }
+        try {
+            return Integer.parseInt(methodName.substring(prefix.length()));
+        } catch (NumberFormatException ignored) {
+            return Integer.MAX_VALUE;
+        }
     }
 
     private static TypedMethodLookupKey typedMethodLookupKey(
@@ -4094,11 +7922,37 @@ public final class JavaEsmGlobal {
                 methods.add(method);
             }
             methods.sort(Comparator
-                    .comparingInt((Method method) -> methodArityDistance(method, key.argCount()))
+                    .comparingInt(JavaEsmGlobal::methodBridgePriority)
+                    .thenComparingInt(method -> methodArityDistance(method, key.argCount()))
+                    .thenComparingInt(method -> declaringClassDistance(key.ownerClass(), method.getDeclaringClass()))
                     .thenComparing(Method::getName)
                     .thenComparing(method -> Arrays.toString(method.getParameterTypes())));
             return List.copyOf(methods);
         });
+    }
+
+    private static int methodBridgePriority(Method method) {
+        return method != null && (method.isBridge() || method.isSynthetic()) ? 1 : 0;
+    }
+
+    private static int declaringClassDistance(Class<?> ownerClass, Class<?> declaringClass) {
+        if (ownerClass == null || declaringClass == null) {
+            return Integer.MAX_VALUE;
+        }
+        if (declaringClass == ownerClass) {
+            return 0;
+        }
+        int distance = 0;
+        for (Class<?> current = ownerClass; current != null; current = current.getSuperclass()) {
+            if (current == declaringClass) {
+                return distance;
+            }
+            distance++;
+        }
+        if (declaringClass.isInterface() && declaringClass.isAssignableFrom(ownerClass)) {
+            return distance + 1024;
+        }
+        return Integer.MAX_VALUE;
     }
 
     private static List<Method> computeCandidateMethods(Class<?> ownerClass) {
@@ -4160,6 +8014,12 @@ public final class JavaEsmGlobal {
         if (parameterType == int.class) {
             return requireNumber(number, "int").intValue();
         }
+        if (parameterType == byte.class) {
+            return requireNumber(number, "byte").byteValue();
+        }
+        if (parameterType == short.class) {
+            return requireNumber(number, "short").shortValue();
+        }
         if (parameterType == long.class) {
             return requireNumber(number, "long").longValue();
         }
@@ -4172,12 +8032,39 @@ public final class JavaEsmGlobal {
         if (parameterType == boolean.class) {
             return truthy(value);
         }
+        if (parameterType == char.class) {
+            return (char) requireNumber(number, "char").intValue();
+        }
         return value;
     }
 
     private static Object coerceTypedFfiArgument(Object value, Class<?> parameterType, Type genericParameterType) {
         if (value == null) {
+            if (isSlimeParserParamsType(parameterType)) {
+                try {
+                    return newSlimeParserParams(parameterType);
+                } catch (ReflectiveOperationException error) {
+                    throw new IllegalArgumentException("Failed to create default parser params for "
+                            + parameterType.getName(), error);
+                }
+            }
             return null;
+        }
+        if (isSubhutiMatchTokenType(parameterType)) {
+            Object token = coerceSubhutiMatchToken(value, parameterType);
+            if (token != BUILTIN_MISS) {
+                return token;
+            }
+        }
+        if (parameterType.isArray()) {
+            Object array = coerceRuntimeArrayArgument(value, parameterType);
+            if (array != BUILTIN_MISS) {
+                return array;
+            }
+        }
+        Object slimeParserParams = coerceSlimeParserParams(value, parameterType);
+        if (slimeParserParams != BUILTIN_MISS) {
+            return slimeParserParams;
         }
         if (isJavaFunctionalInterface(parameterType)) {
             return coerceJavaFunctionalInterface(value, parameterType);
@@ -4198,7 +8085,113 @@ public final class JavaEsmGlobal {
             }
             return alternatives;
         }
+        if (List.class.isAssignableFrom(parameterType)) {
+            List<Object> values = generatedJavaMutableListValues(value);
+            if (values != null) {
+                if (parameterType.isAssignableFrom(ArrayList.class)) {
+                    return new ArrayList<>(values);
+                }
+                if (parameterType.isInterface()) {
+                    return new ArrayList<>(values);
+                }
+            }
+        }
         return value;
+    }
+
+    private static Object coerceRuntimeArrayArgument(Object value, Class<?> arrayType) {
+        if (!arrayType.isArray()) {
+            return BUILTIN_MISS;
+        }
+        if (value == null || arrayType.isInstance(value)) {
+            return value;
+        }
+        List<?> values = runtimeArrayArgumentValues(value);
+        if (values == null) {
+            return BUILTIN_MISS;
+        }
+        Class<?> componentType = arrayType.getComponentType();
+        Object array = Array.newInstance(componentType, values.size());
+        for (int i = 0; i < values.size(); i++) {
+            Array.set(array, i, coerceArgument(values.get(i), componentType, componentType));
+        }
+        return array;
+    }
+
+    private static List<?> runtimeArrayArgumentValues(Object value) {
+        List<Object> generatedValues = generatedJavaMutableListValues(value);
+        if (generatedValues != null) {
+            return generatedValues;
+        }
+        if (value instanceof Collection<?> collection) {
+            return new ArrayList<>(collection);
+        }
+        if (value instanceof JavaEsmSetObject setObject) {
+            return setObject.values();
+        }
+        if (value != null && value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            List<Object> values = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                values.add(Array.get(value, i));
+            }
+            return values;
+        }
+        return null;
+    }
+
+    public static Object __qin_java_functional_interface__(Object value, Class<?> parameterType) {
+        return coerceJavaFunctionalInterface(value, parameterType);
+    }
+
+    public static Object __qin_coerce_java_value__(Object value, Class<?> targetType) {
+        return coerceArgument(value, targetType, targetType);
+    }
+
+    public static String __qin_java_character_char__(Object value) {
+        return new String(Character.toChars(qinJavaCharacterCodePoint(value)));
+    }
+
+    public static boolean __qin_java_character_is_whitespace__(Object value) {
+        return Character.isWhitespace(qinJavaCharacterCodePoint(value));
+    }
+
+    public static boolean __qin_java_character_is_letter__(Object value) {
+        return Character.isLetter(qinJavaCharacterCodePoint(value));
+    }
+
+    public static boolean __qin_java_character_is_letter_or_digit__(Object value) {
+        return Character.isLetterOrDigit(qinJavaCharacterCodePoint(value));
+    }
+
+    public static boolean __qin_java_character_is_java_identifier_start__(Object value) {
+        return Character.isJavaIdentifierStart(qinJavaCharacterCodePoint(value));
+    }
+
+    public static String __qin_java_character_to_upper_case__(Object value) {
+        return new String(Character.toChars(Character.toUpperCase(qinJavaCharacterCodePoint(value))));
+    }
+
+    public static String __qin_java_character_to_lower_case__(Object value) {
+        return new String(Character.toChars(Character.toLowerCase(qinJavaCharacterCodePoint(value))));
+    }
+
+    public static int __qin_java_character_char_count__(Object value) {
+        return Character.charCount(qinJavaCharacterCodePoint(value));
+    }
+
+    private static int qinJavaCharacterCodePoint(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof Character character) {
+            return character;
+        }
+        String text = String.valueOf(value);
+        if (text.isEmpty()) {
+            return 0;
+        }
+        return text.codePointAt(0);
     }
 
     private static Object coerceJavaRecord(Object value, Class<?> recordType) {
@@ -4309,8 +8302,148 @@ public final class JavaEsmGlobal {
     }
 
     private static boolean isSlimeParserParamsRecord(Class<?> recordType) {
-        return recordType.getName().startsWith("com.slime.parser.base.SlimeJavascriptParserBase$")
-                && recordType.getSimpleName().endsWith("Params");
+        return isSlimeParserParamsType(recordType);
+    }
+
+    private static boolean isSlimeParserParamsType(Class<?> type) {
+        String name = type.getName();
+        return (name.startsWith("com.slime.parser.base.SlimeJavascriptParserBase$")
+                || name.startsWith("com_slime_parser_base_SlimeJavascriptParserBase$"))
+                && type.getSimpleName().endsWith("Params");
+    }
+
+    private static boolean isSubhutiMatchTokenType(Class<?> type) {
+        return isSubhutiMatchTokenClassName(type.getName());
+    }
+
+    private static boolean isSubhutiMatchTokenClassName(String name) {
+        return SUBHUTI_MATCH_TOKEN_CLASS_NAME.equals(name)
+                || GENERATED_SUBHUTI_MATCH_TOKEN_CLASS_NAME.equals(name)
+                || "SubhutiMatchToken".equals(name);
+    }
+
+    private static Object coerceSubhutiMatchToken(Object value, Class<?> targetType) {
+        if (targetType.isInstance(value)) {
+            return value;
+        }
+        if (!isSubhutiMatchTokenShapeObject(value)) {
+            return BUILTIN_MISS;
+        }
+        try {
+            Constructor<?> constructor = targetType.getConstructor(
+                    String.class,
+                    String.class,
+                    int.class,
+                    Integer.class,
+                    Integer.class,
+                    Integer.class,
+                    Integer.class,
+                    Boolean.class);
+            return constructor.newInstance(
+                    String.valueOf(readRequiredSubhutiMatchTokenValue(value, "tokenName")),
+                    String.valueOf(readRequiredSubhutiMatchTokenValue(value, "tokenValue")),
+                    intOrDefault(readSubhutiMatchTokenValue(value, "tokenTypeId"), -1),
+                    integerOrNull(readSubhutiMatchTokenValue(value, "rowNum")),
+                    integerOrNull(readSubhutiMatchTokenValue(value, "columnStartNum")),
+                    integerOrNull(readSubhutiMatchTokenValue(value, "columnEndNum")),
+                    integerOrNull(readSubhutiMatchTokenValue(value, "index")),
+                    booleanOrNull(readSubhutiMatchTokenValue(value, "hasLineBreakBefore")));
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Failed to coerce generated SubhutiMatchToken to "
+                    + targetType.getName(), error);
+        }
+    }
+
+    private static boolean isSubhutiMatchTokenShapeObject(Object value) {
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            return isGeneratedSubhutiMatchTokenShape(interpretedInstance);
+        }
+        if (value == null) {
+            return false;
+        }
+        String className = value.getClass().getName();
+        if (SUBHUTI_MATCH_TOKEN_CLASS_NAME.equals(className)
+                || GENERATED_SUBHUTI_MATCH_TOKEN_CLASS_NAME.equals(className)) {
+            return true;
+        }
+        return readSubhutiMatchTokenValue(value, "tokenName") != FIELD_LOOKUP_MISS
+                && readSubhutiMatchTokenValue(value, "tokenValue") != FIELD_LOOKUP_MISS
+                && readSubhutiMatchTokenValue(value, "index") != FIELD_LOOKUP_MISS
+                && readSubhutiMatchTokenValue(value, "hasLineBreakBefore") != FIELD_LOOKUP_MISS;
+    }
+
+    private static Object readRequiredSubhutiMatchTokenValue(Object value, String name) {
+        Object result = readSubhutiMatchTokenValue(value, name);
+        if (result == FIELD_LOOKUP_MISS || result == null) {
+            throw new IllegalArgumentException("Generated SubhutiMatchToken is missing " + name);
+        }
+        return result;
+    }
+
+    private static Object readSubhutiMatchTokenValue(Object value, String name) {
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            return generatedJavaHashSetField(interpretedInstance, name);
+        }
+        Object field = tryReadFieldOrMiss(value, "__qin_field_" + name);
+        if (field != FIELD_LOOKUP_MISS) {
+            return field;
+        }
+        field = tryReadFieldOrMiss(value, name);
+        if (field != FIELD_LOOKUP_MISS) {
+            return field;
+        }
+        for (String methodName : subhutiMatchTokenMethodNames(name)) {
+            Method method = findCompatibleMethod(value.getClass(), methodName, 0, false);
+            if (method == null) {
+                continue;
+            }
+            try {
+                return method.invoke(value);
+            } catch (IllegalAccessException | InvocationTargetException error) {
+                throw new IllegalArgumentException("Failed to read SubhutiMatchToken." + methodName, error);
+            }
+        }
+        return FIELD_LOOKUP_MISS;
+    }
+
+    private static List<String> subhutiMatchTokenMethodNames(String name) {
+        return switch (name) {
+            case "tokenName" -> List.of("getTokenName", "tokenName");
+            case "tokenValue" -> List.of("getTokenValue", "tokenValue", "value");
+            case "tokenTypeId" -> List.of("getTokenTypeId", "tokenTypeId");
+            case "rowNum" -> List.of("getRowNum", "rowNum");
+            case "columnStartNum" -> List.of("getColumnStartNum", "columnStartNum");
+            case "columnEndNum" -> List.of("getColumnEndNum", "columnEndNum");
+            case "index" -> List.of("getIndex", "index");
+            case "hasLineBreakBefore" -> List.of("getHasLineBreakBefore", "hasLineBreakBefore");
+            default -> List.of(name);
+        };
+    }
+
+    private static Integer integerOrNull(Object value) {
+        if (value == FIELD_LOOKUP_MISS || value == null) {
+            return null;
+        }
+        Double number = asNumber(value);
+        if (number == null) {
+            throw new IllegalArgumentException("Expected integer-compatible value, got: " + simpleName(value));
+        }
+        return number.intValue();
+    }
+
+    private static int intOrDefault(Object value, int defaultValue) {
+        Integer integer = integerOrNull(value);
+        return integer == null ? defaultValue : integer;
+    }
+
+    private static Boolean booleanOrNull(Object value) {
+        if (value == FIELD_LOOKUP_MISS || value == null) {
+            return null;
+        }
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        return truthy(value);
     }
 
     private static Object readJavaRecordComponentValue(
@@ -4385,6 +8518,27 @@ public final class JavaEsmGlobal {
             return value;
         }
         Object callable = unwrapExportSlotValue(value);
+        if (callable instanceof DirectMethodFunction directMethodFunction) {
+            return Proxy.newProxyInstance(
+                    parameterType.getClassLoader(),
+                    new Class<?>[]{parameterType},
+                    (proxy, method, args) -> {
+                        if (method.getDeclaringClass() == Object.class) {
+                            return switch (method.getName()) {
+                                case "toString" -> "QinDirectMethodFunctionalInterfaceProxy("
+                                        + parameterType.getName() + ")";
+                                case "hashCode" -> System.identityHashCode(proxy);
+                                case "equals" -> proxy == (args == null || args.length == 0 ? null : args[0]);
+                                default -> throw new UnsupportedOperationException(method.getName());
+                            };
+                        }
+                        Object result = directMethodFunction.invoke(args == null ? new Object[0] : args);
+                        if (method.getReturnType() == void.class) {
+                            return null;
+                        }
+                        return coerceArgument(result, method.getReturnType(), method.getGenericReturnType());
+                    });
+        }
         if (!isRuntimeCallable(callable)) {
             throw new IllegalArgumentException("Expected callable for Java functional interface "
                     + parameterType.getName() + ", got: " + simpleName(value));
@@ -4421,6 +8575,7 @@ public final class JavaEsmGlobal {
         for (Method method : type.getMethods()) {
             int modifiers = method.getModifiers();
             if (method.getDeclaringClass() == Object.class
+                    || isObjectMethodSignature(method)
                     || Modifier.isStatic(modifiers)
                     || method.isDefault()
                     || !Modifier.isAbstract(modifiers)) {
@@ -4432,6 +8587,34 @@ public final class JavaEsmGlobal {
             functionalMethod = method;
         }
         return functionalMethod;
+    }
+
+    private static Method functionalInterfaceMethodForCallable(Object callable) {
+        if (callable == null) {
+            return null;
+        }
+        Method functionalMethod = null;
+        Class<?> type = callable.getClass();
+        for (Class<?> candidate : type.getInterfaces()) {
+            Method candidateMethod = functionalInterfaceMethod(candidate);
+            if (candidateMethod == null) {
+                continue;
+            }
+            if (functionalMethod != null && !sameMethodSignature(functionalMethod, candidateMethod)) {
+                return null;
+            }
+            functionalMethod = candidateMethod;
+        }
+        return functionalMethod;
+    }
+
+    private static boolean isObjectMethodSignature(Method method) {
+        try {
+            Object.class.getMethod(method.getName(), method.getParameterTypes());
+            return true;
+        } catch (NoSuchMethodException ignored) {
+            return false;
+        }
     }
 
     private static boolean sameMethodSignature(Method left, Method right) {
@@ -4486,6 +8669,10 @@ public final class JavaEsmGlobal {
     }
 
     private static Object construct(Object callee, Object... args) {
+        return construct(callee, false, args);
+    }
+
+    private static Object construct(Object callee, boolean superCallContext, Object... args) {
         callee = unwrapExportSlotValue(callee);
         if (callee instanceof String text) {
             return switch (text) {
@@ -4513,8 +8700,12 @@ public final class JavaEsmGlobal {
             };
         }
         if (callee instanceof Class<?> ownerClass) {
+            Object generatedJavaSdkAliasValue = constructGeneratedJavaSdkAlias(ownerClass, args);
+            if (generatedJavaSdkAliasValue != CONSTRUCT_MISS) {
+                return generatedJavaSdkAliasValue;
+            }
             List<String> constructorFailures = new ArrayList<>();
-            for (Constructor<?> constructor : ownerClass.getConstructors()) {
+            for (Constructor<?> constructor : reflectedConstructorCandidates(ownerClass, superCallContext)) {
                 if (!constructor.isVarArgs() && constructor.getParameterCount() != args.length) {
                     continue;
                 }
@@ -4522,6 +8713,7 @@ public final class JavaEsmGlobal {
                     continue;
                 }
                 try {
+                    constructor.setAccessible(true);
                     Object[] adaptedArgs = constructor.isVarArgs()
                             ? adaptVarArgs(args, constructor.getParameterTypes(), constructor.getGenericParameterTypes())
                             : coerceArguments(args, constructor.getParameterTypes());
@@ -4530,13 +8722,19 @@ public final class JavaEsmGlobal {
                     constructorFailures.add(describeConstructorFailure(constructor, error));
                 }
             }
-            if (isGeneratedJsClass(ownerClass)) {
-                for (Constructor<?> constructor : ownerClass.getConstructors()) {
+            if (isGeneratedJsClass(ownerClass) && !superCallContext) {
+                for (Constructor<?> constructor : ownerClass.getDeclaredConstructors()) {
                     if (constructor.isVarArgs()
                             || constructor.getParameterCount() < args.length) {
                         continue;
                     }
                     try {
+                        constructor.setAccessible(true);
+                        if (constructor.getParameterCount() == 1
+                                && constructor.getParameterTypes()[0].isArray()
+                                && Object.class.equals(constructor.getParameterTypes()[0].getComponentType())) {
+                            return constructor.newInstance((Object) args);
+                        }
                         Object[] paddedArgs = Arrays.copyOf(args, constructor.getParameterCount());
                         return constructor.newInstance(coerceArguments(paddedArgs, constructor.getParameterTypes()));
                     } catch (ReflectiveOperationException | IllegalArgumentException error) {
@@ -4551,7 +8749,7 @@ public final class JavaEsmGlobal {
                     + (constructorFailures.isEmpty() ? "" : "; failures=" + constructorFailures));
         }
         if (isFunctionDefinition(callee)) {
-            return new InterpretedFunction(castMap((Map<?, ?>) callee)).construct(args);
+            return interpretedFunction(castMap((Map<?, ?>) callee)).construct(args);
         }
         if (callee instanceof InterpretedFunction interpretedFunction) {
             return interpretedFunction.construct(args);
@@ -4568,6 +8766,160 @@ public final class JavaEsmGlobal {
         throw new IllegalArgumentException("Unsupported constructor target: " + simpleName(callee));
     }
 
+    private static List<Constructor<?>> reflectedConstructorCandidates(Class<?> ownerClass, boolean superCallContext) {
+        if (!superCallContext) {
+            return List.of(ownerClass.getConstructors());
+        }
+        List<Constructor<?>> constructors = new ArrayList<>();
+        for (Constructor<?> constructor : ownerClass.getDeclaredConstructors()) {
+            int modifiers = constructor.getModifiers();
+            if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
+                constructors.add(constructor);
+            }
+        }
+        return List.copyOf(constructors);
+    }
+
+    private static Object constructGeneratedJavaSdkAlias(Class<?> ownerClass, Object[] args) {
+        String simpleName = ownerClass.getSimpleName();
+        return switch (simpleName) {
+            case "__QinJavaUtilArrayList" -> constructGeneratedJavaSdkArrayList(args);
+            case "__QinJavaUtilUnmodifiableList" -> constructGeneratedJavaSdkUnmodifiableList(args);
+            case "__QinJavaUtilArrayDeque" -> constructGeneratedJavaSdkArrayDeque(args);
+            case "__QinJavaUtilHashSet" -> constructGeneratedJavaSdkHashSet(args);
+            case "__QinJavaUtilUnmodifiableSet" -> constructGeneratedJavaSdkUnmodifiableSet(args);
+            case "__QinJavaUtilHashMap" -> constructGeneratedJavaSdkHashMap(args);
+            case "__QinJavaUtilLinkedHashMap" -> constructGeneratedJavaSdkLinkedHashMap(args);
+            case "__QinJavaUtilIdentityHashMap" -> constructGeneratedJavaSdkIdentityHashMap(args);
+            case "__QinJavaUtilUnmodifiableMap" -> constructGeneratedJavaSdkUnmodifiableMap(args);
+            default -> CONSTRUCT_MISS;
+        };
+    }
+
+    private static ArrayList<Object> constructGeneratedJavaSdkArrayList(Object[] args) {
+        if (args.length == 0) {
+            return new ArrayList<>();
+        }
+        if (args.length == 1 && args[0] instanceof Number number) {
+            return new ArrayList<>(Math.max(0, number.intValue()));
+        }
+        if (args.length == 1) {
+            return new ArrayList<>(generatedJavaListValues(args[0]));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilArrayList constructor expects 0 or 1 argument, got: "
+                + args.length);
+    }
+
+    private static List<Object> constructGeneratedJavaSdkUnmodifiableList(Object[] args) {
+        if (args.length == 0) {
+            return List.of();
+        }
+        if (args.length == 1) {
+            return Collections.unmodifiableList(new ArrayList<>(generatedJavaListValues(args[0])));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilUnmodifiableList constructor expects 0 or 1 argument, got: "
+                + args.length);
+    }
+
+    private static ArrayDeque<Object> constructGeneratedJavaSdkArrayDeque(Object[] args) {
+        if (args.length == 0) {
+            return new ArrayDeque<>();
+        }
+        if (args.length == 1 && args[0] instanceof Number number) {
+            return new ArrayDeque<>(Math.max(0, number.intValue()));
+        }
+        if (args.length == 1) {
+            return new ArrayDeque<>(generatedJavaListValues(args[0]));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilArrayDeque constructor expects 0 or 1 argument, got: "
+                + args.length);
+    }
+
+    private static HashSet<Object> constructGeneratedJavaSdkHashSet(Object[] args) {
+        if (args.length == 0) {
+            return new HashSet<>();
+        }
+        if (args.length == 1) {
+            return new HashSet<>(generatedJavaListValues(args[0]));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilHashSet constructor expects 0 or 1 argument, got: "
+                + args.length);
+    }
+
+    private static Set<Object> constructGeneratedJavaSdkUnmodifiableSet(Object[] args) {
+        if (args.length == 0) {
+            return Set.of();
+        }
+        if (args.length == 1) {
+            return Collections.unmodifiableSet(new LinkedHashSet<>(generatedJavaListValues(args[0])));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilUnmodifiableSet constructor expects 0 or 1 argument, got: "
+                + args.length);
+    }
+
+    private static HashMap<Object, Object> constructGeneratedJavaSdkHashMap(Object[] args) {
+        if (args.length == 0) {
+            return new HashMap<>();
+        }
+        if (args.length == 1 && args[0] instanceof Number number) {
+            return new HashMap<>(Math.max(0, number.intValue()));
+        }
+        if (args.length == 1) {
+            return new HashMap<>(runtimeMapCopy(args[0]));
+        }
+        if (args.length == 2 && args[0] instanceof Number capacity && args[1] instanceof Number loadFactor) {
+            return new HashMap<>(Math.max(0, capacity.intValue()), loadFactor.floatValue());
+        }
+        throw new IllegalArgumentException("__QinJavaUtilHashMap constructor expects 0, 1 numeric, or 2 numeric arguments, got: "
+                + args.length);
+    }
+
+    private static LinkedHashMap<Object, Object> constructGeneratedJavaSdkLinkedHashMap(Object[] args) {
+        if (args.length == 0) {
+            return new LinkedHashMap<>();
+        }
+        if (args.length == 1 && args[0] instanceof Number number) {
+            return new LinkedHashMap<>(Math.max(0, number.intValue()));
+        }
+        if (args.length == 2 && args[0] instanceof Number capacity && args[1] instanceof Number loadFactor) {
+            return new LinkedHashMap<>(Math.max(0, capacity.intValue()), loadFactor.floatValue());
+        }
+        if (args.length == 3
+                && args[0] instanceof Number capacity
+                && args[1] instanceof Number loadFactor) {
+            return new LinkedHashMap<>(
+                    Math.max(0, capacity.intValue()),
+                    loadFactor.floatValue(),
+                    truthy(args[2]));
+        }
+        throw new IllegalArgumentException(
+                "__QinJavaUtilLinkedHashMap constructor expects 0, 1 numeric, 2 numeric, or 3 arguments, got: "
+                        + args.length);
+    }
+
+    private static IdentityHashMap<Object, Object> constructGeneratedJavaSdkIdentityHashMap(Object[] args) {
+        if (args.length == 0) {
+            return new IdentityHashMap<>();
+        }
+        if (args.length == 1 && args[0] instanceof Number number) {
+            return new IdentityHashMap<>(Math.max(0, number.intValue()));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilIdentityHashMap constructor expects 0 or 1 numeric argument, got: "
+                + args.length);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Object, Object> constructGeneratedJavaSdkUnmodifiableMap(Object[] args) {
+        if (args.length == 0) {
+            return Map.of();
+        }
+        if (args.length == 1) {
+            return Collections.unmodifiableMap(runtimeMapCopy(args[0]));
+        }
+        throw new IllegalArgumentException("__QinJavaUtilUnmodifiableMap constructor expects 0 or 1 map argument, got: "
+                + args.length);
+    }
+
     private static Object createProxyObject(Object[] args) {
         if (args.length < 2) {
             throw new IllegalArgumentException("Proxy constructor expects target and handler");
@@ -4579,12 +8931,39 @@ public final class JavaEsmGlobal {
         if (ownerClass == null) {
             return false;
         }
+        Module ownerModule = ownerClass.getModule();
+        if (ownerModule != null && ownerModule.isNamed() && ownerModule.getName().startsWith("java.")) {
+            return false;
+        }
         String name = ownerClass.getName();
         String simpleName = ownerClass.getSimpleName();
-        return name.startsWith("__Qin")
+        return hasGeneratedDeclarationClassMarker(ownerClass)
+                || hasGeneratedJsConstructor(ownerClass)
+                || name.startsWith("__Qin")
                 || name.startsWith("com_")
                 || simpleName.startsWith("__Qin")
                 || simpleName.startsWith("com_");
+    }
+
+    private static boolean hasGeneratedDeclarationClassMarker(Class<?> ownerClass) {
+        try {
+            Method marker = ownerClass.getDeclaredMethod("__qin_generated_declaration_class");
+            return Modifier.isStatic(marker.getModifiers())
+                    && (marker.getReturnType() == boolean.class || marker.getReturnType() == Boolean.class);
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    private static boolean hasGeneratedJsConstructor(Class<?> ownerClass) {
+        for (Constructor<?> constructor : ownerClass.getDeclaredConstructors()) {
+            if (constructor.getParameterCount() == 1
+                    && constructor.getParameterTypes()[0].isArray()
+                    && Object.class.equals(constructor.getParameterTypes()[0].getComponentType())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String describeConstructorFailure(Constructor<?> constructor, Exception error) {
@@ -4596,20 +8975,95 @@ public final class JavaEsmGlobal {
                 + " -> "
                 + cause.getClass().getSimpleName()
                 + ": "
-                + String.valueOf(cause.getMessage());
+                + String.valueOf(cause.getMessage())
+                + throwableCauseChain(cause, 6)
+                + stackTraceSummary(cause, 32);
+    }
+
+    private static Throwable invocationCause(InvocationTargetException error) {
+        Throwable cause = error.getCause();
+        return cause == null ? error : cause;
+    }
+
+    private static String reflectionFailureSummary(Throwable error) {
+        Throwable cause = error instanceof InvocationTargetException invocationTargetException
+                ? invocationCause(invocationTargetException)
+                : error;
+        return "; rootCauseClass="
+                + cause.getClass().getName()
+                + "; rootCauseMessage="
+                + boundedDiagnosticText(cause.getMessage(), 2048)
+                + throwableCauseChain(cause, 6)
+                + stackTraceSummary(cause, 24);
+    }
+
+    private static String throwableCauseChain(Throwable throwable, int limit) {
+        StringBuilder builder = new StringBuilder();
+        Throwable current = throwable.getCause();
+        int depth = 0;
+        while (current != null && depth < limit) {
+            builder.append("; cause")
+                    .append(depth + 1)
+                    .append("=")
+                    .append(current.getClass().getSimpleName())
+                    .append(": ")
+                    .append(boundedDiagnosticText(current.getMessage(), 2048));
+            current = current.getCause();
+            depth++;
+        }
+        return builder.toString();
+    }
+
+    private static String stackTraceSummary(Throwable throwable, int limit) {
+        StackTraceElement[] stack = throwable.getStackTrace();
+        if (stack == null || stack.length == 0) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder("; stack=");
+        int count = Math.min(limit, stack.length);
+        for (int i = 0; i < count; i++) {
+            if (i > 0) {
+                builder.append(" <- ");
+            }
+            builder.append(stack[i].getClassName())
+                    .append(".")
+                    .append(stack[i].getMethodName())
+                    .append(":")
+                    .append(stack[i].getLineNumber());
+        }
+        if (stack.length > count) {
+            builder.append(" <- ...");
+        }
+        return builder.toString();
+    }
+
+    private static String boundedDiagnosticText(Object value, int limit) {
+        String text = String.valueOf(value);
+        if (text.length() <= limit) {
+            return text;
+        }
+        return text.substring(0, Math.max(0, limit))
+                + "...(truncated "
+                + (text.length() - limit)
+                + " chars)";
     }
 
     private static Object tryReadField(Object target, String name) {
+        Object value = tryReadFieldOrMiss(target, name);
+        return value == FIELD_LOOKUP_MISS ? null : value;
+    }
+
+    private static Object tryReadFieldOrMiss(Object target, String name) {
         Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
         boolean staticOnly = target instanceof Class<?>;
         Field field = findAccessibleField(ownerClass, name, staticOnly);
         if (field == null) {
-            return null;
+            return FIELD_LOOKUP_MISS;
         }
         try {
             return field.get(staticOnly ? null : target);
         } catch (IllegalAccessException ignored) {
-            return null;
+            return FIELD_LOOKUP_MISS;
         }
     }
 
@@ -4623,10 +9077,47 @@ public final class JavaEsmGlobal {
         try {
             Object coerced = coerceArgument(value, field.getType(), field.getGenericType());
             field.set(staticOnly ? null : target, coerced);
+            if (staticOnly) {
+                traceStaticFieldCoercion("field-write", ownerClass, name, value, field, coerced);
+            }
             return true;
-        } catch (IllegalAccessException | IllegalArgumentException ignored) {
+        } catch (IllegalAccessException | IllegalArgumentException e) {
+            if (staticOnly) {
+                traceStaticFieldCoercion("field-write-failed", ownerClass, name, value, field, e);
+            }
             return false;
         }
+    }
+
+    private static void traceStaticFieldCoercion(
+            String stage,
+            Class<?> ownerClass,
+            String name,
+            Object value,
+            Field field,
+            Object detail) {
+        if (!Boolean.getBoolean("qin.debug.staticFieldCoercion")) {
+            return;
+        }
+        System.err.println("[JavaEsmGlobal] static-field-coercion stage=" + stage
+                + " owner=" + (ownerClass == null ? "null" : ownerClass.getName())
+                + " property=" + name
+                + " fieldType=" + (field == null ? "null" : field.getType().getName())
+                + " value=" + summarizeRuntimeValue(value)
+                + " valueClass=" + (value == null ? "null" : value.getClass().getName())
+                + " detail=" + summarizeRuntimeValue(detail)
+                + " detailClass=" + (detail == null ? "null" : detail.getClass().getName()));
+    }
+
+    private static void traceGeneratedListExtraction(Object value, List<Object> items, String path) {
+        if (!Boolean.getBoolean("qin.debug.staticFieldCoercion")) {
+            return;
+        }
+        System.err.println("[JavaEsmGlobal] generated-list-extraction path=" + path
+                + " value=" + summarizeRuntimeValue(value)
+                + " valueClass=" + (value == null ? "null" : value.getClass().getName())
+                + " items=" + summarizeRuntimeValue(items)
+                + " size=" + (items == null ? "null" : items.size()));
     }
 
     private static Field findAccessibleField(Class<?> ownerClass, String name, boolean staticOnly) {
@@ -4642,7 +9133,7 @@ public final class JavaEsmGlobal {
 
     private static Field findAccessibleFieldUncached(Class<?> ownerClass, String name, boolean staticOnly) {
         for (Field field : ownerClass.getFields()) {
-            if (field.getName().equals(name)
+            if (runtimeFieldNameMatches(field.getName(), name)
                     && (!staticOnly || Modifier.isStatic(field.getModifiers()))) {
                 return field;
             }
@@ -4672,6 +9163,15 @@ public final class JavaEsmGlobal {
         return null;
     }
 
+    private static boolean runtimeFieldNameMatches(String actualFieldName, String requestedFieldName) {
+        if (actualFieldName == null || requestedFieldName == null) {
+            return false;
+        }
+        return actualFieldName.equals(requestedFieldName)
+                || actualFieldName.equals("__qin_field_" + requestedFieldName)
+                || requestedFieldName.equals("__qin_field_" + actualFieldName);
+    }
+
     private record FieldLookupKey(Class<?> ownerClass, String name, boolean staticOnly) {
     }
 
@@ -4682,6 +9182,12 @@ public final class JavaEsmGlobal {
     }
 
     private record TypedMethodLookupKey(Class<?> ownerClass, String name, List<Class<?>> argTypes, boolean staticOnly) {
+    }
+
+    private record PrototypeMethodCallable(Method method) {
+    }
+
+    private record GeneratedEnumMetadata(String name, Object ordinal) {
     }
 
     private static final class NullMethodArgument {
@@ -4759,17 +9265,93 @@ public final class JavaEsmGlobal {
         return Objects.equals(left, right);
     }
 
+    private static boolean generatedJavaEnumValueEquals(Object left, Object right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        Object leftName = generatedJavaEnumMetadata(left, "__qinEnumName");
+        Object rightName = generatedJavaEnumMetadata(right, "__qinEnumName");
+        Object leftOrdinal = generatedJavaEnumMetadata(left, "__qinEnumOrdinal");
+        Object rightOrdinal = generatedJavaEnumMetadata(right, "__qinEnumOrdinal");
+        if (Boolean.getBoolean("qin.debug.generatedEnumEquality")) {
+            System.err.println("[JavaEsmGlobal] generated-enum-equality"
+                    + " left=" + summarizeRuntimeValue(left)
+                    + " right=" + summarizeRuntimeValue(right)
+                    + " leftClass=" + left.getClass().getName()
+                    + " rightClass=" + right.getClass().getName()
+                    + " sameClass=" + (left.getClass() == right.getClass())
+                    + " leftName=" + summarizeRuntimeValue(leftName)
+                    + " rightName=" + summarizeRuntimeValue(rightName)
+                    + " leftOrdinal=" + summarizeRuntimeValue(leftOrdinal)
+                    + " rightOrdinal=" + summarizeRuntimeValue(rightOrdinal));
+        }
+        if (leftName == FIELD_LOOKUP_MISS
+                || rightName == FIELD_LOOKUP_MISS
+                || leftOrdinal == FIELD_LOOKUP_MISS
+                || rightOrdinal == FIELD_LOOKUP_MISS) {
+            return false;
+        }
+        if (!Objects.equals(String.valueOf(leftName), String.valueOf(rightName))
+                || !generatedJavaEnumOrdinalEquals(leftOrdinal, rightOrdinal)) {
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean generatedJavaEnumOrdinalEquals(Object leftOrdinal, Object rightOrdinal) {
+        Double leftNumber = asNumber(leftOrdinal);
+        Double rightNumber = asNumber(rightOrdinal);
+        if (leftNumber != null && rightNumber != null) {
+            return Double.compare(leftNumber, rightNumber) == 0;
+        }
+        return Objects.equals(String.valueOf(leftOrdinal), String.valueOf(rightOrdinal));
+    }
+
+    private static Object generatedJavaEnumMetadata(Object value, String name) {
+        GeneratedEnumMetadata metadata = GENERATED_ENUM_METADATA.get(value);
+        if (metadata != null) {
+            if ("__qinEnumName".equals(name)) {
+                return metadata.name();
+            }
+            if ("__qinEnumOrdinal".equals(name)) {
+                return metadata.ordinal();
+            }
+        }
+        try {
+            Object memberMetadata = __qin_member_get__(value, name);
+            return memberMetadata == null ? FIELD_LOOKUP_MISS : memberMetadata;
+        } catch (RuntimeException | Error ignored) {
+            return FIELD_LOOKUP_MISS;
+        }
+    }
+
+    private static String generatedJavaEnumOwnerKey(Object value) {
+        if (value instanceof InterpretedInstance interpretedInstance
+                && interpretedInstance.constructorFunction instanceof InterpretedFunction classFunction) {
+            return generatedJavaEnumOwnerName(classFunction.classDebugName());
+        }
+        return generatedJavaEnumOwnerName(value.getClass().getName());
+    }
+
+    private static String generatedJavaEnumOwnerName(String className) {
+        int moduleSeparator = className.lastIndexOf('$');
+        if (moduleSeparator >= 0 && moduleSeparator + 1 < className.length()) {
+            return className.substring(moduleSeparator + 1);
+        }
+        return className;
+    }
+
     private static boolean isObjectLike(Object value) {
-        return value instanceof Map<?, ?>
-                || value instanceof List<?>
-                || value instanceof QinRuntimeObject
-                || value instanceof JavaEsmMapObject
-                || value instanceof JavaEsmSetObject
-                || value instanceof JavaEsmArrayObject
-                || value instanceof JavaEsmTypedArray
-                || value instanceof InterpretedFunction
-                || value instanceof Class<?>
-                || value != null && value.getClass().isArray();
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof CharSequence
+                || value instanceof Number
+                || value instanceof Boolean
+                || value instanceof Character) {
+            return false;
+        }
+        return true;
     }
 
     private static String typeOf(Object value) {
@@ -4788,7 +9370,11 @@ public final class JavaEsmGlobal {
         if (value instanceof JavaEsmSymbol.JavaSymbol) {
             return "symbol";
         }
-        if (value instanceof QinCallable || value instanceof Method || isFunctionDefinition(value)) {
+        if (value instanceof QinCallable
+                || value instanceof Method
+                || value instanceof Class<?>
+                || value instanceof PrototypeMethodCallable
+                || isFunctionDefinition(value)) {
             return "function";
         }
         return "object";
@@ -4904,6 +9490,10 @@ public final class JavaEsmGlobal {
         return true;
     }
 
+    public static Iterable<?> __qin_for_of_iterable__(Object value) {
+        return asIterableForOf(value);
+    }
+
     static Iterable<?> asIterableForOf(Object value) {
         if (value == null) {
             throw new IllegalArgumentException("for...of cannot iterate null");
@@ -4915,6 +9505,28 @@ public final class JavaEsmGlobal {
             List<Object> javaListItems = interpretedInstance.interpretedJavaListItems();
             if (javaListItems != null) {
                 return javaListItems;
+            }
+        }
+        if (!(value instanceof String)
+                && !(value instanceof Number)
+                && !(value instanceof Boolean)
+                && !(value instanceof Character)
+                && !(value instanceof Class<?>)) {
+            Object items = __qin_member_get__(value, "__items");
+            if (items instanceof Iterable<?> iterable) {
+                return iterable;
+            }
+            if (items != null && items.getClass().isArray()) {
+                int length = Array.getLength(items);
+                List<Object> arrayItems = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    arrayItems.add(Array.get(items, i));
+                }
+                return arrayItems;
+            }
+            Iterable<?> generatedCollectionIterable = generatedJavaCollectionFacadeIterable(value);
+            if (generatedCollectionIterable != null) {
+                return generatedCollectionIterable;
             }
         }
         if (value instanceof CharSequence text) {
@@ -4951,6 +9563,50 @@ public final class JavaEsmGlobal {
             return iterableFromJsIterator(iterator);
         }
         throw new IllegalArgumentException("Unsupported for...of target: " + simpleName(value));
+    }
+
+    private static Iterable<?> generatedJavaCollectionFacadeIterable(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String simpleName = value.getClass().getSimpleName();
+        if (!simpleName.startsWith("__QinJavaUtil")) {
+            return null;
+        }
+        Method toArrayMethod = findCompatibleMethod(value.getClass(), "toArray", 0, false);
+        if (toArrayMethod == null) {
+            return null;
+        }
+        Object items;
+        try {
+            items = toArrayMethod.invoke(value);
+        } catch (IllegalAccessException e) {
+            return null;
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalArgumentException("Failed to iterate generated Java collection facade", cause);
+        }
+        if (items == value || items == null) {
+            return null;
+        }
+        if (items instanceof Iterable<?> iterable) {
+            return iterable;
+        }
+        if (items.getClass().isArray()) {
+            int length = Array.getLength(items);
+            List<Object> arrayItems = new ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                arrayItems.add(Array.get(items, i));
+            }
+            return arrayItems;
+        }
+        return null;
     }
 
     private static Iterable<Object> iterableFromJsIterator(Object iterator) {
@@ -5193,6 +9849,7 @@ public final class JavaEsmGlobal {
             case "Number" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Array" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Object" -> invokeBuiltinNamespace(builtinName, methodName, args);
+            case "Map" -> invokeJavaUtilMapNamespace(methodName, args);
             case "String" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Date" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Symbol" -> invokeSymbolNamespace(methodName, args);
@@ -5296,6 +9953,191 @@ public final class JavaEsmGlobal {
             case "reject" -> ImmediatePromise.rejected(args.length == 0 ? null : args[0]);
             default -> BUILTIN_MISS;
         };
+    }
+
+    private static Object invokeJavaUtilMapNamespace(String methodName, Object[] args) {
+        return switch (methodName) {
+            case "of" -> javaUtilMapOf(args);
+            case "copyOf" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield Collections.unmodifiableMap(runtimeMapCopy(args[0]));
+            }
+            default -> BUILTIN_MISS;
+        };
+    }
+
+    private static Map<Object, Object> javaUtilMapOf(Object[] args) {
+        if (args.length % 2 != 0) {
+            throw new IllegalArgumentException("Map.of expects key/value pairs, got " + args.length + " values");
+        }
+        LinkedHashMap<Object, Object> map = new LinkedHashMap<>();
+        for (int i = 0; i < args.length; i += 2) {
+            map.put(args[i], args[i + 1]);
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    private static LinkedHashMap<Object, Object> runtimeMapCopy(Object source) {
+        source = unwrapExportSlotValue(source);
+        if (source == null) {
+            throw new NullPointerException("Map.copyOf source");
+        }
+        LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
+        if (source instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                copy.put(entry.getKey(), entry.getValue());
+            }
+            return copy;
+        }
+        if (source instanceof JavaEsmMapObject mapObject) {
+            for (Map.Entry<Object, Object> entry : mapObject.rawEntryList()) {
+                copy.put(entry.getKey(), entry.getValue());
+            }
+            return copy;
+        }
+        LinkedHashMap<Object, Object> generatedMapFacadeCopy = runtimeGeneratedJavaMapFacadeCopy(source);
+        if (generatedMapFacadeCopy != null) {
+            return generatedMapFacadeCopy;
+        }
+        if (source instanceof InterpretedInstance interpretedInstance) {
+            if (isGeneratedJavaHashMapShape(interpretedInstance)) {
+                for (Map.Entry<Object, Object> entry : generatedJavaHashMapEntries(interpretedInstance)) {
+                    copy.put(entry.getKey(), entry.getValue());
+                }
+                return copy;
+            }
+            Object nestedSource = interpretedInstance.fields.get("__source");
+            if (nestedSource != null || interpretedInstance.fields.containsKey("__source")) {
+                return runtimeMapCopy(JavaEsmObject.resolveStoredPropertyValue(nestedSource));
+            }
+        }
+        throw new IllegalArgumentException("Map.copyOf source is not map-like: " + simpleName(source));
+    }
+
+    private static LinkedHashMap<Object, Object> runtimeGeneratedJavaMapFacadeCopy(Object source) {
+        if (!isGeneratedJavaMapFacade(source)) {
+            return null;
+        }
+        Object entries = tryInvokeZeroArgumentMethod(source, "entrySet");
+        if (entries == INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            Object nestedSource = tryReadField(source, "__source");
+            if (nestedSource != null) {
+                return runtimeMapCopy(JavaEsmObject.resolveStoredPropertyValue(nestedSource));
+            }
+            return null;
+        }
+        LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
+        for (Object entry : generatedJavaListValues(entries)) {
+            copy.put(runtimeMapEntryKey(entry), runtimeMapEntryValue(entry));
+        }
+        return copy;
+    }
+
+    private static boolean isGeneratedJavaMapFacade(Object source) {
+        if (source == null
+                || source instanceof String
+                || source instanceof Number
+                || source instanceof Boolean
+                || source instanceof Character
+                || source instanceof Class<?>) {
+            return false;
+        }
+        String simpleName = source.getClass().getSimpleName();
+        return "__QinJavaUtilHashMap".equals(simpleName)
+                || "__QinJavaUtilLinkedHashMap".equals(simpleName)
+                || "__QinJavaUtilIdentityHashMap".equals(simpleName)
+                || "__QinJavaUtilUnmodifiableMap".equals(simpleName);
+    }
+
+    private static Object runtimeMapEntryKey(Object entry) {
+        if (entry instanceof Map.Entry<?, ?> mapEntry) {
+            return mapEntry.getKey();
+        }
+        if (entry instanceof Map<?, ?> map && hasGeneratedMapEntrySlot(map, "0", "0.0")) {
+            return generatedMapEntrySlot(map, "0", "0.0");
+        }
+        Object key = tryInvokeZeroArgumentMethod(entry, "getKey");
+        if (key != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return key;
+        }
+        Object namedKey = __qin_member_get__(entry, "key");
+        if (namedKey != null) {
+            return namedKey;
+        }
+        Object keyGetter = __qin_member_get__(entry, "getKey");
+        if (isRuntimeCallableValue(keyGetter)) {
+            Object callableKey = callAny(bindRuntimeCallableThis(keyGetter, entry));
+            if (callableKey != null) {
+                return callableKey;
+            }
+        }
+        return runtimeMapEntrySlot(entry, 0.0d, "0.0", "0");
+    }
+
+    private static Object runtimeMapEntryValue(Object entry) {
+        if (entry instanceof Map.Entry<?, ?> mapEntry) {
+            return mapEntry.getValue();
+        }
+        if (entry instanceof Map<?, ?> map && hasGeneratedMapEntrySlot(map, "1", "1.0")) {
+            return generatedMapEntrySlot(map, "1", "1.0");
+        }
+        Object value = tryInvokeZeroArgumentMethod(entry, "getValue");
+        if (value != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return value;
+        }
+        Object namedValue = __qin_member_get__(entry, "value");
+        if (namedValue != null) {
+            return namedValue;
+        }
+        Object valueGetter = __qin_member_get__(entry, "getValue");
+        if (isRuntimeCallableValue(valueGetter)) {
+            Object callableValue = callAny(bindRuntimeCallableThis(valueGetter, entry));
+            if (callableValue != null) {
+                return callableValue;
+            }
+        }
+        return runtimeMapEntrySlot(entry, 1.0d, "1.0", "1");
+    }
+
+    private static Object runtimeMapEntrySlot(Object entry, double numericKey, String generatedKey, String integerKey) {
+        if (entry instanceof Map<?, ?> map && hasGeneratedMapEntrySlot(map, integerKey, generatedKey)) {
+            return generatedMapEntrySlot(map, integerKey, generatedKey);
+        }
+        Object numericValue = __qin_member_get__(entry, numericKey);
+        if (numericValue != null) {
+            return numericValue;
+        }
+        Object generatedValue = __qin_member_get__(entry, generatedKey);
+        if (generatedValue != null) {
+            return generatedValue;
+        }
+        return __qin_member_get__(entry, integerKey);
+    }
+
+    private static Object tryInvokeZeroArgumentMethod(Object target, String methodName) {
+        if (target == null || target instanceof Class<?>) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Method method = findCompatibleMethod(target.getClass(), methodName, 0, false);
+        if (method == null || Modifier.isStatic(method.getModifiers())) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        try {
+            return method.invoke(target);
+        } catch (IllegalAccessException | IllegalArgumentException ignored) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new IllegalArgumentException("Failed to invoke zero-arg method: " + methodName, cause);
+        }
     }
 
     private static Object invokeBuiltinNamespace(String builtinName, String methodName, Object[] args) {
@@ -5524,6 +10366,15 @@ public final class JavaEsmGlobal {
     }
 
     private static boolean canCoerceTypedFfiArgument(Object value, Class<?> parameterType, Type genericParameterType) {
+        if (isSubhutiMatchTokenType(parameterType) && isSubhutiMatchTokenShapeObject(value)) {
+            return true;
+        }
+        if (parameterType.isArray() && canCoerceRuntimeArrayArgument(value, parameterType)) {
+            return true;
+        }
+        if (isSlimeParserParamsType(parameterType) && canReadStructuralParams(value)) {
+            return true;
+        }
         if (isJavaFunctionalInterface(parameterType)) {
             return parameterType.isInstance(value) || isRuntimeCallableValue(value);
         }
@@ -5545,6 +10396,26 @@ public final class JavaEsmGlobal {
             return true;
         }
         return false;
+    }
+
+    private static boolean canCoerceRuntimeArrayArgument(Object value, Class<?> arrayType) {
+        if (!arrayType.isArray()) {
+            return false;
+        }
+        if (value == null || arrayType.isInstance(value)) {
+            return true;
+        }
+        List<?> values = runtimeArrayArgumentValues(value);
+        if (values == null) {
+            return false;
+        }
+        Class<?> componentType = arrayType.getComponentType();
+        for (Object item : values) {
+            if (!canCoerceArgument(item, componentType, componentType)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isJavaRecordObjectShape(Object value, Class<?> recordType) {
@@ -5686,6 +10557,26 @@ public final class JavaEsmGlobal {
         Object call(Object... args);
     }
 
+    public interface JavaFunctionalObject {
+        Object apply(Object value);
+
+        Object apply(Object left, Object right);
+
+        Object get();
+
+        void run();
+
+        void accept(Object value);
+
+        void accept(Object left, Object right);
+
+        boolean test(Object value);
+
+        boolean test(Object left, Object right);
+
+        Object compare(Object left, Object right);
+    }
+
     private interface QinRuntimeObject {
         Object get(Object property);
 
@@ -5696,6 +10587,34 @@ public final class JavaEsmGlobal {
         default boolean isGeneratedClassInstance(String className) {
             return false;
         }
+    }
+
+    private static boolean tryWritePropertySetter(Object target, String name, Object value) {
+        if (target instanceof Class<?>) {
+            return false;
+        }
+        String setterName = "set" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        for (Method method : candidateMethods(target.getClass(), setterName, 1, false)) {
+            if (Modifier.isStatic(method.getModifiers()) || method.getParameterCount() != 1) {
+                continue;
+            }
+            try {
+                method.invoke(target, coerceArgument(value, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]));
+                return true;
+            } catch (IllegalAccessException | IllegalArgumentException ignored) {
+                // Try the next compatible setter.
+            } catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                if (cause instanceof Error error) {
+                    throw error;
+                }
+                throw new IllegalArgumentException("Failed to write property via setter: " + setterName, cause);
+            }
+        }
+        return false;
     }
 
     static boolean isRuntimeHiddenObjectKey(String key) {
@@ -5881,6 +10800,9 @@ public final class JavaEsmGlobal {
             return true;
         }
         if (target instanceof List<?> && JavaEsmArray.supports(name)) {
+            return true;
+        }
+        if (target.getClass().isArray() && JavaEsmArray.supports(name)) {
             return true;
         }
         if (target instanceof JavaEsmRegExp regexp && regexp.supports(name)) {
@@ -6107,6 +11029,31 @@ public final class JavaEsmGlobal {
                 "Spread element expects an array-like value; got=" + summarizeRuntimeValue(spreadValue));
     }
 
+    private static Object[] runtimeSpreadValuesToArray(Object spreadValue) {
+        if (spreadValue == null) {
+            return new Object[0];
+        }
+        if (spreadValue instanceof Object[] array) {
+            return array;
+        }
+        if (spreadValue instanceof Collection<?> collection) {
+            return collection.toArray();
+        }
+        if (spreadValue instanceof JavaEsmSetObject setObject) {
+            return setObject.values().toArray();
+        }
+        if (spreadValue.getClass().isArray()) {
+            int length = Array.getLength(spreadValue);
+            Object[] values = new Object[length];
+            for (int i = 0; i < length; i++) {
+                values[i] = Array.get(spreadValue, i);
+            }
+            return values;
+        }
+        throw new IllegalArgumentException(
+                "Spread element expects an array-like value; got=" + summarizeRuntimeValue(spreadValue));
+    }
+
     private static final class ImmediatePromise implements QinRuntimeObject {
         private final Object value;
         private final Object error;
@@ -6303,12 +11250,13 @@ public final class JavaEsmGlobal {
 
     private static final class JavaUtilRegexMatcherObject implements QinRuntimeObject {
         private final Pattern pattern;
-        private final String input;
+        private String input;
         private int regionStart;
         private int regionEnd;
         private int searchIndex;
         private int appendPosition;
         private Matcher lastMatch;
+        private final Map<String, Object> nativeMethods = new HashMap<>();
 
         private JavaUtilRegexMatcherObject(Pattern pattern, String input) {
             this.pattern = pattern;
@@ -6322,21 +11270,26 @@ public final class JavaEsmGlobal {
         @Override
         public Object get(Object property) {
             String name = propertyKey(property);
-            if (!Set.of(
-                    "region",
-                    "lookingAt",
-                    "matches",
-                    "find",
-                    "group",
-                    "groupCount",
-                    "start",
-                    "end",
-                    "replaceAll",
-                    "appendReplacement",
-                    "appendTail").contains(name)) {
-                return null;
-            }
-            return new NativeFunction("__QinJavaUtilRegexMatcher." + name, args -> invoke(name, args));
+            return switch (name) {
+                case "region",
+                        "reset",
+                        "lookingAt",
+                        "matches",
+                        "find",
+                        "group",
+                        "groupCount",
+                        "start",
+                        "end",
+                        "replaceAll",
+                        "appendReplacement",
+                        "appendTail" ->
+                        nativeMethods.computeIfAbsent(
+                                name,
+                                key -> new NativeFunction(
+                                        "__QinJavaUtilRegexMatcher." + key,
+                                        args -> invoke(key, args)));
+                default -> null;
+            };
         }
 
         @Override
@@ -6362,6 +11315,7 @@ public final class JavaEsmGlobal {
         private Object invoke(String name, Object[] args) {
             return switch (name) {
                 case "region" -> region(args);
+                case "reset" -> reset(args);
                 case "lookingAt" -> args.length == 0 ? matchAtRegionStart(false) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
                 case "matches" -> args.length == 0 ? matchAtRegionStart(true) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
                 case "find" -> find(args);
@@ -6385,6 +11339,21 @@ public final class JavaEsmGlobal {
             regionStart = Math.max(0, toInt32(args[0]));
             regionEnd = Math.min(input.length(), Math.max(regionStart, toInt32(args[1])));
             searchIndex = regionStart;
+            lastMatch = null;
+            return this;
+        }
+
+        private Object reset(Object[] args) {
+            if (args.length > 1) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            if (args.length == 1) {
+                input = String.valueOf(args[0]);
+            }
+            regionStart = 0;
+            regionEnd = input.length();
+            searchIndex = 0;
+            appendPosition = 0;
             lastMatch = null;
             return this;
         }
@@ -6838,9 +11807,17 @@ public final class JavaEsmGlobal {
             if (generatedJavaHashSetMethod != null) {
                 return generatedJavaHashSetMethod;
             }
+            Object generatedJavaTreeSetMethod = generatedJavaTreeSetNativeMethod(this, name);
+            if (generatedJavaTreeSetMethod != null) {
+                return generatedJavaTreeSetMethod;
+            }
             Object generatedJavaHashMapMethod = generatedJavaHashMapNativeMethod(this, name);
             if (generatedJavaHashMapMethod != null) {
                 return generatedJavaHashMapMethod;
+            }
+            Object generatedJavaArrayDequeMethod = generatedJavaArrayDequeNativeMethod(this, name);
+            if (generatedJavaArrayDequeMethod != null) {
+                return generatedJavaArrayDequeMethod;
             }
             Object generatedSubhutiCstMethod = generatedSubhutiCstNativeMethod(this, name);
             if (generatedSubhutiCstMethod != null) {
@@ -6879,7 +11856,7 @@ public final class JavaEsmGlobal {
                 return prototypeFunction.bindThis(this);
             }
             if (isFunctionDefinition(prototypeValue)) {
-                return new InterpretedFunction(castMap((Map<?, ?>) prototypeValue)).bindThis(this);
+                return interpretedFunction(castMap((Map<?, ?>) prototypeValue)).bindThis(this);
             }
             if (prototypeValue != null || prototypeProperties.containsKey(name)) {
                 return prototypeValue;
@@ -6963,6 +11940,11 @@ public final class JavaEsmGlobal {
         @SuppressWarnings("unchecked")
         private List<Object> interpretedJavaListItems() {
             Object items = fields.get("__items");
+            if (items == null && fields.containsKey("__items")) {
+                ArrayList<Object> initialized = new ArrayList<>();
+                fields.put("__items", initialized);
+                return initialized;
+            }
             if (items instanceof List<?> list) {
                 return (List<Object>) list;
             }
@@ -7003,7 +11985,7 @@ public final class JavaEsmGlobal {
                 return prototypeFunction.bindThis(this);
             }
             if (isFunctionDefinition(value)) {
-                return new InterpretedFunction(castMap((Map<?, ?>) value)).bindThis(this);
+                return interpretedFunction(castMap((Map<?, ?>) value)).bindThis(this);
             }
             return value;
         }
@@ -7062,9 +12044,17 @@ public final class JavaEsmGlobal {
             if (generatedJavaHashSetMethod != null) {
                 return generatedJavaHashSetMethod;
             }
+            Object generatedJavaTreeSetMethod = generatedJavaTreeSetNativeMethod(this, name);
+            if (generatedJavaTreeSetMethod != null) {
+                return generatedJavaTreeSetMethod;
+            }
             Object generatedJavaHashMapMethod = generatedJavaHashMapNativeMethod(this, name);
             if (generatedJavaHashMapMethod != null) {
                 return generatedJavaHashMapMethod;
+            }
+            Object generatedJavaArrayDequeMethod = generatedJavaArrayDequeNativeMethod(this, name);
+            if (generatedJavaArrayDequeMethod != null) {
+                return generatedJavaArrayDequeMethod;
             }
             Object generatedSubhutiCstMethod = generatedSubhutiCstNativeMethod(this, name);
             if (generatedSubhutiCstMethod != null) {
@@ -7087,7 +12077,7 @@ public final class JavaEsmGlobal {
                 return prototypeFunction.bindThis(this);
             }
             if (isFunctionDefinition(prototypeValue)) {
-                return new InterpretedFunction(castMap((Map<?, ?>) prototypeValue)).bindThis(this);
+                return interpretedFunction(castMap((Map<?, ?>) prototypeValue)).bindThis(this);
             }
             Object prototypeChainValue = getPrototypeChainValue(name);
             Object boundPrototypeChainValue = bindPrototypeValue(prototypeChainValue);
@@ -7660,6 +12650,7 @@ public final class JavaEsmGlobal {
                         }
                     }
                 }
+                installConstructorAssignedInstanceFields(instance, args);
                 return instance;
             } finally {
                 stack.remove(stack.size() - 1);
@@ -7900,7 +12891,7 @@ public final class JavaEsmGlobal {
             if (!(superClassNode instanceof Map<?, ?> rawSuperClass)) {
                 capturedSuperClassValue = unwrapExportSlotValue(capturedSuperClassValue);
                 if (isFunctionDefinition(capturedSuperClassValue)) {
-                    cachedSuperClassFunction = new InterpretedFunction(castMap((Map<?, ?>) capturedSuperClassValue));
+                    cachedSuperClassFunction = interpretedFunction(castMap((Map<?, ?>) capturedSuperClassValue));
                     superClassFunctionResolved = true;
                     return cachedSuperClassFunction;
                 }
@@ -7926,7 +12917,7 @@ public final class JavaEsmGlobal {
             }
             value = unwrapExportSlotValue(value);
             if (isFunctionDefinition(value)) {
-                cachedSuperClassFunction = new InterpretedFunction(castMap((Map<?, ?>) value));
+                cachedSuperClassFunction = interpretedFunction(castMap((Map<?, ?>) value));
                 superClassFunctionResolved = true;
                 return cachedSuperClassFunction;
             }
@@ -7984,7 +12975,7 @@ public final class JavaEsmGlobal {
             if (rawSuperName != null) {
                 methodDefinition.put("ownerSuperClassValue", resolveIdentifier(String.valueOf(rawSuperName), resolvedClosure));
             }
-            return new InterpretedFunction(methodDefinition);
+            return interpretedFunction(methodDefinition);
         }
 
         private Object applyLegacyMethodDecorators(
@@ -8045,7 +13036,7 @@ public final class JavaEsmGlobal {
                 return interpretedFunction;
             }
             if (isFunctionDefinition(value)) {
-                return new InterpretedFunction(castMap((Map<?, ?>) value));
+                return interpretedFunction(castMap((Map<?, ?>) value));
             }
             return fallback;
         }
@@ -8151,6 +13142,85 @@ public final class JavaEsmGlobal {
                     instance.set(fieldName, i < args.length ? args[i] : null);
                 }
             }
+        }
+
+        private void installConstructorAssignedInstanceFields(InterpretedInstance instance, Object[] args) {
+            InterpretedFunction constructor = instance.methods.get("constructor");
+            if (constructor == null) {
+                return;
+            }
+            Map<String, Object> constructorAst = constructor.ast();
+            Object bodyNode = constructorAst.get("body");
+            if (!(bodyNode instanceof Map<?, ?> rawBody)) {
+                return;
+            }
+            Map<String, Object> body = castMap(rawBody);
+            Map<String, Object> env = new LinkedHashMap<>();
+            installLocalBindings(env);
+            installClosureBindings(env);
+            bindParametersInto(env, constructorAst, args);
+            env.put("this", instance);
+            bindClassSelfName(env);
+            for (Object statementNode : asList(body.get("body"))) {
+                if (!(statementNode instanceof Map<?, ?> rawStatement)) {
+                    continue;
+                }
+                Map<String, Object> statement = castMap(rawStatement);
+                if (!"ExpressionStatement".equals(String.valueOf(statement.get("type")))) {
+                    continue;
+                }
+                Object expressionNode = statement.get("expression");
+                if (!(expressionNode instanceof Map<?, ?> rawExpression)) {
+                    continue;
+                }
+                Map<String, Object> expression = castMap(rawExpression);
+                if (!"AssignmentExpression".equals(String.valueOf(expression.get("type")))
+                        || !"=".equals(String.valueOf(expression.get("operator")))) {
+                    continue;
+                }
+                String fieldName = thisMemberFieldName(expression.get("left"));
+                if (fieldName == null) {
+                    continue;
+                }
+                Object current = instance.get(fieldName);
+                if (current != null) {
+                    continue;
+                }
+                instance.set(fieldName, evalNode(expression.get("right"), env));
+            }
+        }
+
+        private void bindParametersInto(Map<String, Object> env, Map<String, Object> functionAst, Object[] args) {
+            env.put("arguments", argumentsObject(args));
+            List<?> params = asList(functionAst.get("params"));
+            for (int i = 0; i < params.size(); i++) {
+                Object paramNode = unwrapFunctionParam(params.get(i));
+                if (!(paramNode instanceof Map<?, ?> map)) {
+                    continue;
+                }
+                if ("RestElement".equals(String.valueOf(map.get("type")))) {
+                    List<Object> rest = new ArrayList<>(Arrays.asList(args).subList(Math.min(i, args.length), args.length));
+                    bindPattern(paramNode, rest, env);
+                    continue;
+                }
+                bindPattern(paramNode, i < args.length ? args[i] : null, env);
+            }
+        }
+
+        private String thisMemberFieldName(Object node) {
+            if (!(node instanceof Map<?, ?> rawMember)) {
+                return null;
+            }
+            Map<String, Object> member = castMap(rawMember);
+            if (!isMemberExpressionType(member.get("type")) || Boolean.TRUE.equals(member.get("computed"))) {
+                return null;
+            }
+            Object object = member.get("object");
+            if (!(object instanceof Map<?, ?> rawObject)
+                    || !"ThisExpression".equals(String.valueOf(castMap(rawObject).get("type")))) {
+                return null;
+            }
+            return extractPropertyName(member.get("property"));
         }
 
         private String constructorParameterPropertyName(Object parameterNode) {
@@ -8328,7 +13398,7 @@ public final class JavaEsmGlobal {
                     runtimeDefinition.put("ownerSuperClassFunction", interpretedSuperClass);
                 }
             }
-            InterpretedFunction function = new InterpretedFunction(runtimeDefinition);
+            InterpretedFunction function = interpretedFunction(runtimeDefinition);
             Object idNode = astNode.get("id");
             String type = String.valueOf(astNode.get("type"));
             if (("FunctionDeclaration".equals(type) || "ClassDeclaration".equals(type))
@@ -8548,6 +13618,20 @@ public final class JavaEsmGlobal {
                     continue;
                 }
                 Object testValue = evalNode(testNode, env);
+                if (Boolean.getBoolean("qin.debug.switchEquality")
+                        && (summarizeRuntimeValue(discriminant).contains("NodeKind")
+                        || summarizeRuntimeValue(testValue).contains("NodeKind"))) {
+                    Object equal = __qin_binary__("===", discriminant, testValue);
+                    System.err.println("[JavaEsmGlobal] switch-equality"
+                            + " discriminant=" + summarizeRuntimeValue(discriminant)
+                            + " test=" + summarizeRuntimeValue(testValue)
+                            + " equal=" + summarizeRuntimeValue(equal));
+                    if (Boolean.TRUE.equals(equal)) {
+                        startIndex = i;
+                        break;
+                    }
+                    continue;
+                }
                 if (Boolean.TRUE.equals(__qin_binary__("===", discriminant, testValue))) {
                     startIndex = i;
                     break;
@@ -9198,14 +14282,29 @@ public final class JavaEsmGlobal {
                         }
                         return callMethod(target, property, evaluated);
                     } catch (ThrownValue thrown) {
+                        traceRuntimeThrownValue(
+                                "method",
+                                functionDebugName(),
+                                "method=" + property
+                                        + "; object=" + summarizeAstNode(calleeAst.get("object"))
+                                        + "; target=" + summarizeRuntimeValue(target),
+                                thrown);
                         throw thrown;
                     } catch (RuntimeException error) {
+                        traceRuntimeCallFailure(
+                                "method",
+                                functionDebugName(),
+                                "method=" + property
+                                        + "; object=" + summarizeAstNode(calleeAst.get("object"))
+                                        + "; target=" + summarizeRuntimeValue(target),
+                                error);
                         throw new IllegalArgumentException(
                                 "Failed runtime method call"
                                         + "; function=" + functionDebugName()
                                         + "; method=" + property
                                         + "; object=" + summarizeAstNode(calleeAst.get("object"))
-                                        + "; target=" + summarizeRuntimeValue(target),
+                                        + "; target=" + summarizeRuntimeValue(target)
+                                        + runtimeCauseSummary(error),
                                 error);
                     }
                 }
@@ -9226,16 +14325,86 @@ public final class JavaEsmGlobal {
             try {
                 return callAny(callee, evaluated);
             } catch (ThrownValue thrown) {
+                traceRuntimeThrownValue(
+                        "callable",
+                        functionDebugName(),
+                        "callee=" + summarizeAstNode(calleeNode)
+                                + "; value=" + summarizeRuntimeValue(callee)
+                                + "; args=" + describeArgs(evaluated),
+                        thrown);
                 throw thrown;
             } catch (RuntimeException error) {
+                traceRuntimeCallFailure(
+                        "callable",
+                        functionDebugName(),
+                        "callee=" + summarizeAstNode(calleeNode)
+                                + "; value=" + summarizeRuntimeValue(callee)
+                                + "; args=" + describeArgs(evaluated),
+                        error);
                 throw new IllegalArgumentException(
                         "Failed runtime callable"
                                 + "; function=" + functionDebugName()
                                 + "; callee=" + summarizeAstNode(calleeNode)
                                 + "; value=" + summarizeRuntimeValue(callee)
-                                + "; args=" + describeArgs(evaluated),
+                                + "; args=" + describeArgs(evaluated)
+                                + runtimeCauseSummary(error),
                         error);
             }
+        }
+
+        private void traceRuntimeThrownValue(
+                String kind,
+                String functionName,
+                String detail,
+                ThrownValue thrown) {
+            System.err.println("[QinRuntimeThrownValue] kind="
+                    + kind
+                    + "; function="
+                    + functionName
+                    + "; "
+                    + detail
+                    + "; thrownValue="
+                    + thrownValueSummary(thrown.value()));
+        }
+
+        private String thrownValueSummary(Object value) {
+            if (value instanceof Throwable throwable) {
+                return throwable.getClass().getName()
+                        + ": "
+                        + throwable.getMessage()
+                        + "; throwableCause="
+                        + (throwable.getCause() == null
+                        ? "null"
+                        : throwable.getCause().getClass().getName() + ": " + throwable.getCause().getMessage());
+            }
+            return summarizeRuntimeValue(value);
+        }
+
+        private void traceRuntimeCallFailure(
+                String kind,
+                String functionName,
+                String detail,
+                RuntimeException error) {
+            System.err.println("[QinRuntimeCallableFailure] kind="
+                    + kind
+                    + "; function="
+                    + functionName
+                    + "; "
+                    + detail
+                    + runtimeCauseSummary(error));
+        }
+
+        private String runtimeCauseSummary(RuntimeException error) {
+            StringBuilder builder = new StringBuilder()
+                    .append("; causeClass=")
+                    .append(error.getClass().getName())
+                    .append("; causeMessage=")
+                    .append(boundedDiagnosticText(error.getMessage(), 2048));
+            List<String> stack = interpretedCallStackSnapshot();
+            if (!stack.isEmpty()) {
+                builder.append("; interpretedCallStack=").append(stack);
+            }
+            return builder.toString();
         }
 
         private boolean isGeneratedRawRuleIdentifier(Object calleeNode) {
@@ -9362,7 +14531,7 @@ public final class JavaEsmGlobal {
             if (!isRuntimeCallable(superClassValue) && !(superClassValue instanceof Class<?>)) {
                 return null;
             }
-            return JavaEsmGlobal.construct(superClassValue, args);
+            return JavaEsmGlobal.construct(superClassValue, true, args);
         }
 
         private void mergeConstructedSuperInstance(InterpretedInstance receiver, Object constructed) {
@@ -9391,6 +14560,14 @@ public final class JavaEsmGlobal {
         }
 
         private Object callSuperMethod(Object property, Map<String, Object> env, Object[] args) {
+            Object javaSuperResult = callJavaSuperMethodOrMiss(
+                    env.getOrDefault("this", GLOBAL_OBJECT),
+                    property,
+                    args,
+                    definition);
+            if (javaSuperResult != BUILTIN_MISS) {
+                return javaSuperResult;
+            }
             Object method = resolveSuperMethod(property, env);
             if (method instanceof InterpretedFunction interpretedFunction) {
                 return interpretedFunction.bindThis(env.getOrDefault("this", GLOBAL_OBJECT)).call(args);
@@ -9937,7 +15114,8 @@ public final class JavaEsmGlobal {
                 return decodeQuotedStringLiteral(text);
             }
             Object raw = astNode.get("raw");
-            if (astNode.containsKey("regex") && raw instanceof String rawText) {
+            Object regex = astNode.get("regex");
+            if (regex != null && raw instanceof String rawText) {
                 JavaEsmRegExp regexp = regexLiteral(rawText);
                 if (regexp != null) {
                     return regexp;

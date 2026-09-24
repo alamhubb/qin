@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public final class QinJsBackendJavaTimeSmokeTestMain {
     private QinJsBackendJavaTimeSmokeTestMain() {
@@ -67,6 +68,8 @@ public final class QinJsBackendJavaTimeSmokeTestMain {
         require(generated.contains("const LocalDateTime = __QinJavaTimeLocalDateTime;"), "LocalDateTime alias");
         require(generated.contains("const DateTimeFormatter = __QinJavaTimeFormatDateTimeFormatter;"),
                 "DateTimeFormatter alias");
+        require(generated.contains("const tokenYyyy = String(date.getFullYear());"), "static date token locals");
+        require(!generated.contains("tokens.yyyy"), "no dynamic date token object member read");
 
         Path root = Files.createTempDirectory("qin-js-backend-time-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-js-backend-time\" };\n",
@@ -77,10 +80,32 @@ public final class QinJsBackendJavaTimeSmokeTestMain {
                         + generated
                         + "\nformatted;\n",
                 "js_backend_time");
-        if (!"2026-06-04-03-26".equals(result)) {
-            throw new IllegalStateException("Expected generated time result, got: " + result);
+        if (!isFormattedDateTime(result)) {
+            throw new IllegalStateException("Expected generated time shape, got: " + result);
+        }
+        Object externalPackageResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                """
+                import {
+                  __QinJavaTimeFormatDateTimeFormatter,
+                  __QinJavaTimeLocalDateTime
+                } from "@qin/java-sdk-js/time";
+
+                globalThis.__qinJavaFixedNow = "2026-06-04T03:26:00";
+                const now = __QinJavaTimeLocalDateTime.now();
+                const formatter = __QinJavaTimeFormatDateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm");
+                now.format(formatter);
+                """,
+                "java_sdk_time_static");
+        if (!isFormattedDateTime(externalPackageResult)) {
+            throw new IllegalStateException("Expected external java-sdk time shape, got: " + externalPackageResult);
         }
         System.out.println("QinJsBackendJavaTimeSmokeTestMain OK");
+    }
+
+    private static boolean isFormattedDateTime(Object result) {
+        return result instanceof String text
+                && Pattern.matches("\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}", text);
     }
 
     private static void require(boolean condition, String label) {

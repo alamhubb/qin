@@ -27,20 +27,20 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createIfStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
+  createIfStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_IfStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
     if (__qin_binary__("==", children, null)) {
       children = __QinJavaUtilList.of();
     }
-    let test: any = null;
-    let consequent: any = null;
-    let alternate: any = null;
-    let sawElse: any = false;
+    let test: com_slime_ast_Expression = null;
+    let consequent: com_slime_ast_Statement = null;
+    let alternate: com_slime_ast_Statement = null;
+    let sawElse: boolean = false;
     for (const child of children) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Else", name) || __QinJavaLangString.equals("else", child.getValue()))) {
         sawElse = true;
         continue;
@@ -49,7 +49,7 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
         test = this.createExpressionAst(child);
         continue;
       }
-      let body: any = this.extractIfBodyStatement(child);
+      let body: com_slime_ast_Statement = this.extractIfBodyStatement(child);
       if (__qin_binary__("==", body, null)) {
         continue;
       }
@@ -63,12 +63,12 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIfStatement(test, consequent, alternate, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  createReturnStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
+  createReturnStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_ReturnStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
     if (__qin_binary__("==", children, null)) {
       children = __QinJavaUtilList.of();
     }
-    let argument: any = null;
+    let argument: com_slime_ast_Expression = null;
     for (const child of children) {
       if ((__qin_binary__("!=", child, null) && __QinJavaLangString.equals("Expression", child.getName()))) {
         argument = this.createExpressionAst(child);
@@ -96,39 +96,39 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createReturnStatement(argument, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Expression {
     return this.__qin_field_transformer.createExpressionAst(cst);
   }
-  createStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    return (__qin_binary__("!=", (this.__qin_field_transformer.createDeclarationAst(cst)), null) ? (this.__qin_field_transformer.createDeclarationAst(cst)) : com_slime_parser_cstToAst_SlimeAstCreateUtils.createEmptyStatement(com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst)));
+  createStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Statement {
+    return (__qin_binary__("!=", (this.__qin_field_transformer.createDeclarationAst(cst) as com_slime_ast_Statement), null) ? (this.__qin_field_transformer.createDeclarationAst(cst) as com_slime_ast_Statement) : com_slime_parser_cstToAst_SlimeAstCreateUtils.createEmptyStatement(com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst)));
   }
-  findFirstExpression(cst: com_subhuti_struct_SubhutiCst): any {
+  findFirstExpression(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Expression {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
     if (com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst.isExpressionNode(cst.getName())) {
       return this.createExpressionAst(cst);
     }
-    let children: any = cst.getChildren();
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
     if (__qin_binary__("==", children, null)) {
       return null;
     }
     for (const child of children) {
-      let expression: any = this.findFirstExpression(child);
+      let expression: com_slime_ast_Expression = this.findFirstExpression(child);
       if (__qin_binary__("!=", expression, null)) {
         return expression;
       }
     }
     return null;
   }
-  static isReturnPunctuation(cst: com_subhuti_struct_SubhutiCst): any {
+  static isReturnPunctuation(cst: com_subhuti_struct_SubhutiCst): boolean {
     return (__QinJavaLangString.equals("Return", cst.getName()) || __QinJavaLangString.equals("Semicolon", cst.getName()) || __QinJavaLangString.equals("SemicolonASI", cst.getName()) || __QinJavaLangString.equals("LineTerminator", cst.getName()) || __QinJavaLangString.equals(";", cst.getValue()));
   }
-  extractIfBodyStatement(cst: com_subhuti_struct_SubhutiCst): any {
+  extractIfBodyStatement(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Statement {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
-    let name: any = cst.getName();
+    let name: string = cst.getName();
     if (__qin_binary__("==", name, null)) {
       return null;
     }
@@ -139,12 +139,12 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
       return this.createStatementAst(cst);
     }
     if ((__QinJavaLangString.equals("Declaration", name) || __QinJavaLangString.equals("LabelledItem", name))) {
-      let children: any = cst.getChildren();
+      let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
       if (__qin_binary__("==", children, null)) {
         return null;
       }
       for (const child of children) {
-        let body: any = this.extractIfBodyStatement(child);
+        let body: com_slime_ast_Statement = this.extractIfBodyStatement(child);
         if (__qin_binary__("!=", body, null)) {
           return body;
         }
@@ -152,8 +152,8 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
     }
     return null;
   }
-  createIfStatementBodyAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
+  createIfStatementBodyAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Statement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
     if (__qin_binary__("==", children, null)) {
       children = __QinJavaUtilList.of();
     }
@@ -161,24 +161,24 @@ class com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Statement", name) || __QinJavaLangString.equals("StatementListItem", name) || __QinJavaLangString.equals("FunctionDeclaration", name) || __QinJavaLangString.equals("Declaration", name))) {
-        let body: any = this.createStatementAst(child);
+        let body: com_slime_ast_Statement = this.createStatementAst(child);
         if (__qin_binary__("!=", body, null)) {
           return body;
         }
       }
     }
-    let fallback: any = this.createStatementAst(cst);
+    let fallback: com_slime_ast_Statement = this.createStatementAst(cst);
     if (__qin_binary__("!=", fallback, null)) {
       return fallback;
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createEmptyStatement(com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  static isExpressionNode(name: string): any {
+  static isExpressionNode(name: string): boolean {
     return (__QinJavaLangString.equals("Expression", name) || __QinJavaLangString.equals("AssignmentExpression", name) || __QinJavaLangString.equals("ConditionalExpression", name) || __QinJavaLangString.equals("CallExpression", name) || __QinJavaLangString.equals("MemberExpression", name) || __QinJavaLangString.equals("PrimaryExpression", name) || __QinJavaLangString.equals("Identifier", name) || __QinJavaLangString.equals("IdentifierReference", name) || __QinJavaLangString.equals("Literal", name) || __QinJavaLangString.equals("ObjectLiteral", name) || __QinJavaLangString.equals("ArrayLiteral", name));
   }
-  static isStatementNode(name: string): any {
+  static isStatementNode(name: string): boolean {
     return (__QinJavaLangString.equals("Statement", name) || __QinJavaLangString.equals("StatementListItem", name) || __QinJavaLangString.equals("IfStatementBody", name) || __QinJavaLangString.equals("Declaration", name) || __QinJavaLangString.equals("LabelledItem", name) || __QinJavaLangString.equals("Block", name) || __QinJavaLangString.equals("BlockStatement", name) || __QinJavaLangString.equals("ExpressionStatement", name) || __QinJavaLangString.equals("IfStatement", name) || __QinJavaLangString.equals("ReturnStatement", name) || __QinJavaLangString.equals("ForStatement", name) || __QinJavaLangString.equals("WhileStatement", name) || __QinJavaLangString.equals("DoWhileStatement", name) || __QinJavaLangString.equals("TryStatement", name) || __QinJavaLangString.equals("SwitchStatement", name) || __QinJavaLangString.equals("BreakStatement", name) || __QinJavaLangString.equals("ContinueStatement", name) || __QinJavaLangString.equals("ThrowStatement", name) || __QinJavaLangString.equals("VariableStatement", name) || __QinJavaLangString.equals("LexicalDeclaration", name) || __QinJavaLangString.equals("FunctionDeclaration", name) || __QinJavaLangString.equals("ClassDeclaration", name));
   }
 }

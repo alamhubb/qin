@@ -11,14 +11,14 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_ast_nodes_expressions_ArrowFunctionExpression {
-  __qin_field_params: any = null as any;
+  __qin_field_params: __QinJavaUtilList<com_slime_ast_Pattern> | null = null as any;
   __qin_field_body: com_slime_ast_AstNode | null = null as any;
-  __qin_field_async: boolean | null = null as any;
-  __qin_field_expression: boolean | null = null as any;
-  __qin_field_paramsParenthesized: boolean | null = null as any;
+  __qin_field_async: boolean | null = false as any;
+  __qin_field_expression: boolean | null = false as any;
+  __qin_field_paramsParenthesized: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 6 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && typeof __qin_args[2] === "boolean" && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SourceLocation) || __qin_args[5].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 6 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && typeof __qin_args[2] === "boolean" && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_slime_ast_SourceLocation))) {
       const params: any = __qin_args[0];
       const body: any = __qin_args[1];
       const async: any = __qin_args[2];
@@ -30,12 +30,12 @@ class com_slime_ast_nodes_expressions_ArrowFunctionExpression {
     }
     throw new Error("Unsupported Java constructor overload: ArrowFunctionExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_expressions_ArrowFunctionExpression_6_0(params: any, body: com_slime_ast_AstNode, async: boolean, expression: boolean, paramsParenthesized: boolean, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_expressions_ArrowFunctionExpression_6_0(params: __QinJavaUtilList<com_slime_ast_Pattern>, body: com_slime_ast_AstNode, async: boolean, expression: boolean, paramsParenthesized: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_params = null;
     this.__qin_field_body = null;
-    this.__qin_field_async = null;
-    this.__qin_field_expression = null;
-    this.__qin_field_paramsParenthesized = null;
+    this.__qin_field_async = false;
+    this.__qin_field_expression = false;
+    this.__qin_field_paramsParenthesized = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_params = params;
@@ -47,38 +47,39 @@ class com_slime_ast_nodes_expressions_ArrowFunctionExpression {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_ARROW_FUNCTION_EXPRESSION;
   }
-  params(): any {
+  params(): __QinJavaUtilList<com_slime_ast_Pattern> {
     return this.__qin_field_params;
   }
-  body(): any {
+  body(): com_slime_ast_AstNode {
     return this.__qin_field_body;
   }
-  async(): any {
+  async(): boolean {
     return this.__qin_field_async;
   }
-  expression(): any {
+  expression(): boolean {
     return this.__qin_field_expression;
   }
-  paramsParenthesized(): any {
+  paramsParenthesized(): boolean {
     return this.__qin_field_paramsParenthesized;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_expressions_ArrowFunctionExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_params, other.__qin_field_params)
-      && __qin_java_values_equal__(this.__qin_field_body, other.__qin_field_body)
-      && __qin_java_values_equal__(this.__qin_field_async, other.__qin_field_async)
-      && __qin_java_values_equal__(this.__qin_field_expression, other.__qin_field_expression)
-      && __qin_java_values_equal__(this.__qin_field_paramsParenthesized, other.__qin_field_paramsParenthesized)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_expressions_ArrowFunctionExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_params, __qin_record_other.__qin_field_params)
+      && __qin_java_values_equal__(this.__qin_field_body, __qin_record_other.__qin_field_body)
+      && __qin_java_values_equal__(this.__qin_field_async, __qin_record_other.__qin_field_async)
+      && __qin_java_values_equal__(this.__qin_field_expression, __qin_record_other.__qin_field_expression)
+      && __qin_java_values_equal__(this.__qin_field_paramsParenthesized, __qin_record_other.__qin_field_paramsParenthesized)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_params);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_body);
@@ -88,7 +89,7 @@ class com_slime_ast_nodes_expressions_ArrowFunctionExpression {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ArrowFunctionExpression[", "params=", this.__qin_field_params, ", ", "body=", this.__qin_field_body, ", ", "async=", this.__qin_field_async, ", ", "expression=", this.__qin_field_expression, ", ", "paramsParenthesized=", this.__qin_field_paramsParenthesized, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

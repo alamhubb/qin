@@ -6,12 +6,12 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_subhuti_error_ErrorPosition {
-  __qin_field_tokenIndex: number | null = null as any;
-  __qin_field_line: number | null = null as any;
-  __qin_field_column: number | null = null as any;
-  __qin_field_offset: number | null = null as any;
+  __qin_field_tokenIndex: number | null = 0 as any;
+  __qin_field_line: number | null = 0 as any;
+  __qin_field_column: number | null = 0 as any;
+  __qin_field_offset: number | null = 0 as any;
   __qin_field_sourceLine: string | null = null as any;
-  __qin_field_ruleStackDepth: number | null = null as any;
+  __qin_field_ruleStackDepth: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 6 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || typeof __qin_args[4] === "string") && typeof __qin_args[5] === "number") {
       const tokenIndex: any = __qin_args[0];
@@ -26,12 +26,12 @@ class com_subhuti_error_ErrorPosition {
     throw new Error("Unsupported Java constructor overload: ErrorPosition/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_error_ErrorPosition_6_0(tokenIndex: number, line: number, column: number, offset: number, sourceLine: string, ruleStackDepth: number): void {
-    this.__qin_field_tokenIndex = null;
-    this.__qin_field_line = null;
-    this.__qin_field_column = null;
-    this.__qin_field_offset = null;
+    this.__qin_field_tokenIndex = 0;
+    this.__qin_field_line = 0;
+    this.__qin_field_column = 0;
+    this.__qin_field_offset = 0;
     this.__qin_field_sourceLine = null;
-    this.__qin_field_ruleStackDepth = null;
+    this.__qin_field_ruleStackDepth = 0;
     (() => {
       this.__qin_field_tokenIndex = tokenIndex;
       this.__qin_field_line = line;
@@ -42,47 +42,48 @@ class com_subhuti_error_ErrorPosition {
       return null;
     })();
   }
-  static of(tokenIndex: number, line: number, column: number): any {
+  static of(tokenIndex: number, line: number, column: number): com_subhuti_error_ErrorPosition {
     return new com_subhuti_error_ErrorPosition(tokenIndex, line, column, __qin_binary__("-", 0.0, 1.0), null, 0.0);
   }
-  static full(tokenIndex: number, line: number, column: number, offset: number, sourceLine: string, ruleStackDepth: number): any {
+  static full(tokenIndex: number, line: number, column: number, offset: number, sourceLine: string, ruleStackDepth: number): com_subhuti_error_ErrorPosition {
     return new com_subhuti_error_ErrorPosition(tokenIndex, line, column, offset, sourceLine, ruleStackDepth);
   }
-  format(): any {
+  format(): string {
     if (__qin_binary__("!=", this.__qin_field_sourceLine, null)) {
       return __QinJavaLangString.format("line %d, column %d (token #%d)", this.__qin_field_line, this.__qin_field_column, this.__qin_field_tokenIndex);
     }
     return __QinJavaLangString.format("line %d, column %d", this.__qin_field_line, this.__qin_field_column);
   }
-  tokenIndex(): any {
+  tokenIndex(): number {
     return this.__qin_field_tokenIndex;
   }
-  line(): any {
+  line(): number {
     return this.__qin_field_line;
   }
-  column(): any {
+  column(): number {
     return this.__qin_field_column;
   }
-  offset(): any {
+  offset(): number {
     return this.__qin_field_offset;
   }
-  sourceLine(): any {
+  sourceLine(): string {
     return this.__qin_field_sourceLine;
   }
-  ruleStackDepth(): any {
+  ruleStackDepth(): number {
     return this.__qin_field_ruleStackDepth;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_subhuti_error_ErrorPosition)) return false;
-    return __qin_java_values_equal__(this.__qin_field_tokenIndex, other.__qin_field_tokenIndex)
-      && __qin_java_values_equal__(this.__qin_field_line, other.__qin_field_line)
-      && __qin_java_values_equal__(this.__qin_field_column, other.__qin_field_column)
-      && __qin_java_values_equal__(this.__qin_field_offset, other.__qin_field_offset)
-      && __qin_java_values_equal__(this.__qin_field_sourceLine, other.__qin_field_sourceLine)
-      && __qin_java_values_equal__(this.__qin_field_ruleStackDepth, other.__qin_field_ruleStackDepth);
+    const __qin_record_other: com_subhuti_error_ErrorPosition = other;
+    return __qin_java_values_equal__(this.__qin_field_tokenIndex, __qin_record_other.__qin_field_tokenIndex)
+      && __qin_java_values_equal__(this.__qin_field_line, __qin_record_other.__qin_field_line)
+      && __qin_java_values_equal__(this.__qin_field_column, __qin_record_other.__qin_field_column)
+      && __qin_java_values_equal__(this.__qin_field_offset, __qin_record_other.__qin_field_offset)
+      && __qin_java_values_equal__(this.__qin_field_sourceLine, __qin_record_other.__qin_field_sourceLine)
+      && __qin_java_values_equal__(this.__qin_field_ruleStackDepth, __qin_record_other.__qin_field_ruleStackDepth);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_tokenIndex);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_line);
@@ -92,7 +93,7 @@ class com_subhuti_error_ErrorPosition {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_ruleStackDepth);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ErrorPosition[", "tokenIndex=", this.__qin_field_tokenIndex, ", ", "line=", this.__qin_field_line, ", ", "column=", this.__qin_field_column, ", ", "offset=", this.__qin_field_offset, ", ", "sourceLine=", this.__qin_field_sourceLine, ", ", "ruleStackDepth=", this.__qin_field_ruleStackDepth, "]"].join("");
   }
 }

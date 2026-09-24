@@ -16,10 +16,10 @@ class com_slime_ast_nodes_statements_ForOfStatement {
   __qin_field_left: com_slime_ast_AstNode | null = null as any;
   __qin_field_right: com_slime_ast_Expression | null = null as any;
   __qin_field_body: com_slime_ast_Statement | null = null as any;
-  __qin_field___qin_await: boolean | null = null as any;
+  __qin_field___qin_await: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.Statement")) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.AstNode")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.Statement")) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const left: any = __qin_args[0];
       const right: any = __qin_args[1];
       const body: any = __qin_args[2];
@@ -34,7 +34,7 @@ class com_slime_ast_nodes_statements_ForOfStatement {
     this.__qin_field_left = null;
     this.__qin_field_right = null;
     this.__qin_field_body = null;
-    this.__qin_field___qin_await = null;
+    this.__qin_field___qin_await = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_left = left;
@@ -45,34 +45,35 @@ class com_slime_ast_nodes_statements_ForOfStatement {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_FOR_OF_STATEMENT;
   }
-  left(): any {
+  left(): com_slime_ast_AstNode {
     return this.__qin_field_left;
   }
-  right(): any {
+  right(): com_slime_ast_Expression {
     return this.__qin_field_right;
   }
-  body(): any {
+  body(): com_slime_ast_Statement {
     return this.__qin_field_body;
   }
-  __qin_await(): any {
+  await(): boolean {
     return this.__qin_field___qin_await;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_statements_ForOfStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_left, other.__qin_field_left)
-      && __qin_java_values_equal__(this.__qin_field_right, other.__qin_field_right)
-      && __qin_java_values_equal__(this.__qin_field_body, other.__qin_field_body)
-      && __qin_java_values_equal__(this.__qin_field___qin_await, other.__qin_field___qin_await)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_statements_ForOfStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_left, __qin_record_other.__qin_field_left)
+      && __qin_java_values_equal__(this.__qin_field_right, __qin_record_other.__qin_field_right)
+      && __qin_java_values_equal__(this.__qin_field_body, __qin_record_other.__qin_field_body)
+      && __qin_java_values_equal__(this.__qin_field___qin_await, __qin_record_other.__qin_field___qin_await)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_left);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_right);
@@ -81,7 +82,7 @@ class com_slime_ast_nodes_statements_ForOfStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ForOfStatement[", "left=", this.__qin_field_left, ", ", "right=", this.__qin_field_right, ", ", "body=", this.__qin_field_body, ", ", "await=", this.__qin_field___qin_await, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

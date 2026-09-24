@@ -9,80 +9,68 @@ function __qin_structural_object__(value) {
 }
 const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstLambdaExpression {
-  __qin_field_parameterNames: any = null as any;
-  __qin_field_parameterTypeNames: any = null as any;
+  __qin_field_parameterNames: __QinJavaUtilList<string> | null = null as any;
+  __qin_field_parameterTypeNames: __QinJavaUtilList<string> | null = null as any;
   __qin_field_bodyExpression: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_bodyStatements: any = null as any;
+  __qin_field_bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_0_0();
+    if (__qin_args.length === 4 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList))) {
+      const parameterNames: any = __qin_args[0];
+      const parameterTypeNames: any = __qin_args[1];
+      const bodyExpression: any = __qin_args[2];
+      const bodyStatements: any = __qin_args[3];
+      this.__qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_4_0(parameterNames, parameterTypeNames, bodyExpression, bodyStatements);
       return;
     }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
       const parameterNames: any = __qin_args[0];
       const bodyExpression: any = __qin_args[1];
       const bodyStatements: any = __qin_args[2];
       this.__qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_3_1(parameterNames, bodyExpression, bodyStatements);
       return;
     }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList)) {
-      const parameterNames: any = __qin_args[0];
-      const parameterTypeNames: any = __qin_args[1];
-      const bodyExpression: any = __qin_args[2];
-      const bodyStatements: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_4_2(parameterNames, parameterTypeNames, bodyExpression, bodyStatements);
-      return;
-    }
     throw new Error("Unsupported Java constructor overload: JavaAstLambdaExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_4_0(parameterNames: __QinJavaUtilList<string>, parameterTypeNames: __QinJavaUtilList<string>, bodyExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_parameterNames = null;
     this.__qin_field_parameterTypeNames = null;
     this.__qin_field_bodyExpression = null;
     this.__qin_field_bodyStatements = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_parameterNames, "parameterNames cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_parameterTypeNames, "parameterTypeNames cannot be null");
-    this.__qin_field_parameterNames = __QinJavaUtilList.copyOf(this.__qin_field_parameterNames);
-    this.__qin_field_parameterTypeNames = __QinJavaUtilList.copyOf(this.__qin_field_parameterTypeNames);
-    this.__qin_field_bodyStatements = (__qin_binary__("==", this.__qin_field_bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_bodyStatements));
+    __QinJavaUtilObjects.requireNonNull(parameterNames, "parameterNames cannot be null");
+    __QinJavaUtilObjects.requireNonNull(parameterTypeNames, "parameterTypeNames cannot be null");
+    parameterNames = __QinJavaUtilList.copyOf(parameterNames);
+    parameterTypeNames = __QinJavaUtilList.copyOf(parameterTypeNames);
+    bodyStatements = (__qin_binary__("==", bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(bodyStatements));
+    this.__qin_field_parameterNames = parameterNames;
+    this.__qin_field_parameterTypeNames = parameterTypeNames;
+    this.__qin_field_bodyExpression = bodyExpression;
+    this.__qin_field_bodyStatements = bodyStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_3_1(parameterNames: any, bodyExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || Array.isArray(__qin_delegate_args[0]) || __qin_delegate_args[0] instanceof __QinJavaUtilArrayList || __qin_delegate_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_delegate_args[1] instanceof __QinJavaUtilArrayList || __qin_delegate_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[2] === null || __qin_java_implements(__qin_delegate_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList)) { return this.__qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_4_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstLambdaExpression/" + __qin_delegate_args.length); })(parameterNames, __QinJavaUtilList.of(), bodyExpression, bodyStatements);
+  __qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_3_1(parameterNames: __QinJavaUtilList<string>, bodyExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || Array.isArray(__qin_delegate_args[0]) || __qin_instanceof__(__qin_delegate_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[2] === null || __qin_java_implements(__qin_delegate_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList))) { return this.__qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_4_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstLambdaExpression/" + __qin_delegate_args.length); })(parameterNames, __QinJavaUtilList.of(), bodyExpression, bodyStatements);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstLambdaExpression_4_2(parameterNames: any, parameterTypeNames: any, bodyExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: any): void {
-    this.__qin_field_parameterNames = null;
-    this.__qin_field_parameterTypeNames = null;
-    this.__qin_field_bodyExpression = null;
-    this.__qin_field_bodyStatements = null;
-    (() => {
-      this.__qin_field_parameterNames = parameterNames;
-      this.__qin_field_parameterTypeNames = parameterTypeNames;
-      this.__qin_field_bodyExpression = bodyExpression;
-      this.__qin_field_bodyStatements = bodyStatements;
-      return null;
-    })();
-  }
-  parameterNames(): any {
+  parameterNames(): __QinJavaUtilList<string> {
     return this.__qin_field_parameterNames;
   }
-  parameterTypeNames(): any {
+  parameterTypeNames(): __QinJavaUtilList<string> {
     return this.__qin_field_parameterTypeNames;
   }
-  bodyExpression(): any {
+  bodyExpression(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_bodyExpression;
   }
-  bodyStatements(): any {
+  bodyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_bodyStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstLambdaExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_parameterNames, other.__qin_field_parameterNames)
-      && __qin_java_values_equal__(this.__qin_field_parameterTypeNames, other.__qin_field_parameterTypeNames)
-      && __qin_java_values_equal__(this.__qin_field_bodyExpression, other.__qin_field_bodyExpression)
-      && __qin_java_values_equal__(this.__qin_field_bodyStatements, other.__qin_field_bodyStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstLambdaExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_parameterNames, __qin_record_other.__qin_field_parameterNames)
+      && __qin_java_values_equal__(this.__qin_field_parameterTypeNames, __qin_record_other.__qin_field_parameterTypeNames)
+      && __qin_java_values_equal__(this.__qin_field_bodyExpression, __qin_record_other.__qin_field_bodyExpression)
+      && __qin_java_values_equal__(this.__qin_field_bodyStatements, __qin_record_other.__qin_field_bodyStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_parameterNames);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_parameterTypeNames);
@@ -90,7 +78,7 @@ class com_slime_java_ast_JavaAstLambdaExpression {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_bodyStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstLambdaExpression[", "parameterNames=", this.__qin_field_parameterNames, ", ", "parameterTypeNames=", this.__qin_field_parameterTypeNames, ", ", "bodyExpression=", this.__qin_field_bodyExpression, ", ", "bodyStatements=", this.__qin_field_bodyStatements, "]"].join("");
   }
 }

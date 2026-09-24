@@ -10,13 +10,19 @@ function __qin_structural_object__(value) {
 class com_slime_java_ast_JavaAstFieldDeclaration {
   __qin_field_typeName: string | null = null as any;
   __qin_field_name: string | null = null as any;
-  __qin_field_annotations: any = null as any;
+  __qin_field_annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation> | null = null as any;
   __qin_field_initializer: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_recordComponent: boolean | null = null as any;
-  __qin_field_staticField: boolean | null = null as any;
+  __qin_field_recordComponent: boolean | null = false as any;
+  __qin_field_staticField: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_0_0();
+    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_args[4] === "boolean" && typeof __qin_args[5] === "boolean") {
+      const typeName: any = __qin_args[0];
+      const name: any = __qin_args[1];
+      const annotations: any = __qin_args[2];
+      const initializer: any = __qin_args[3];
+      const recordComponent: any = __qin_args[4];
+      const staticField: any = __qin_args[5];
+      this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_0(typeName, name, annotations, initializer, recordComponent, staticField);
       return;
     }
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) {
@@ -25,14 +31,14 @@ class com_slime_java_ast_JavaAstFieldDeclaration {
       this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_2_1(typeName, name);
       return;
     }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
       const typeName: any = __qin_args[0];
       const name: any = __qin_args[1];
       const annotations: any = __qin_args[2];
       this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_3_2(typeName, name, annotations);
       return;
     }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression"))) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression"))) {
       const typeName: any = __qin_args[0];
       const name: any = __qin_args[1];
       const annotations: any = __qin_args[2];
@@ -40,7 +46,7 @@ class com_slime_java_ast_JavaAstFieldDeclaration {
       this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_4_3(typeName, name, annotations, initializer);
       return;
     }
-    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_args[4] === "boolean") {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_args[4] === "boolean") {
       const typeName: any = __qin_args[0];
       const name: any = __qin_args[1];
       const annotations: any = __qin_args[2];
@@ -49,85 +55,65 @@ class com_slime_java_ast_JavaAstFieldDeclaration {
       this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_5_4(typeName, name, annotations, initializer, recordComponent);
       return;
     }
-    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_args[4] === "boolean" && typeof __qin_args[5] === "boolean") {
-      const typeName: any = __qin_args[0];
-      const name: any = __qin_args[1];
-      const annotations: any = __qin_args[2];
-      const initializer: any = __qin_args[3];
-      const recordComponent: any = __qin_args[4];
-      const staticField: any = __qin_args[5];
-      this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_5(typeName, name, annotations, initializer, recordComponent, staticField);
-      return;
-    }
     throw new Error("Unsupported Java constructor overload: JavaAstFieldDeclaration/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_0(typeName: string, name: string, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, initializer: com_slime_java_ast_JavaAstExpression, recordComponent: boolean, staticField: boolean): void {
     this.__qin_field_typeName = null;
     this.__qin_field_name = null;
     this.__qin_field_annotations = null;
     this.__qin_field_initializer = null;
-    this.__qin_field_recordComponent = null;
-    this.__qin_field_staticField = null;
-    this.__qin_field_annotations = __QinJavaUtilList.copyOf(this.__qin_field_annotations);
+    this.__qin_field_recordComponent = false;
+    this.__qin_field_staticField = false;
+    annotations = __QinJavaUtilList.copyOf(annotations);
+    this.__qin_field_typeName = typeName;
+    this.__qin_field_name = name;
+    this.__qin_field_annotations = annotations;
+    this.__qin_field_initializer = initializer;
+    this.__qin_field_recordComponent = recordComponent;
+    this.__qin_field_staticField = staticField;
   }
   __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_2_1(typeName: string, name: string): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_5(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, __QinJavaUtilList.of(), null, false, false);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, __QinJavaUtilList.of(), null, false, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_3_2(typeName: string, name: string, annotations: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_5(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, annotations, null, false, false);
+  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_3_2(typeName: string, name: string, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, annotations, null, false, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_4_3(typeName: string, name: string, annotations: any, initializer: com_slime_java_ast_JavaAstExpression): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_5(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, annotations, initializer, false, false);
+  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_4_3(typeName: string, name: string, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, initializer: com_slime_java_ast_JavaAstExpression): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, annotations, initializer, false, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_5_4(typeName: string, name: string, annotations: any, initializer: com_slime_java_ast_JavaAstExpression, recordComponent: boolean): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_5(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, annotations, initializer, recordComponent, false);
+  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_5_4(typeName: string, name: string, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, initializer: com_slime_java_ast_JavaAstExpression, recordComponent: boolean): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 6 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || __qin_java_implements(__qin_delegate_args[3], "com.slime.java.ast.JavaAstExpression")) && typeof __qin_delegate_args[4] === "boolean" && typeof __qin_delegate_args[5] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstFieldDeclaration/" + __qin_delegate_args.length); })(typeName, name, annotations, initializer, recordComponent, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstFieldDeclaration_6_5(typeName: string, name: string, annotations: any, initializer: com_slime_java_ast_JavaAstExpression, recordComponent: boolean, staticField: boolean): void {
-    this.__qin_field_typeName = null;
-    this.__qin_field_name = null;
-    this.__qin_field_annotations = null;
-    this.__qin_field_initializer = null;
-    this.__qin_field_recordComponent = null;
-    this.__qin_field_staticField = null;
-    (() => {
-      this.__qin_field_typeName = typeName;
-      this.__qin_field_name = name;
-      this.__qin_field_annotations = annotations;
-      this.__qin_field_initializer = initializer;
-      this.__qin_field_recordComponent = recordComponent;
-      this.__qin_field_staticField = staticField;
-      return null;
-    })();
-  }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  annotations(): any {
+  annotations(): __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation> {
     return this.__qin_field_annotations;
   }
-  initializer(): any {
+  initializer(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_initializer;
   }
-  recordComponent(): any {
+  recordComponent(): boolean {
     return this.__qin_field_recordComponent;
   }
-  staticField(): any {
+  staticField(): boolean {
     return this.__qin_field_staticField;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstFieldDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_annotations, other.__qin_field_annotations)
-      && __qin_java_values_equal__(this.__qin_field_initializer, other.__qin_field_initializer)
-      && __qin_java_values_equal__(this.__qin_field_recordComponent, other.__qin_field_recordComponent)
-      && __qin_java_values_equal__(this.__qin_field_staticField, other.__qin_field_staticField);
+    const __qin_record_other: com_slime_java_ast_JavaAstFieldDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_annotations, __qin_record_other.__qin_field_annotations)
+      && __qin_java_values_equal__(this.__qin_field_initializer, __qin_record_other.__qin_field_initializer)
+      && __qin_java_values_equal__(this.__qin_field_recordComponent, __qin_record_other.__qin_field_recordComponent)
+      && __qin_java_values_equal__(this.__qin_field_staticField, __qin_record_other.__qin_field_staticField);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
@@ -137,7 +123,7 @@ class com_slime_java_ast_JavaAstFieldDeclaration {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_staticField);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstFieldDeclaration[", "typeName=", this.__qin_field_typeName, ", ", "name=", this.__qin_field_name, ", ", "annotations=", this.__qin_field_annotations, ", ", "initializer=", this.__qin_field_initializer, ", ", "recordComponent=", this.__qin_field_recordComponent, ", ", "staticField=", this.__qin_field_staticField, "]"].join("");
   }
 }

@@ -33,7 +33,21 @@ public final class QinJsBackendJavaObjectsSmokeTestMain {
                                         "Objects",
                                         "java.util.Objects",
                                         "toString",
-                                        List.of(new QinIrNullLiteral(), new QinIrStringLiteral("empty"))))),
+                                        List.of(new QinIrNullLiteral(), new QinIrStringLiteral("empty")))),
+                        new QinIrConstDeclaration(
+                                "present",
+                                new QinIrStaticMethodCallExpression(
+                                        "Objects",
+                                        "java.util.Objects",
+                                        "nonNull",
+                                        List.of(new QinIrStringLiteral("x")))),
+                        new QinIrConstDeclaration(
+                                "missing",
+                                new QinIrStaticMethodCallExpression(
+                                        "Objects",
+                                        "java.util.Objects",
+                                        "isNull",
+                                        List.of(new QinIrNullLiteral())))),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -53,15 +67,17 @@ public final class QinJsBackendJavaObjectsSmokeTestMain {
         require(generated.contains("const Objects = __QinJavaUtilObjects;"), "Objects import alias");
         require(generated.contains("Objects.toString(null)"), "Objects.toString null call");
         require(generated.contains("Objects.toString(null, \"empty\")"), "Objects.toString fallback call");
+        require(generated.contains("Objects.nonNull(\"x\")"), "Objects.nonNull call");
+        require(generated.contains("Objects.isNull(null)"), "Objects.isNull call");
 
         Path root = Files.createTempDirectory("qin-js-backend-objects-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-js-backend-objects\" };\n",
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nglobalThis.__qinResult;\n",
+                generated + "\n[value, fallback, present, missing].join(\":\");\n",
                 "js_backend_objects");
-        if (!"empty".equals(result)) {
+        if (!"null:empty:true:true".equals(result)) {
             throw new IllegalStateException("Expected generated Objects.toString fallback empty, got: " + result);
         }
         System.out.println("QinJsBackendJavaObjectsSmokeTestMain OK");

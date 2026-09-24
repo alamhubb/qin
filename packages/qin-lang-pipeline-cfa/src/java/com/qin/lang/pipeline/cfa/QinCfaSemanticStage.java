@@ -55,10 +55,10 @@ public final class QinCfaSemanticStage {
 
         long startNanos = System.nanoTime();
         logPhase("module graph start", startNanos, sourceFile.toString());
-        QinModuleGraph moduleGraph = moduleGraphBuilder.build(sourceFile);
+        QinModuleGraph moduleGraph = new QinModuleGraphBuilder(projectRoot).build(sourceFile);
         logPhase("module graph done", startNanos, "modules=" + moduleGraph.modules().size());
         logPhase("linked source start", startNanos, sourceFile.toString());
-        QinLinkedModuleSource linkedSource = linkedSourceEmitter.emit(moduleGraph);
+        QinLinkedModuleSource linkedSource = new QinLinkedModuleSourceEmitter(projectRoot).emit(moduleGraph);
         logPhase("linked source done", startNanos, "chars=" + linkedSource.source().length());
 
         logPhase("policy start", startNanos, projectRoot.toString());
@@ -81,10 +81,10 @@ public final class QinCfaSemanticStage {
 
         long startNanos = System.nanoTime();
         logPhase("module graph start", startNanos, sourceFile.toString());
-        QinModuleGraph moduleGraph = moduleGraphBuilder.build(sourceFile);
+        QinModuleGraph moduleGraph = new QinModuleGraphBuilder(projectRoot).build(sourceFile);
         logPhase("module graph done", startNanos, "modules=" + moduleGraph.modules().size());
         logPhase("linked source start", startNanos, sourceFile.toString());
-        QinLinkedModuleSource linkedSource = linkedSourceEmitter.emit(moduleGraph);
+        QinLinkedModuleSource linkedSource = new QinLinkedModuleSourceEmitter(projectRoot).emit(moduleGraph);
         logPhase("linked source done", startNanos, "chars=" + linkedSource.source().length());
 
         logPhase("policy start", startNanos, projectRoot.toString());

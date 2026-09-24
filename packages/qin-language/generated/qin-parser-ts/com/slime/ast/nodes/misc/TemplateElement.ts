@@ -11,10 +11,10 @@ function __qin_structural_object__(value) {
 class com_slime_ast_nodes_misc_TemplateElement {
   __qin_field_raw: string | null = null as any;
   __qin_field_cooked: string | null = null as any;
-  __qin_field_tail: boolean | null = null as any;
+  __qin_field_tail: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation) || __qin_args[3].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && typeof __qin_args[2] === "boolean" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_slime_ast_SourceLocation))) {
       const raw: any = __qin_args[0];
       const cooked: any = __qin_args[1];
       const tail: any = __qin_args[2];
@@ -27,7 +27,7 @@ class com_slime_ast_nodes_misc_TemplateElement {
   __qin_constructor_com_slime_ast_nodes_misc_TemplateElement_4_0(raw: string, cooked: string, tail: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_raw = null;
     this.__qin_field_cooked = null;
-    this.__qin_field_tail = null;
+    this.__qin_field_tail = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_raw = raw;
@@ -37,30 +37,31 @@ class com_slime_ast_nodes_misc_TemplateElement {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_TEMPLATE_ELEMENT;
   }
-  raw(): any {
+  raw(): string {
     return this.__qin_field_raw;
   }
-  cooked(): any {
+  cooked(): string {
     return this.__qin_field_cooked;
   }
-  tail(): any {
+  tail(): boolean {
     return this.__qin_field_tail;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_TemplateElement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_raw, other.__qin_field_raw)
-      && __qin_java_values_equal__(this.__qin_field_cooked, other.__qin_field_cooked)
-      && __qin_java_values_equal__(this.__qin_field_tail, other.__qin_field_tail)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_TemplateElement = other;
+    return __qin_java_values_equal__(this.__qin_field_raw, __qin_record_other.__qin_field_raw)
+      && __qin_java_values_equal__(this.__qin_field_cooked, __qin_record_other.__qin_field_cooked)
+      && __qin_java_values_equal__(this.__qin_field_tail, __qin_record_other.__qin_field_tail)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_raw);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_cooked);
@@ -68,7 +69,7 @@ class com_slime_ast_nodes_misc_TemplateElement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TemplateElement[", "raw=", this.__qin_field_raw, ", ", "cooked=", this.__qin_field_cooked, ", ", "tail=", this.__qin_field_tail, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

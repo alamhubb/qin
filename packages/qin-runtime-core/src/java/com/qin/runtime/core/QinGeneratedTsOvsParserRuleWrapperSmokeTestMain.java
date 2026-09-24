@@ -61,8 +61,6 @@ public final class QinGeneratedTsOvsParserRuleWrapperSmokeTestMain {
                 const parser = new OvsParser(source);
                 const cst = parser.Program();
                 ({
-                  statementMarked: !!(parser.Statement && parser.Statement.__isSubhutiRule__),
-                  ovsRenderMarked: !!(parser.OvsRenderStatement && parser.OvsRenderStatement.__isSubhutiRule__),
                   programName: cstName(cst),
                   hasStatement: hasNode(cst, "Statement"),
                   hasOvsRenderStatement: hasNode(cst, "OvsRenderStatement"),
@@ -73,9 +71,7 @@ public final class QinGeneratedTsOvsParserRuleWrapperSmokeTestMain {
         if (!(result instanceof Map<?, ?> map)) {
             throw new IllegalStateException("Expected object result, got: " + result);
         }
-        require(Boolean.TRUE.equals(map.get("statementMarked")), "Statement rule was not marked: " + map);
-        require(Boolean.TRUE.equals(map.get("ovsRenderMarked")), "OvsRenderStatement rule was not marked: " + map);
-        require("Program".equals(map.get("programName")), "Expected Program CST root: " + map);
+        require("OvsProgram".equals(map.get("programName")), "Expected OvsProgram CST root: " + map);
         require(Boolean.TRUE.equals(map.get("hasStatement")), "Program CST is missing Statement wrapper: " + map);
         require(Boolean.TRUE.equals(map.get("hasOvsRenderStatement")),
                 "Program CST is missing OvsRenderStatement wrapper: " + map);

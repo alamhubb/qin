@@ -9,31 +9,31 @@ const Pattern = __QinJavaUtilRegexPattern;
 const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 const StringBuilder = __QinJavaLangStringBuilder;
 class com_subhuti_lexer_RegexUtils {
-  static __qin_field_SPECIAL_CHARS: any = null as any;
+  static __qin_field_SPECIAL_CHARS: __QinJavaUtilRegexPattern | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length !== 0) {
       throw new Error("Unsupported Java constructor arity: RegexUtils/" + __qin_args.length);
     }
   }
-  static escapeRegex(literal: string): any {
+  static escapeRegex(literal: string): string {
     if ((__qin_binary__("==", literal, null) || __QinJavaLangString.isEmpty(literal))) {
       return literal;
     }
     return com_subhuti_lexer_RegexUtils.__qin_field_SPECIAL_CHARS.matcher(literal).replaceAll("\\\\$0");
   }
-  static addNegativeLookahead(pattern: string, lookahead: string): any {
+  static addNegativeLookahead(pattern: string, lookahead: string): string {
     if ((__qin_binary__("==", lookahead, null) || __QinJavaLangString.isEmpty(lookahead))) {
       return pattern;
     }
     return (pattern + "(?!" + lookahead + ")");
   }
-  static anyOf(...options: string[]): any {
+  static anyOf(...options: string[]): string {
     if ((__qin_binary__("==", options, null) || __qin_binary__("==", options.length, 0.0))) {
       throw new __QinJavaLangIllegalArgumentException("At least one option required");
     }
-    let sb: any = new __QinJavaLangStringBuilder();
+    let sb: __QinJavaLangStringBuilder = new __QinJavaLangStringBuilder();
     sb.append("(?:");
-    for (let i: any = 0.0; __qin_binary__("<", i, options.length); i++) {
+    for (let i: number = 0.0; __qin_binary__("<", i, options.length); i++) {
       if (__qin_binary__(">", i, 0.0)) {
         sb.append("|");
       }
@@ -42,33 +42,33 @@ class com_subhuti_lexer_RegexUtils {
     sb.append(")");
     return sb.toString();
   }
-  static charClass(chars: string): any {
+  static charClass(chars: string): string {
     if ((__qin_binary__("==", chars, null) || __QinJavaLangString.isEmpty(chars))) {
       throw new __QinJavaLangIllegalArgumentException("Character class cannot be empty");
     }
-    let escaped: any = chars.replace("\\", "\\\\").replace("]", "\\]").replace("^", "\\^").replace("-", "\\-");
+    let escaped: string = chars.replace("\\", "\\\\").replace("]", "\\]").replace("^", "\\^").replace("-", "\\-");
     return ("[" + escaped + "]");
   }
-  static notCharClass(chars: string): any {
+  static notCharClass(chars: string): string {
     if ((__qin_binary__("==", chars, null) || __QinJavaLangString.isEmpty(chars))) {
       throw new __QinJavaLangIllegalArgumentException("Character class cannot be empty");
     }
-    let escaped: any = chars.replace("\\", "\\\\").replace("]", "\\]").replace("^", "\\^").replace("-", "\\-");
+    let escaped: string = chars.replace("\\", "\\\\").replace("]", "\\]").replace("^", "\\^").replace("-", "\\-");
     return ("[^" + escaped + "]");
   }
-  static optional(pattern: string): any {
+  static optional(pattern: string): string {
     return ("(?:" + pattern + ")?");
   }
-  static zeroOrMore(pattern: string): any {
+  static zeroOrMore(pattern: string): string {
     return ("(?:" + pattern + ")*");
   }
-  static oneOrMore(pattern: string): any {
+  static oneOrMore(pattern: string): string {
     return ("(?:" + pattern + ")+");
   }
-  static group(pattern: string): any {
+  static group(pattern: string): string {
     return ("(?:" + pattern + ")");
   }
-  static compileAnchored(pattern: string): any {
+  static compileAnchored(pattern: string): __QinJavaUtilRegexPattern {
     return __QinJavaUtilRegexPattern.compile(("^(?:" + pattern + ")"));
   }
 }

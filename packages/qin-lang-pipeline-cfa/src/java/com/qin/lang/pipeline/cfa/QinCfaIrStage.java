@@ -1,6 +1,7 @@
 package com.qin.lang.pipeline.cfa;
 
 import com.qin.lang.frontend.adapter.QinFrontendLowerer;
+import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
 import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
@@ -39,12 +40,20 @@ public final class QinCfaIrStage {
     public QinCfaIrStageResult execute(
             QinCfaSemanticStageResult semanticStageResult,
             Map<String, String> declarationClassExportSlots) {
+        return execute(semanticStageResult, declarationClassExportSlots, Map.of());
+    }
+
+    public QinCfaIrStageResult execute(
+            QinCfaSemanticStageResult semanticStageResult,
+            Map<String, String> declarationClassExportSlots,
+            Map<String, QinIrExpression> staticExportSlotValues) {
         Objects.requireNonNull(semanticStageResult, "semanticStageResult cannot be null");
 
         String linkedSource = semanticStageResult.linkedSource().source();
         QinIrProgram irBeforeLowering = frontendLowerer.lowerSource(
                 linkedSource,
-                declarationClassExportSlots == null ? Map.of() : declarationClassExportSlots);
+                declarationClassExportSlots == null ? Map.of() : declarationClassExportSlots,
+                staticExportSlotValues == null ? Map.of() : staticExportSlotValues);
         String astText = renderAstTextForSnapshot(linkedSource);
 
         QinIrProgram loweredProgram = lowerer.lower(

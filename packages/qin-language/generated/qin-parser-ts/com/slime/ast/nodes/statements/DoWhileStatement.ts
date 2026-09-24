@@ -15,7 +15,7 @@ class com_slime_ast_nodes_statements_DoWhileStatement {
   __qin_field_test: com_slime_ast_Expression | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Statement")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Statement")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.Expression")) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const body: any = __qin_args[0];
       const test: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -35,33 +35,34 @@ class com_slime_ast_nodes_statements_DoWhileStatement {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_DO_WHILE_STATEMENT;
   }
-  body(): any {
+  body(): com_slime_ast_Statement {
     return this.__qin_field_body;
   }
-  test(): any {
+  test(): com_slime_ast_Expression {
     return this.__qin_field_test;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_statements_DoWhileStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_body, other.__qin_field_body)
-      && __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_statements_DoWhileStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_body, __qin_record_other.__qin_field_body)
+      && __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_body);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["DoWhileStatement[", "body=", this.__qin_field_body, ", ", "test=", this.__qin_field_test, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

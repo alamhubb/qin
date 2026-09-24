@@ -26,18 +26,21 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createDecoratorsAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let result: any = new __QinJavaUtilArrayList();
-    this.collectDecorators(cst, result);
+  createDecoratorsAst(cst: com_subhuti_struct_SubhutiCst): __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator> {
+    let result: __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator> = new __QinJavaUtilArrayList();
+    {
+      const __qin_typed_receiver_2207: com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst = this;
+      __qin_typed_receiver_2207.collectDecorators(cst, result);
+    }
     return result;
   }
-  createDecoratorAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let expression: any = null;
+  createDecoratorAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_misc_Decorator {
+    let expression: com_slime_ast_Expression = null;
     for (const child of com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("LeftHandSideExpression", name) || __QinJavaLangString.equals("CallExpression", name) || __QinJavaLangString.equals("MemberExpression", name) || __QinJavaLangString.equals("PrimaryExpression", name) || __QinJavaLangString.equals("IdentifierReference", name) || __QinJavaLangString.equals("Identifier", name))) {
         expression = this.__qin_field_transformer.createExpressionAst(child);
         break;
@@ -48,7 +51,7 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst {
     }
     return new com_slime_ast_nodes_misc_Decorator(expression, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
-  collectDecorators(cst: com_subhuti_struct_SubhutiCst, result: any): any {
+  collectDecorators(cst: com_subhuti_struct_SubhutiCst, result: __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator>): void {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
@@ -57,11 +60,14 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst {
       return null;
     }
     for (const child of com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst.safeChildren(cst)) {
-      this.collectDecorators(child, result);
+      {
+        const __qin_typed_receiver_2208: com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst = this;
+        __qin_typed_receiver_2208.collectDecorators(child, result);
+      }
     }
     return null;
   }
-  static safeChildren(cst: com_subhuti_struct_SubhutiCst): any {
+  static safeChildren(cst: com_subhuti_struct_SubhutiCst): __QinJavaUtilList<com_subhuti_struct_SubhutiCst> {
     return (__qin_binary__("==", (__qin_binary__("==", cst, null) ? null : cst.getChildren()), null) ? __QinJavaUtilList.of() : (__qin_binary__("==", cst, null) ? null : cst.getChildren()));
   }
 }

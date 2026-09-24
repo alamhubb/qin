@@ -12,10 +12,10 @@ const Objects = __QinJavaUtilObjects;
 class com_subhuti_parser_SubhutiRuleCacheKey {
   __qin_field_ruleName: string | null = null as any;
   __qin_field_cacheKeyExtra: any = null as any;
-  __qin_field_cursorStamp: number | null = null as any;
+  __qin_field_cursorStamp: number | null = 0 as any;
   __qin_field_mode: com_subhuti_struct_LexerMode | null = null as any;
   __qin_field_lastTokenName: string | null = null as any;
-  __qin_field_hashCode: number | null = null as any;
+  __qin_field_hashCode: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_struct_LexerMode)) && (__qin_args[4] === null || typeof __qin_args[4] === "string")) {
       const ruleName: any = __qin_args[0];
@@ -31,33 +31,33 @@ class com_subhuti_parser_SubhutiRuleCacheKey {
   __qin_constructor_com_subhuti_parser_SubhutiRuleCacheKey_5_0(ruleName: string, cacheKeyExtra: any, cursorStamp: number, mode: com_subhuti_struct_LexerMode, lastTokenName: string): void {
     this.__qin_field_ruleName = null;
     this.__qin_field_cacheKeyExtra = null;
-    this.__qin_field_cursorStamp = null;
+    this.__qin_field_cursorStamp = 0;
     this.__qin_field_mode = null;
     this.__qin_field_lastTokenName = null;
-    this.__qin_field_hashCode = null;
+    this.__qin_field_hashCode = 0;
     this.__qin_field_ruleName = ruleName;
     this.__qin_field_cacheKeyExtra = (__qin_binary__("==", cacheKeyExtra, null) ? "" : cacheKeyExtra);
     this.__qin_field_cursorStamp = cursorStamp;
     this.__qin_field_mode = mode;
     this.__qin_field_lastTokenName = lastTokenName;
-    let hash: any = (__qin_binary__("==", ruleName, null) ? 0.0 : __QinJavaLangString.hashCode(ruleName));
+    let hash: number = (__qin_binary__("==", ruleName, null) ? 0.0 : __QinJavaLangString.hashCode(ruleName));
     hash = __qin_binary__("+", __qin_binary__("*", 31.0, hash), __qin_java_value_hash_code__(this.__qin_field_cacheKeyExtra));
     hash = __qin_binary__("+", __qin_binary__("*", 31.0, hash), ((__qin_long_hash_input) => { const __qin_long_hash_number = Number(__qin_long_hash_input); return (__qin_long_hash_number ^ Math.trunc(__qin_long_hash_number / 4294967296)) | 0; })(cursorStamp));
     hash = __qin_binary__("+", __qin_binary__("*", 31.0, hash), (__qin_binary__("==", mode, null) ? 0.0 : mode.hashCode()));
     hash = __qin_binary__("+", __qin_binary__("*", 31.0, hash), (__qin_binary__("==", lastTokenName, null) ? 0.0 : __QinJavaLangString.hashCode(lastTokenName)));
     this.__qin_field_hashCode = hash;
   }
-  equals(other: any): any {
-    let that: any = null;
+  equals(other: any): boolean {
+    let that: com_subhuti_parser_SubhutiRuleCacheKey = null as any;
     if (__qin_binary__("==", this, other)) {
       return true;
     }
-    if ((!(() => { const __qin_pattern_value = other; return __qin_instanceof__(__qin_pattern_value, com_subhuti_parser_SubhutiRuleCacheKey) && (that = __qin_pattern_value, true); })())) {
+    if ((!(__qin_instanceof__(other, com_subhuti_parser_SubhutiRuleCacheKey) && (that = other, true)))) {
       return false;
     }
     return (__qin_binary__("==", this.__qin_field_cursorStamp, that.__qin_field_cursorStamp) && __QinJavaUtilObjects.equals(this.__qin_field_ruleName, that.__qin_field_ruleName) && __QinJavaUtilObjects.equals(this.__qin_field_cacheKeyExtra, that.__qin_field_cacheKeyExtra) && __qin_binary__("==", this.__qin_field_mode, that.__qin_field_mode) && __QinJavaUtilObjects.equals(this.__qin_field_lastTokenName, that.__qin_field_lastTokenName));
   }
-  hashCode(): any {
+  hashCode(): number {
     return this.__qin_field_hashCode;
   }
 }

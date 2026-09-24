@@ -13,7 +13,7 @@ class com_slime_ast_nodes_misc_ImportNamespaceSpecifier {
   __qin_field_local: com_slime_ast_nodes_expressions_Identifier | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SourceLocation) || __qin_args[1].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_slime_ast_SourceLocation))) {
       const local: any = __qin_args[0];
       const location: any = __qin_args[1];
       this.__qin_constructor_com_slime_ast_nodes_misc_ImportNamespaceSpecifier_2_0(local, location);
@@ -30,28 +30,29 @@ class com_slime_ast_nodes_misc_ImportNamespaceSpecifier {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_IMPORT_NAMESPACE_SPECIFIER;
   }
-  local(): any {
+  local(): com_slime_ast_nodes_expressions_Identifier {
     return this.__qin_field_local;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_ImportNamespaceSpecifier)) return false;
-    return __qin_java_values_equal__(this.__qin_field_local, other.__qin_field_local)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_ImportNamespaceSpecifier = other;
+    return __qin_java_values_equal__(this.__qin_field_local, __qin_record_other.__qin_field_local)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_local);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ImportNamespaceSpecifier[", "local=", this.__qin_field_local, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

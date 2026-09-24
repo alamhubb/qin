@@ -12,66 +12,54 @@ class com_slime_java_ast_JavaAstEnhancedForStatement {
   __qin_field_variableTypeName: string | null = null as any;
   __qin_field_variableName: string | null = null as any;
   __qin_field_iterableExpression: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_bodyStatements: any = null as any;
+  __qin_field_bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstEnhancedForStatement_0_0();
-      return;
-    }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList))) {
       const variableTypeName: any = __qin_args[0];
       const variableName: any = __qin_args[1];
       const iterableExpression: any = __qin_args[2];
       const bodyStatements: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstEnhancedForStatement_4_1(variableTypeName, variableName, iterableExpression, bodyStatements);
+      this.__qin_constructor_com_slime_java_ast_JavaAstEnhancedForStatement_4_0(variableTypeName, variableName, iterableExpression, bodyStatements);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstEnhancedForStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstEnhancedForStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstEnhancedForStatement_4_0(variableTypeName: string, variableName: string, iterableExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_variableTypeName = null;
     this.__qin_field_variableName = null;
     this.__qin_field_iterableExpression = null;
     this.__qin_field_bodyStatements = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_variableTypeName, "variableTypeName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_variableName, "variableName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_iterableExpression, "iterableExpression cannot be null");
-    this.__qin_field_bodyStatements = (__qin_binary__("==", this.__qin_field_bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_bodyStatements));
+    __QinJavaUtilObjects.requireNonNull(variableTypeName, "variableTypeName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(variableName, "variableName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(iterableExpression, "iterableExpression cannot be null");
+    bodyStatements = (__qin_binary__("==", bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(bodyStatements));
+    this.__qin_field_variableTypeName = variableTypeName;
+    this.__qin_field_variableName = variableName;
+    this.__qin_field_iterableExpression = iterableExpression;
+    this.__qin_field_bodyStatements = bodyStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstEnhancedForStatement_4_1(variableTypeName: string, variableName: string, iterableExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: any): void {
-    this.__qin_field_variableTypeName = null;
-    this.__qin_field_variableName = null;
-    this.__qin_field_iterableExpression = null;
-    this.__qin_field_bodyStatements = null;
-    (() => {
-      this.__qin_field_variableTypeName = variableTypeName;
-      this.__qin_field_variableName = variableName;
-      this.__qin_field_iterableExpression = iterableExpression;
-      this.__qin_field_bodyStatements = bodyStatements;
-      return null;
-    })();
-  }
-  variableTypeName(): any {
+  variableTypeName(): string {
     return this.__qin_field_variableTypeName;
   }
-  variableName(): any {
+  variableName(): string {
     return this.__qin_field_variableName;
   }
-  iterableExpression(): any {
+  iterableExpression(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_iterableExpression;
   }
-  bodyStatements(): any {
+  bodyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_bodyStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstEnhancedForStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_variableTypeName, other.__qin_field_variableTypeName)
-      && __qin_java_values_equal__(this.__qin_field_variableName, other.__qin_field_variableName)
-      && __qin_java_values_equal__(this.__qin_field_iterableExpression, other.__qin_field_iterableExpression)
-      && __qin_java_values_equal__(this.__qin_field_bodyStatements, other.__qin_field_bodyStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstEnhancedForStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_variableTypeName, __qin_record_other.__qin_field_variableTypeName)
+      && __qin_java_values_equal__(this.__qin_field_variableName, __qin_record_other.__qin_field_variableName)
+      && __qin_java_values_equal__(this.__qin_field_iterableExpression, __qin_record_other.__qin_field_iterableExpression)
+      && __qin_java_values_equal__(this.__qin_field_bodyStatements, __qin_record_other.__qin_field_bodyStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_variableTypeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_variableName);
@@ -79,7 +67,7 @@ class com_slime_java_ast_JavaAstEnhancedForStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_bodyStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstEnhancedForStatement[", "variableTypeName=", this.__qin_field_variableTypeName, ", ", "variableName=", this.__qin_field_variableName, ", ", "iterableExpression=", this.__qin_field_iterableExpression, ", ", "bodyStatements=", this.__qin_field_bodyStatements, "]"].join("");
   }
 }

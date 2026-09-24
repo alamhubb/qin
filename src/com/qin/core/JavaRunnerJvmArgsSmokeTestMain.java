@@ -23,6 +23,31 @@ public final class JavaRunnerJvmArgsSmokeTestMain {
         method.invoke(newRunner(), explicit, List.of("-Xmx512m"));
         require(!explicit.contains("-Xmx1536m"), "explicit Xmx should override default heap");
 
+        Method inheritedMethod = JavaRunner.class.getDeclaredMethod(
+                "appendInheritedRunSystemProperties",
+                List.class,
+                List.class);
+        inheritedMethod.setAccessible(true);
+        String previousMode = System.getProperty("qin.dynamicSemanticMode");
+        try {
+            System.setProperty("qin.dynamicSemanticMode", "error");
+            List<String> inherited = new ArrayList<>();
+            inheritedMethod.invoke(newRunner(), inherited, List.of());
+            require(inherited.contains("-Dqin.dynamicSemanticMode=error"),
+                    "Qin dynamic semantic mode should be inherited by qin run child JVM");
+
+            List<String> overridden = new ArrayList<>();
+            inheritedMethod.invoke(newRunner(), overridden, List.of("-Dqin.dynamicSemanticMode=warn"));
+            require(!overridden.contains("-Dqin.dynamicSemanticMode=error"),
+                    "Explicit --jvm-args should override inherited Qin dynamic semantic mode");
+        } finally {
+            if (previousMode == null) {
+                System.clearProperty("qin.dynamicSemanticMode");
+            } else {
+                System.setProperty("qin.dynamicSemanticMode", previousMode);
+            }
+        }
+
         System.out.println("JavaRunnerJvmArgsSmokeTestMain OK");
     }
 

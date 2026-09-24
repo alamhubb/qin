@@ -55,9 +55,10 @@ public final class QinJsPackageRunnerSubhutiShimSmokeTestMain {
                 root,
                 wrapperDir,
                 """
-                        import { createRegToken, SubhutiRule, SubhutiPackratCache } from "subhuti"
-                        ;({ createRegToken, SubhutiRule, SubhutiPackratCache })
-                        """);
+                import { createRegToken, SubhutiRule, SubhutiPackratCache } from "subhuti"
+                import { __qin_java_functional } from "@qin/java-sdk-js"
+                ;({ createRegToken, SubhutiRule, SubhutiPackratCache })
+                """);
 
         Path subhutiDir = wrapperDir.resolve("node_modules").resolve("subhuti");
         Path shimIndex = subhutiDir.resolve("index.ts");
@@ -78,9 +79,18 @@ public final class QinJsPackageRunnerSubhutiShimSmokeTestMain {
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
                 """
-                        import { createRegToken, SubhutiRule, SubhutiPackratCache } from "subhuti"
+                import { createRegToken, SubhutiRule, SubhutiPackratCache } from "subhuti"
+                import { __qin_java_functional } from "@qin/java-sdk-js"
 
-                        class BaseParser {
+                class BaseParser {
+                          __qin_field_lastRuleName = ""
+
+                          executeRuleWrapper(...args) {
+                            const ruleName = args[1]
+                            this.__qin_field_lastRuleName = ruleName
+                            return "ok"
+                          }
+
                           @SubhutiRule
                           Rule() {
                             return this.Statement()
@@ -99,12 +109,41 @@ public final class QinJsPackageRunnerSubhutiShimSmokeTestMain {
                           }
                         }
 
+                        const descriptorReceiver = {
+                          ruleName: "",
+                          executeRuleWrapper(targetFun, ruleName) {
+                            this.ruleName = ruleName
+                            return targetFun()
+                          }
+                        }
+                        const descriptorWrapped = SubhutiRule({ method: function DescriptorRule() {
+                          return "descriptor"
+                        } }, { name: "DescriptorRule" })
+                        const shiftedWrapped = SubhutiRule("ShiftedRule", { method: function ShiftedRule() {
+                          return "shifted"
+                        } })
+                        const functionalDescriptor = __qin_java_functional(descriptorWrapped)
+                        const demo = new Demo()
+                        descriptorReceiver.descriptor = descriptorWrapped
+                        descriptorReceiver.shifted = shiftedWrapped
                         const token = createRegToken("Hash", /#/)
                         const cache = new SubhutiPackratCache(10)
                         ;({
                           tokenName: token.getName(),
-                          methodResult: new Demo().Rule(),
-                          directMethodResult: new Demo().Statement(),
+                          methodResult: demo.Rule(),
+                          directMethodResult: demo.Statement(),
+                          lastRuleName: demo.__qin_field_lastRuleName,
+                          descriptorMarked: descriptorWrapped.__isSubhutiRule__ === true,
+                          descriptorRuleName: descriptorWrapped.__qinSubhutiRuleName,
+                          descriptorResult: descriptorReceiver.descriptor(),
+                          descriptorReceiverRuleName: descriptorReceiver.ruleName,
+                          functionalDescriptorMarked: functionalDescriptor.__isSubhutiRule__ === true,
+                          functionalDescriptorRuleName: functionalDescriptor.__qinSubhutiRuleName,
+                          functionalDescriptorMethodRuleName: functionalDescriptor.method && functionalDescriptor.method.__qinSubhutiRuleName,
+                          functionalDescriptorResult: functionalDescriptor(),
+                          shiftedMarked: shiftedWrapped.__isSubhutiRule__ === true,
+                          shiftedRuleName: shiftedWrapped.__qinSubhutiRuleName,
+                          shiftedResult: descriptorReceiver.shifted(),
                           cacheReady: cache.getMaxSize() === 10
                         })
                         """,
@@ -113,6 +152,30 @@ public final class QinJsPackageRunnerSubhutiShimSmokeTestMain {
         require(String.valueOf(result).contains("methodResult=ok"), "subhuti shim SubhutiRule broke method execution: " + result);
         require(String.valueOf(result).contains("directMethodResult=ok"),
                 "subhuti shim direct decorated method execution failed: " + result);
+        require(String.valueOf(result).contains("lastRuleName=Statement"),
+                "subhuti shim did not route class decorators through executeRuleWrapper: " + result);
+        require(String.valueOf(result).contains("descriptorMarked=true"),
+                "subhuti shim did not mark Qin-lowered method descriptor: " + result);
+        require(String.valueOf(result).contains("descriptorRuleName=DescriptorRule"),
+                "subhuti shim did not preserve method descriptor rule name: " + result);
+        require(String.valueOf(result).contains("descriptorResult=descriptor"),
+                "subhuti shim method descriptor execution failed: " + result);
+        require(String.valueOf(result).contains("descriptorReceiverRuleName=DescriptorRule"),
+                "subhuti shim method descriptor did not route through wrapper: " + result);
+        require(String.valueOf(result).contains("functionalDescriptorMarked=true"),
+                "subhuti shim functional wrapper did not preserve rule marker: " + result);
+        require(String.valueOf(result).contains("functionalDescriptorRuleName=DescriptorRule"),
+                "subhuti shim functional wrapper did not preserve rule name: " + result);
+        require(String.valueOf(result).contains("functionalDescriptorMethodRuleName=DescriptorRule"),
+                "subhuti shim functional wrapper did not preserve nested rule name: " + result);
+        require(String.valueOf(result).contains("functionalDescriptorResult=descriptor"),
+                "subhuti shim functional wrapper did not preserve execution: " + result);
+        require(String.valueOf(result).contains("shiftedMarked=true"),
+                "subhuti shim did not mark shifted method descriptor: " + result);
+        require(String.valueOf(result).contains("shiftedRuleName=ShiftedRule"),
+                "subhuti shim did not preserve shifted descriptor rule name: " + result);
+        require(String.valueOf(result).contains("shiftedResult=shifted"),
+                "subhuti shim shifted descriptor execution failed: " + result);
         require(String.valueOf(result).contains("cacheReady=true"), "subhuti shim SubhutiPackratCache did not execute: " + result);
         System.out.println("QinJsPackageRunnerSubhutiShimSmokeTestMain OK");
     }

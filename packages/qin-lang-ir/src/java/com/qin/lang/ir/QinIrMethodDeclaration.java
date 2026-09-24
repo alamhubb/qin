@@ -14,6 +14,7 @@ public record QinIrMethodDeclaration(
         QinIrExpression returnExpression,
         List<QinIrStatement> bodyStatements,
         List<QinIrExpression> superArguments,
+        boolean explicitSuperConstructorCall,
         QinIrObjectLiteral runtimeFunctionDefinition,
         boolean staticMethod,
         boolean abstractMethod) {
@@ -23,9 +24,9 @@ public record QinIrMethodDeclaration(
             List<QinIrParameter> parameters,
             List<QinIrAnnotation> annotations,
             QinIrExpression returnExpression,
-            QinIrObjectLiteral runtimeFunctionDefinition,
-            boolean staticMethod) {
-        this(name, returnType, parameters, annotations, returnExpression, List.of(), List.of(), runtimeFunctionDefinition, staticMethod, false);
+        QinIrObjectLiteral runtimeFunctionDefinition,
+        boolean staticMethod) {
+        this(name, returnType, parameters, annotations, returnExpression, List.of(), List.of(), false, runtimeFunctionDefinition, staticMethod, false);
     }
 
     public QinIrMethodDeclaration(
@@ -38,7 +39,21 @@ public record QinIrMethodDeclaration(
             List<QinIrExpression> superArguments,
             QinIrObjectLiteral runtimeFunctionDefinition,
             boolean staticMethod) {
-        this(name, returnType, parameters, annotations, returnExpression, bodyStatements, superArguments, runtimeFunctionDefinition, staticMethod, false);
+        this(name, returnType, parameters, annotations, returnExpression, bodyStatements, superArguments, false, runtimeFunctionDefinition, staticMethod, false);
+    }
+
+    public QinIrMethodDeclaration(
+            String name,
+            QinIrTypeRef returnType,
+            List<QinIrParameter> parameters,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression returnExpression,
+            List<QinIrStatement> bodyStatements,
+            List<QinIrExpression> superArguments,
+            boolean explicitSuperConstructorCall,
+            QinIrObjectLiteral runtimeFunctionDefinition,
+            boolean staticMethod) {
+        this(name, returnType, parameters, annotations, returnExpression, bodyStatements, superArguments, explicitSuperConstructorCall, runtimeFunctionDefinition, staticMethod, false);
     }
 
     public QinIrMethodDeclaration(
@@ -50,7 +65,21 @@ public record QinIrMethodDeclaration(
             List<QinIrExpression> superArguments,
             QinIrObjectLiteral runtimeFunctionDefinition,
             boolean staticMethod) {
-        this(name, returnType, parameters, annotations, returnExpression, List.of(), superArguments, runtimeFunctionDefinition, staticMethod, false);
+        this(name, returnType, parameters, annotations, returnExpression, List.of(), superArguments, !superArguments.isEmpty(), runtimeFunctionDefinition, staticMethod, false);
+    }
+
+    public QinIrMethodDeclaration(
+            String name,
+            QinIrTypeRef returnType,
+            List<QinIrParameter> parameters,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression returnExpression,
+            List<QinIrStatement> bodyStatements,
+            List<QinIrExpression> superArguments,
+            QinIrObjectLiteral runtimeFunctionDefinition,
+            boolean staticMethod,
+            boolean abstractMethod) {
+        this(name, returnType, parameters, annotations, returnExpression, bodyStatements, superArguments, false, runtimeFunctionDefinition, staticMethod, abstractMethod);
     }
 
     public QinIrMethodDeclaration(

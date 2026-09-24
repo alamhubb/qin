@@ -202,6 +202,7 @@ This implies:
 
 - simple cross-project capabilities should prefer Qin-owned APIs
 - heavy enterprise/backend capabilities should usually reuse the JVM ecosystem directly
+- if backend lowering needs to normalize a method parameter for runtime adaptation, it must emit a fresh local alias and retarget the compiler binding table to that alias; it must not assign the normalized value back onto the original parameter symbol, because generated-class lowering treats parameter rebinding as an invalid local-assignment target
 
 ## 5. Spring Example
 

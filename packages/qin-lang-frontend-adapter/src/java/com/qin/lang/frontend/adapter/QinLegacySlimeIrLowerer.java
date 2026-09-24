@@ -20,6 +20,7 @@ import com.slime.ast.nodes.declarations.ClassDeclaration;
 import com.slime.ast.nodes.declarations.FunctionDeclaration;
 import com.slime.ast.nodes.declarations.VariableDeclaration;
 import com.slime.ast.nodes.modules.ExportAllDeclaration;
+import com.slime.ast.nodes.modules.ExportDefaultDeclaration;
 import com.slime.ast.nodes.modules.ImportDeclaration;
 import com.slime.ast.nodes.modules.ExportNamedDeclaration;
 
@@ -48,6 +49,12 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
         adapter.currentSourceLength = sourceLength;
     }
 
+    void setCurrentSource(String sourceText) {
+        this.currentSourceText = sourceText == null ? "" : sourceText;
+        setCurrentSourceLength(this.currentSourceText.length());
+        adapter.currentSourceText = this.currentSourceText;
+    }
+
     void setFunctionModelBudget(int budget) {
         loweringContext.setFunctionModelBudgetRemaining(budget);
         this.functionModelBudgetRemaining = budget;
@@ -70,14 +77,16 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
             Map<String, String> jsDeclarationClassLookup,
             Set<String> localDeclarationNames,
             Map<String, QinIrExpression> declarationLookup,
-            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
+            Map<String, QinIrClassDeclaration> localJvmDeclarations,
+            Map<String, QinIrExpression> staticExportSlotValues) {
         return declarationIrLowerer.lowerClassDeclarationOrNull(
                 classDeclaration,
                 javaImportLookup,
                 jsDeclarationClassLookup,
                 localDeclarationNames,
                 declarationLookup,
-                localJvmDeclarations);
+                localJvmDeclarations,
+                staticExportSlotValues);
     }
 
     List<QinIrConstDeclaration> lowerVariableDeclaration(
@@ -98,19 +107,21 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
             com.slime.ast.nodes.declarations.ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup) {
-        return lowerClassDeclarationValue(classDeclaration, javaImportLookup, declarationLookup, false);
+        return lowerClassDeclarationValue(classDeclaration, javaImportLookup, declarationLookup, false, null);
     }
 
     QinIrConstDeclaration lowerClassDeclarationValue(
             com.slime.ast.nodes.declarations.ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup,
-            boolean useJvmClassValue) {
+            boolean useJvmClassValue,
+            String jvmClassBinaryName) {
         return declarationIrLowerer.lowerClassDeclarationValue(
                 classDeclaration,
                 javaImportLookup,
                 declarationLookup,
-                useJvmClassValue);
+                useJvmClassValue,
+                jvmClassBinaryName);
     }
 
     QinTopLevelIrAssembler.LoweredImports lowerImportDeclaration(
@@ -162,6 +173,11 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
             if (statement instanceof ClassDeclaration directClassDeclaration) {
                 classDeclaration = directClassDeclaration;
             } else if (statement instanceof ExportNamedDeclaration) {
+                Object declaration = QinSlimeFrontendAdapter.invokeByName(statement, "declaration");
+                if (declaration instanceof ClassDeclaration exportedClassDeclaration) {
+                    classDeclaration = exportedClassDeclaration;
+                }
+            } else if (statement instanceof ExportDefaultDeclaration) {
                 Object declaration = QinSlimeFrontendAdapter.invokeByName(statement, "declaration");
                 if (declaration instanceof ClassDeclaration exportedClassDeclaration) {
                     classDeclaration = exportedClassDeclaration;
@@ -222,6 +238,22 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
                     }
                     continue;
                 }
+                if ("FunctionDeclaration".equals(declarationType) || "ClassDeclaration".equals(declarationType)) {
+                    String name = extractIdentifierName(
+                            QinSlimeFrontendAdapter.invokeByName(declaration, "id"),
+                            declarationType + ".id");
+                    if (!name.isBlank()) {
+                        declarationLookup.putIfAbsent(name, new QinIrIdentifierReference(name));
+                    }
+                }
+                continue;
+            }
+            if (statement instanceof ExportDefaultDeclaration) {
+                Object declaration = QinSlimeFrontendAdapter.invokeByName(statement, "declaration");
+                if (declaration == null) {
+                    continue;
+                }
+                String declarationType = QinSlimeFrontendAdapter.simpleName(declaration);
                 if ("FunctionDeclaration".equals(declarationType) || "ClassDeclaration".equals(declarationType)) {
                     String name = extractIdentifierName(
                             QinSlimeFrontendAdapter.invokeByName(declaration, "id"),

@@ -35,6 +35,10 @@ public class JavaRunner {
             "-Dfile.encoding=UTF-8",
             "-Dstdout.encoding=UTF-8",
             "-Dstderr.encoding=UTF-8");
+    private static final List<String> INHERITED_RUN_SYSTEM_PROPERTIES = List.of(
+            "qin.dynamicSemanticMode",
+            "qin.dynamicSemanticHardFailures",
+            "qin.dynamicSemanticWarnings");
 
     private final QinConfig config;
     private final String classpath;
@@ -297,6 +301,7 @@ public class JavaRunner {
         if (jvmArgs != null && !jvmArgs.isEmpty()) {
             javaArgs.addAll(jvmArgs);
         }
+        appendInheritedRunSystemProperties(javaArgs, jvmArgs);
 
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
         if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
@@ -384,6 +389,7 @@ public class JavaRunner {
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("java");
         appendDefaultRunJvmArgs(javaArgs, jvmArgs);
+        appendInheritedRunSystemProperties(javaArgs, jvmArgs);
         if (jvmArgs != null && !jvmArgs.isEmpty()) {
             javaArgs.addAll(jvmArgs);
         }
@@ -423,6 +429,16 @@ public class JavaRunner {
         }
     }
 
+    private void appendInheritedRunSystemProperties(List<String> javaArgs, List<String> explicitJvmArgs) {
+        for (String propertyName : INHERITED_RUN_SYSTEM_PROPERTIES) {
+            String value = System.getProperty(propertyName);
+            if (value == null || value.isBlank() || hasSystemPropertyArg(propertyName, explicitJvmArgs)) {
+                continue;
+            }
+            javaArgs.add("-D" + propertyName + "=" + value);
+        }
+    }
+
     private String configuredRunMaxHeap() {
         String property = System.getProperty("qin.run.maxHeap");
         if (property != null && !property.isBlank()) {
@@ -441,6 +457,20 @@ public class JavaRunner {
         }
         for (String arg : explicitJvmArgs) {
             if (arg != null && arg.startsWith(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasSystemPropertyArg(String propertyName, List<String> explicitJvmArgs) {
+        if (explicitJvmArgs == null || explicitJvmArgs.isEmpty()) {
+            return false;
+        }
+        String exact = "-D" + propertyName;
+        String prefix = exact + "=";
+        for (String arg : explicitJvmArgs) {
+            if (arg != null && (arg.equals(exact) || arg.startsWith(prefix))) {
                 return true;
             }
         }

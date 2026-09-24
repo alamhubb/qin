@@ -18,7 +18,7 @@ class com_slime_parser_SlimeTSBindingIdentifierTailStaticGrammar {
   __qin_constructor_com_slime_parser_SlimeTSBindingIdentifierTailStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
     return com_subhuti_parser_SubhutiStaticGrammar.builder().rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalBindingIdentifierQuestion", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("Question")))).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalTSPropertyMarker", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.or(com_subhuti_parser_SubhutiStaticGrammar.alt(com_subhuti_parser_SubhutiStaticGrammar.consume("Question")), com_subhuti_parser_SubhutiStaticGrammar.alt(com_subhuti_parser_SubhutiStaticGrammar.consume("LogicalNot")))))).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalTSDefiniteAssignmentAssertion", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("LogicalNot")))).build();
   }
 }

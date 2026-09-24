@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeTSInferTypeStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSInferTypeStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("Identifier").declareExternalRule("TSType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSInferType", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consumeValue("IdentifierName", "infer"), com_subhuti_parser_SubhutiStaticGrammar.call("Identifier"), com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Extends"), com_subhuti_parser_SubhutiStaticGrammar.call("TSType")))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("Identifier").declareExternalRule("TSType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSInferType", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consumeValue("IdentifierName", "infer"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("Identifier"), com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("Extends"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSType")))))).build();
   }
 }
 const SlimeTSInferTypeStaticGrammar = com_slime_parser_typescript_SlimeTSInferTypeStaticGrammar;

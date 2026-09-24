@@ -8,55 +8,45 @@ function __qin_structural_object__(value) {
 const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstNewExpression {
   __qin_field_typeName: string | null = null as any;
-  __qin_field___qin_arguments: any = null as any;
+  __qin_field___qin_arguments: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstNewExpression_0_0();
-      return;
-    }
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList))) {
       const typeName: any = __qin_args[0];
       const __qin_arguments: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstNewExpression_2_1(typeName, __qin_arguments);
+      this.__qin_constructor_com_slime_java_ast_JavaAstNewExpression_2_0(typeName, __qin_arguments);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstNewExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstNewExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstNewExpression_2_0(typeName: string, __qin_arguments: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression>): void {
     this.__qin_field_typeName = null;
     this.__qin_field___qin_arguments = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field___qin_arguments, "arguments cannot be null");
-    this.__qin_field___qin_arguments = __QinJavaUtilList.copyOf(this.__qin_field___qin_arguments);
+    __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(__qin_arguments, "arguments cannot be null");
+    __qin_arguments = __QinJavaUtilList.copyOf(__qin_arguments);
+    this.__qin_field_typeName = typeName;
+    this.__qin_field___qin_arguments = __qin_arguments;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstNewExpression_2_1(typeName: string, __qin_arguments: any): void {
-    this.__qin_field_typeName = null;
-    this.__qin_field___qin_arguments = null;
-    (() => {
-      this.__qin_field_typeName = typeName;
-      this.__qin_field___qin_arguments = __qin_arguments;
-      return null;
-    })();
-  }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  __qin_arguments(): any {
+  arguments(): __QinJavaUtilList<com_slime_java_ast_JavaAstExpression> {
     return this.__qin_field___qin_arguments;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstNewExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field___qin_arguments, other.__qin_field___qin_arguments);
+    const __qin_record_other: com_slime_java_ast_JavaAstNewExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field___qin_arguments, __qin_record_other.__qin_field___qin_arguments);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field___qin_arguments);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstNewExpression[", "typeName=", this.__qin_field_typeName, ", ", "arguments=", this.__qin_field___qin_arguments, "]"].join("");
   }
 }

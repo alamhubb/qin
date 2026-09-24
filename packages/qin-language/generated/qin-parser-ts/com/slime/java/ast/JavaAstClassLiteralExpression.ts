@@ -10,45 +10,36 @@ const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 class com_slime_java_ast_JavaAstClassLiteralExpression {
   __qin_field_typeName: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassLiteralExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) {
       const typeName: any = __qin_args[0];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassLiteralExpression_1_1(typeName);
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassLiteralExpression_1_0(typeName);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstClassLiteralExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassLiteralExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstClassLiteralExpression_1_0(typeName: string): void {
     this.__qin_field_typeName = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null");
-    if (__QinJavaLangString.isBlank(this.__qin_field_typeName)) {
+    __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null");
+    if (__QinJavaLangString.isBlank(typeName)) {
       throw new __QinJavaLangIllegalArgumentException("typeName cannot be blank");
     }
+    this.__qin_field_typeName = typeName;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassLiteralExpression_1_1(typeName: string): void {
-    this.__qin_field_typeName = null;
-    (() => {
-      this.__qin_field_typeName = typeName;
-      return null;
-    })();
-  }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstClassLiteralExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName);
+    const __qin_record_other: com_slime_java_ast_JavaAstClassLiteralExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstClassLiteralExpression[", "typeName=", this.__qin_field_typeName, "]"].join("");
   }
 }

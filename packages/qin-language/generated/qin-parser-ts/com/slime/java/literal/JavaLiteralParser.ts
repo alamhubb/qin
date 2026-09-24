@@ -39,12 +39,12 @@ class com_slime_java_literal_JavaLiteralParser extends com_slime_java_identifier
   __qin_constructor_com_slime_java_literal_JavaLiteralParser_1_0(sourceCode: string): void {
     null;
   }
-  literal(): any {
+  literal(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_literal();
+      return /* @qin-static-admission member=call owner=com.slime.java.literal.JavaLiteralParser method=__qin_subhuti_raw_literal receiver=this arity=0 */ com_slime_java_literal_JavaLiteralParser.prototype.__qin_subhuti_raw_literal.call(this);
     }), "literal", "JavaLiteralParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_literal(): any {
+  __qin_subhuti_raw_literal(): void {
     SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.integerLiteral();
     }), __qin_java_functional(() => {
@@ -62,12 +62,12 @@ class com_slime_java_literal_JavaLiteralParser extends com_slime_java_identifier
     }));
     return null;
   }
-  integerLiteral(): any {
+  integerLiteral(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_integerLiteral();
+      return /* @qin-static-admission member=call owner=com.slime.java.literal.JavaLiteralParser method=__qin_subhuti_raw_integerLiteral receiver=this arity=0 */ com_slime_java_literal_JavaLiteralParser.prototype.__qin_subhuti_raw_integerLiteral.call(this);
     }), "integerLiteral", "JavaLiteralParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_integerLiteral(): any {
+  __qin_subhuti_raw_integerLiteral(): void {
     SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.DECIMAL_LITERAL();
     }), __qin_java_functional(() => {
@@ -79,12 +79,12 @@ class com_slime_java_literal_JavaLiteralParser extends com_slime_java_identifier
     }));
     return null;
   }
-  floatingPointLiteral(): any {
+  floatingPointLiteral(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_floatingPointLiteral();
+      return /* @qin-static-admission member=call owner=com.slime.java.literal.JavaLiteralParser method=__qin_subhuti_raw_floatingPointLiteral receiver=this arity=0 */ com_slime_java_literal_JavaLiteralParser.prototype.__qin_subhuti_raw_floatingPointLiteral.call(this);
     }), "floatingPointLiteral", "JavaLiteralParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_floatingPointLiteral(): any {
+  __qin_subhuti_raw_floatingPointLiteral(): void {
     SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.FLOAT_LITERAL();
     }), __qin_java_functional(() => {
@@ -92,18 +92,30 @@ class com_slime_java_literal_JavaLiteralParser extends com_slime_java_identifier
     }));
     return null;
   }
-  arrayInitializer(): any {
+  arrayInitializer(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_arrayInitializer();
+      return /* @qin-static-admission member=call owner=com.slime.java.literal.JavaLiteralParser method=__qin_subhuti_raw_arrayInitializer receiver=this arity=0 */ com_slime_java_literal_JavaLiteralParser.prototype.__qin_subhuti_raw_arrayInitializer.call(this);
     }), "arrayInitializer", "JavaLiteralParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_arrayInitializer(): any {
-    this.__qin_field_tokenConsumer.LBRACE();
+  __qin_subhuti_raw_arrayInitializer(): void {
+    {
+      const __qin_typed_receiver_3318: com_slime_java_JavaTokenConsumer = this.__qin_field_tokenConsumer;
+      __qin_typed_receiver_3318.LBRACE();
+    }
     SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
-      this.variableInitializer();
+      {
+        const __qin_typed_receiver_3319: com_slime_java_literal_JavaLiteralParser = this;
+        __qin_typed_receiver_3319.variableInitializer();
+      }
       SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
-      this.__qin_field_tokenConsumer.COMMA();
-      this.variableInitializer();
+      {
+        const __qin_typed_receiver_3320: com_slime_java_JavaTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_3320.COMMA();
+      }
+      {
+        const __qin_typed_receiver_3321: com_slime_java_literal_JavaLiteralParser = this;
+        __qin_typed_receiver_3321.variableInitializer();
+      }
       return null;
     }));
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
@@ -111,24 +123,24 @@ class com_slime_java_literal_JavaLiteralParser extends com_slime_java_identifier
     }));
       return null;
     }));
-    this.__qin_field_tokenConsumer.RBRACE();
+    {
+      const __qin_typed_receiver_3322: com_slime_java_JavaTokenConsumer = this.__qin_field_tokenConsumer;
+      __qin_typed_receiver_3322.RBRACE();
+    }
     return null;
   }
-  variableInitializer(): any {
+  variableInitializer(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_variableInitializer();
+      return /* @qin-static-admission member=call owner=com.slime.java.literal.JavaLiteralParser method=__qin_subhuti_raw_variableInitializer receiver=this arity=0 */ com_slime_java_literal_JavaLiteralParser.prototype.__qin_subhuti_raw_variableInitializer.call(this);
     }), "variableInitializer", "JavaLiteralParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_variableInitializer(): any {
+  __qin_subhuti_raw_variableInitializer(): void {
     SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.arrayInitializer();
     }), __qin_java_functional(() => {
       return this.expression();
     }));
     return null;
-  }
-  expression(): any {
-    throw new Error("Abstract Java method is not implemented: expression");
   }
 }
 const JavaLiteralParser = com_slime_java_literal_JavaLiteralParser;

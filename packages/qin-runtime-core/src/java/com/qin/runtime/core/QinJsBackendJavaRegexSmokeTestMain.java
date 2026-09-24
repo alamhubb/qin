@@ -64,6 +64,7 @@ public final class QinJsBackendJavaRegexSmokeTestMain {
         Path root = Files.createTempDirectory("qin-js-backend-regex-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-js-backend-regex\" };\n",
                 StandardCharsets.UTF_8);
+        String moduleName = "js_backend_regex_" + System.nanoTime();
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
                 generated
@@ -74,7 +75,7 @@ public final class QinJsBackendJavaRegexSmokeTestMain {
                         + "const found = second.find();\n"
                         + "const replaced = pattern.matcher(\"ab cd\").replaceAll(\"X\");\n"
                         + "[quoted, pattern.pattern(), pattern.flags(), regionHit, regionGroup, leadingMiss, found, second.group(), replaced].join(\":\");\n",
-                "js_backend_regex");
+                moduleName);
         if (!"\\Q?.*\\E:\\b[a-z]+\\b:0.0:true:abc:false:true:xx:X X".equals(result)) {
             throw new IllegalStateException("Expected generated regex result, got: " + result);
         }

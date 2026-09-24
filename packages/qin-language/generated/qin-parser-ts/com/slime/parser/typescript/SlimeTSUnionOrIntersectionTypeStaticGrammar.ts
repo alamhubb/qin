@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeTSUnionOrIntersectionTypeStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSUnionOrIntersectionTypeStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSIntersectionType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSUnionOrIntersectionType", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseOr")), com_subhuti_parser_SubhutiStaticGrammar.call("TSIntersectionType"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseOr"), com_subhuti_parser_SubhutiStaticGrammar.call("TSIntersectionType")))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSIntersectionType").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSUnionOrIntersectionType", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseOr")), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSIntersectionType"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseOr"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSIntersectionType")))))).build();
   }
 }
 const SlimeTSUnionOrIntersectionTypeStaticGrammar = com_slime_parser_typescript_SlimeTSUnionOrIntersectionTypeStaticGrammar;

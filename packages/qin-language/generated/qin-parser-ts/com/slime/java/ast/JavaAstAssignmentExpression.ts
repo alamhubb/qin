@@ -13,62 +13,51 @@ class com_slime_java_ast_JavaAstAssignmentExpression {
   __qin_field_operator: string | null = null as any;
   __qin_field_value: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstAssignmentExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression"))) {
       const target: any = __qin_args[0];
       const operator: any = __qin_args[1];
       const value: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstAssignmentExpression_3_1(target, operator, value);
+      this.__qin_constructor_com_slime_java_ast_JavaAstAssignmentExpression_3_0(target, operator, value);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstAssignmentExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstAssignmentExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstAssignmentExpression_3_0(target: com_slime_java_ast_JavaAstExpression, operator: string, value: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_target = null;
     this.__qin_field_operator = null;
     this.__qin_field_value = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_target, "target cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_operator, "operator cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_value, "value cannot be null");
+    __QinJavaUtilObjects.requireNonNull(target, "target cannot be null");
+    __QinJavaUtilObjects.requireNonNull(operator, "operator cannot be null");
+    __QinJavaUtilObjects.requireNonNull(value, "value cannot be null");
+    this.__qin_field_target = target;
+    this.__qin_field_operator = operator;
+    this.__qin_field_value = value;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstAssignmentExpression_3_1(target: com_slime_java_ast_JavaAstExpression, operator: string, value: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_target = null;
-    this.__qin_field_operator = null;
-    this.__qin_field_value = null;
-    (() => {
-      this.__qin_field_target = target;
-      this.__qin_field_operator = operator;
-      this.__qin_field_value = value;
-      return null;
-    })();
-  }
-  target(): any {
+  target(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_target;
   }
-  operator(): any {
+  operator(): string {
     return this.__qin_field_operator;
   }
-  value(): any {
+  value(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_value;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstAssignmentExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_target, other.__qin_field_target)
-      && __qin_java_values_equal__(this.__qin_field_operator, other.__qin_field_operator)
-      && __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value);
+    const __qin_record_other: com_slime_java_ast_JavaAstAssignmentExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_target, __qin_record_other.__qin_field_target)
+      && __qin_java_values_equal__(this.__qin_field_operator, __qin_record_other.__qin_field_operator)
+      && __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_target);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_operator);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstAssignmentExpression[", "target=", this.__qin_field_target, ", ", "operator=", this.__qin_field_operator, ", ", "value=", this.__qin_field_value, "]"].join("");
   }
 }

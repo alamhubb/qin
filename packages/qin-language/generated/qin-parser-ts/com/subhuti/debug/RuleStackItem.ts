@@ -12,17 +12,34 @@ class com_subhuti_debug_RuleStackItem {
   __qin_field_tokenValue: string | null = null as any;
   __qin_field_tokenExpectName: string | null = null as any;
   __qin_field_tokenSuccess: boolean | null = null as any;
-  __qin_field_tokenIndex: number | null = null as any;
-  __qin_field_startTime: number | null = null as any;
-  __qin_field_outputted: boolean | null = null as any;
-  __qin_field_shouldBreakLine: boolean | null = null as any;
-  __qin_field_displayDepth: number | null = null as any;
-  __qin_field_isManuallyAdded: boolean | null = null as any;
+  __qin_field_tokenIndex: number | null = 0 as any;
+  __qin_field_startTime: number | null = 0 as any;
+  __qin_field_outputted: boolean | null = false as any;
+  __qin_field_shouldBreakLine: boolean | null = false as any;
+  __qin_field_displayDepth: number | null = 0 as any;
+  __qin_field_isManuallyAdded: boolean | null = false as any;
   __qin_field_orBranchInfo: com_subhuti_debug_RuleStackItem$OrBranchInfo | null = null as any;
-  __qin_field_childs: any = null as any;
+  __qin_field_childs: __QinJavaUtilList<string> | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 0 && true) {
       this.__qin_constructor_com_subhuti_debug_RuleStackItem_0_0();
+      return;
+    }
+    if (__qin_args.length === 13 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && (__qin_args[3] === null || typeof __qin_args[3] === "string") && (__qin_args[4] === null || typeof __qin_args[4] === "boolean") && typeof __qin_args[5] === "number" && typeof __qin_args[6] === "number" && typeof __qin_args[7] === "boolean" && typeof __qin_args[8] === "boolean" && typeof __qin_args[9] === "number" && typeof __qin_args[10] === "boolean" && (__qin_args[11] === null || __qin_instanceof__(__qin_args[11], com_subhuti_debug_RuleStackItem$OrBranchInfo)) && (__qin_args[12] === null || Array.isArray(__qin_args[12]) || __qin_instanceof__(__qin_args[12], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[12], __QinJavaUtilUnmodifiableList))) {
+      const ruleName: any = __qin_args[0];
+      const tokenName: any = __qin_args[1];
+      const tokenValue: any = __qin_args[2];
+      const tokenExpectName: any = __qin_args[3];
+      const tokenSuccess: any = __qin_args[4];
+      const tokenIndex: any = __qin_args[5];
+      const startTime: any = __qin_args[6];
+      const outputted: any = __qin_args[7];
+      const shouldBreakLine: any = __qin_args[8];
+      const displayDepth: any = __qin_args[9];
+      const isManuallyAdded: any = __qin_args[10];
+      const orBranchInfo: any = __qin_args[11];
+      const childs: any = __qin_args[12];
+      this.__qin_constructor_com_subhuti_debug_RuleStackItem_13_1(ruleName, tokenName, tokenValue, tokenExpectName, tokenSuccess, tokenIndex, startTime, outputted, shouldBreakLine, displayDepth, isManuallyAdded, orBranchInfo, childs);
       return;
     }
     throw new Error("Unsupported Java constructor overload: RuleStackItem/" + __qin_args.length);
@@ -43,91 +60,110 @@ class com_subhuti_debug_RuleStackItem {
     this.__qin_field_childs = new __QinJavaUtilArrayList();
     null;
   }
-  static forRule(ruleName: string, tokenIndex: number, startTime: number): any {
-    let item: any = new com_subhuti_debug_RuleStackItem();
-    item.__qin_field_ruleName = ruleName;
-    item.__qin_field_tokenIndex = tokenIndex;
-    item.__qin_field_startTime = startTime;
-    item.__qin_field_childs = new __QinJavaUtilArrayList();
-    return item;
+  __qin_constructor_com_subhuti_debug_RuleStackItem_13_1(ruleName: string, tokenName: string, tokenValue: string, tokenExpectName: string, tokenSuccess: boolean | null, tokenIndex: number, startTime: number, outputted: boolean, shouldBreakLine: boolean, displayDepth: number, isManuallyAdded: boolean, orBranchInfo: com_subhuti_debug_RuleStackItem$OrBranchInfo, childs: __QinJavaUtilList<string>): void {
+    this.__qin_field_ruleName = null;
+    this.__qin_field_tokenName = null;
+    this.__qin_field_tokenValue = null;
+    this.__qin_field_tokenExpectName = null;
+    this.__qin_field_tokenSuccess = null;
+    this.__qin_field_tokenIndex = 0.0;
+    this.__qin_field_startTime = 0.0;
+    this.__qin_field_outputted = false;
+    this.__qin_field_shouldBreakLine = false;
+    this.__qin_field_displayDepth = 0.0;
+    this.__qin_field_isManuallyAdded = false;
+    this.__qin_field_orBranchInfo = null;
+    this.__qin_field_childs = new __QinJavaUtilArrayList();
+    this.__qin_field_ruleName = ruleName;
+    this.__qin_field_tokenName = tokenName;
+    this.__qin_field_tokenValue = tokenValue;
+    this.__qin_field_tokenExpectName = tokenExpectName;
+    this.__qin_field_tokenSuccess = tokenSuccess;
+    this.__qin_field_tokenIndex = tokenIndex;
+    this.__qin_field_startTime = startTime;
+    this.__qin_field_outputted = outputted;
+    this.__qin_field_shouldBreakLine = shouldBreakLine;
+    this.__qin_field_displayDepth = displayDepth;
+    this.__qin_field_isManuallyAdded = isManuallyAdded;
+    this.__qin_field_orBranchInfo = orBranchInfo;
+    this.__qin_field_childs = (__qin_binary__("!=", childs, null) ? childs : new __QinJavaUtilArrayList());
   }
-  static forToken(tokenIndex: number, tokenValue: string, tokenName: string, expectName: string, success: boolean): any {
-    let item: any = new com_subhuti_debug_RuleStackItem();
-    item.__qin_field_tokenIndex = tokenIndex;
-    item.__qin_field_tokenValue = tokenValue;
-    item.__qin_field_tokenName = tokenName;
-    item.__qin_field_tokenExpectName = expectName;
-    item.__qin_field_tokenSuccess = success;
-    item.__qin_field_shouldBreakLine = true;
-    return item;
+  static forRule(ruleName: string, tokenIndex: number, startTime: number): com_subhuti_debug_RuleStackItem {
+    return new com_subhuti_debug_RuleStackItem(ruleName, null, null, null, null, tokenIndex, startTime, false, false, 0.0, false, null, new __QinJavaUtilArrayList());
   }
-  deepClone(): any {
-    let clone: any = new com_subhuti_debug_RuleStackItem();
-    clone.__qin_field_ruleName = this.__qin_field_ruleName;
-    clone.__qin_field_tokenName = this.__qin_field_tokenName;
-    clone.__qin_field_tokenValue = this.__qin_field_tokenValue;
-    clone.__qin_field_tokenExpectName = this.__qin_field_tokenExpectName;
-    clone.__qin_field_tokenSuccess = this.__qin_field_tokenSuccess;
-    clone.__qin_field_tokenIndex = this.__qin_field_tokenIndex;
-    clone.__qin_field_startTime = this.__qin_field_startTime;
-    clone.__qin_field_outputted = this.__qin_field_outputted;
-    clone.__qin_field_shouldBreakLine = this.__qin_field_shouldBreakLine;
-    clone.__qin_field_displayDepth = this.__qin_field_displayDepth;
-    clone.__qin_field_isManuallyAdded = this.__qin_field_isManuallyAdded;
-    clone.__qin_field_childs = new __QinJavaUtilArrayList(this.__qin_field_childs);
-    if (__qin_binary__("!=", this.__qin_field_orBranchInfo, null)) {
-      clone.__qin_field_orBranchInfo = this.__qin_field_orBranchInfo.deepClone();
-    }
-    return clone;
+  static forToken(tokenIndex: number, tokenValue: string, tokenName: string, expectName: string, success: boolean): com_subhuti_debug_RuleStackItem {
+    return new com_subhuti_debug_RuleStackItem(null, tokenName, tokenValue, expectName, success, tokenIndex, 0.0, false, true, 0.0, false, null, new __QinJavaUtilArrayList());
   }
-  isRule(): any {
+  static forOrEntry(parentRuleName: string, tokenIndex: number, orIndex: number): com_subhuti_debug_RuleStackItem {
+    return new com_subhuti_debug_RuleStackItem((parentRuleName + "(Or)"), null, null, null, null, tokenIndex, 0.0, false, false, 0.0, false, new com_subhuti_debug_RuleStackItem$OrBranchInfo(orIndex, 0.0, 0.0, true, false), new __QinJavaUtilArrayList());
+  }
+  static forOrBranch(branchIndex: number, totalBranches: number, parentRuleName: string, tokenIndex: number, orIndex: number): com_subhuti_debug_RuleStackItem {
+    return new com_subhuti_debug_RuleStackItem(("[Branch #" + branchIndex + "](" + parentRuleName + ")"), null, null, null, null, tokenIndex, 0.0, false, false, 0.0, false, new com_subhuti_debug_RuleStackItem$OrBranchInfo(orIndex, branchIndex, totalBranches, false, true), new __QinJavaUtilArrayList());
+  }
+  deepClone(): com_subhuti_debug_RuleStackItem {
+    return new com_subhuti_debug_RuleStackItem(this.__qin_field_ruleName, this.__qin_field_tokenName, this.__qin_field_tokenValue, this.__qin_field_tokenExpectName, this.__qin_field_tokenSuccess, this.__qin_field_tokenIndex, this.__qin_field_startTime, this.__qin_field_outputted, this.__qin_field_shouldBreakLine, this.__qin_field_displayDepth, this.__qin_field_isManuallyAdded, (__qin_binary__("!=", this.__qin_field_orBranchInfo, null) ? this.__qin_field_orBranchInfo.deepClone() : null), new __QinJavaUtilArrayList(this.__qin_field_childs));
+  }
+  isRule(): boolean {
     return __qin_binary__("!=", this.__qin_field_ruleName, null);
   }
-  isToken(): any {
+  isToken(): boolean {
     return (__qin_binary__("!=", this.__qin_field_tokenExpectName, null) || __qin_binary__("!=", this.__qin_field_tokenName, null));
   }
-  toString(): any {
+  toString(): string {
     if (this.isToken()) {
-      let status: any = ((__qin_binary__("!=", this.__qin_field_tokenSuccess, null) && this.__qin_field_tokenSuccess) ? "✓" : "✗");
+      let status: string = ((__qin_binary__("!=", this.__qin_field_tokenSuccess, null) && this.__qin_field_tokenSuccess) ? "OK" : "FAIL");
       return __QinJavaLangString.format("Token[%d] %s %s <%s>", this.__qin_field_tokenIndex, status, this.__qin_field_tokenValue, this.__qin_field_tokenName);
-    } else {
-      return __QinJavaLangString.format("Rule[%s] @%d", this.__qin_field_ruleName, this.__qin_field_tokenIndex);
     }
-    return null;
+    return __QinJavaLangString.format("Rule[%s] @%d", this.__qin_field_ruleName, this.__qin_field_tokenIndex);
   }
 }
 const RuleStackItem = com_subhuti_debug_RuleStackItem;
 class com_subhuti_debug_RuleStackItem$OrBranchInfo {
-  __qin_field_orIndex: number | null = null as any;
-  __qin_field_branchIndex: number | null = null as any;
-  __qin_field_totalBranches: number | null = null as any;
-  __qin_field_isOrEntry: boolean | null = null as any;
-  __qin_field_isOrBranch: boolean | null = null as any;
+  __qin_field_orIndex: number | null = 0 as any;
+  __qin_field_branchIndex: number | null = 0 as any;
+  __qin_field_totalBranches: number | null = 0 as any;
+  __qin_field_isOrEntry: boolean | null = false as any;
+  __qin_field_isOrBranch: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 0 && true) {
       this.__qin_constructor_com_subhuti_debug_RuleStackItem$OrBranchInfo_0_0();
       return;
     }
+    if (__qin_args.length === 5 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean") {
+      const orIndex: any = __qin_args[0];
+      const branchIndex: any = __qin_args[1];
+      const totalBranches: any = __qin_args[2];
+      const isOrEntry: any = __qin_args[3];
+      const isOrBranch: any = __qin_args[4];
+      this.__qin_constructor_com_subhuti_debug_RuleStackItem$OrBranchInfo_5_1(orIndex, branchIndex, totalBranches, isOrEntry, isOrBranch);
+      return;
+    }
     throw new Error("Unsupported Java constructor overload: RuleStackItem$OrBranchInfo/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_debug_RuleStackItem$OrBranchInfo_0_0(): void {
-    this.__qin_field_orIndex = null;
-    this.__qin_field_branchIndex = null;
-    this.__qin_field_totalBranches = null;
-    this.__qin_field_isOrEntry = null;
-    this.__qin_field_isOrBranch = null;
+    this.__qin_field_orIndex = 0;
+    this.__qin_field_branchIndex = 0;
+    this.__qin_field_totalBranches = 0;
+    this.__qin_field_isOrEntry = false;
+    this.__qin_field_isOrBranch = false;
     null;
   }
-  deepClone(): any {
-    let clone: any = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
-    clone.__qin_field_orIndex = this.__qin_field_orIndex;
-    clone.__qin_field_branchIndex = this.__qin_field_branchIndex;
-    clone.__qin_field_totalBranches = this.__qin_field_totalBranches;
-    clone.__qin_field_isOrEntry = this.__qin_field_isOrEntry;
-    clone.__qin_field_isOrBranch = this.__qin_field_isOrBranch;
-    return clone;
+  __qin_constructor_com_subhuti_debug_RuleStackItem$OrBranchInfo_5_1(orIndex: number, branchIndex: number, totalBranches: number, isOrEntry: boolean, isOrBranch: boolean): void {
+    this.__qin_field_orIndex = 0;
+    this.__qin_field_branchIndex = 0;
+    this.__qin_field_totalBranches = 0;
+    this.__qin_field_isOrEntry = false;
+    this.__qin_field_isOrBranch = false;
+    this.__qin_field_orIndex = orIndex;
+    this.__qin_field_branchIndex = branchIndex;
+    this.__qin_field_totalBranches = totalBranches;
+    this.__qin_field_isOrEntry = isOrEntry;
+    this.__qin_field_isOrBranch = isOrBranch;
   }
-  toString(): any {
+  deepClone(): com_subhuti_debug_RuleStackItem$OrBranchInfo {
+    return new com_subhuti_debug_RuleStackItem$OrBranchInfo(this.__qin_field_orIndex, this.__qin_field_branchIndex, this.__qin_field_totalBranches, this.__qin_field_isOrEntry, this.__qin_field_isOrBranch);
+  }
+  toString(): string {
     return __QinJavaLangString.format("Or[%d] Branch[%d/%d]", this.__qin_field_orIndex, this.__qin_field_branchIndex, this.__qin_field_totalBranches);
   }
 }

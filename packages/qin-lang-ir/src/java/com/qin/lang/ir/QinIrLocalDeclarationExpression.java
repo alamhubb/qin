@@ -8,7 +8,12 @@ import java.util.Objects;
  */
 public record QinIrLocalDeclarationExpression(
         String name,
-        QinIrExpression initializer) implements QinIrExpression {
+        QinIrExpression initializer,
+        QinIrTypeRef declaredType) implements QinIrExpression {
+    public QinIrLocalDeclarationExpression(String name, QinIrExpression initializer) {
+        this(name, initializer, null);
+    }
+
     public QinIrLocalDeclarationExpression {
         Objects.requireNonNull(name, "name cannot be null");
         Objects.requireNonNull(initializer, "initializer cannot be null");

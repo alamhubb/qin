@@ -26,12 +26,12 @@ class com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createYieldExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let argument: any = null;
-    let delegate: any = false;
+  createYieldExpressionAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_expressions_YieldExpression {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let argument: com_slime_ast_Expression = null;
+    let delegate: boolean = false;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Asterisk", name) || __QinJavaLangString.equals("*", child.getValue()))) {
         delegate = true;
       } else {
@@ -42,11 +42,11 @@ class com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createYieldExpression(argument, delegate, cst.getLocation());
   }
-  createAwaitExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let argument: any = null;
+  createAwaitExpressionAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_expressions_AwaitExpression {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let argument: com_slime_ast_Expression = null;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("UnaryExpression", name) || __QinJavaLangString.equals("Expression", name))) {
         argument = this.createExpressionAst(child);
       }
@@ -56,7 +56,7 @@ class com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createAwaitExpression(argument, cst.getLocation());
   }
-  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Expression {
     return this.__qin_field_transformer.createExpressionAst(cst);
   }
 }

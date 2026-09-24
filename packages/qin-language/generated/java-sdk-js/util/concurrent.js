@@ -1,36 +1,36 @@
 export class __QinJavaUtilConcurrentAtomicLong {
-  constructor(initialValue = 0) {
-    this.__value = Number(initialValue);
+  constructor(initialValue: number = 0) {
+    this.__value = initialValue;
   }
-  get() {
+  get(): number {
     return this.__value;
   }
-  set(value) {
-    this.__value = Number(value);
+  set(value: number): void {
+    this.__value = value;
   }
-  incrementAndGet() {
+  incrementAndGet(): number {
     this.__value += 1;
     return this.__value;
   }
-  getAndIncrement() {
+  getAndIncrement(): number {
     const previous = this.__value;
     this.__value += 1;
     return previous;
   }
-  addAndGet(delta) {
-    this.__value += Number(delta);
+  addAndGet(delta: number): number {
+    this.__value += delta;
     return this.__value;
   }
-  getAndAdd(delta) {
+  getAndAdd(delta: number): number {
     const previous = this.__value;
-    this.__value += Number(delta);
+    this.__value += delta;
     return previous;
   }
-  compareAndSet(expectedValue, newValue) {
-    if (this.__value !== Number(expectedValue)) {
+  compareAndSet(expectedValue: number, newValue: number): boolean {
+    if (this.__value !== expectedValue) {
       return false;
     }
-    this.__value = Number(newValue);
+    this.__value = newValue;
     return true;
   }
 }

@@ -12,6 +12,7 @@ class com_slime_ast_Pattern {
     }
   }
 }
+com_slime_ast_Pattern.__qin_java_interface = true;
 com_slime_ast_Pattern.__qin_java_interfaces = ["com.slime.ast.AstNode"];
 const Pattern = com_slime_ast_Pattern;
 

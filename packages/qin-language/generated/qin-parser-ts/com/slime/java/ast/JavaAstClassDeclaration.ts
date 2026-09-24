@@ -8,80 +8,17 @@ function __qin_structural_object__(value) {
 class com_slime_java_ast_JavaAstClassDeclaration {
   __qin_field_name: string | null = null as any;
   __qin_field_superTypeName: string | null = null as any;
-  __qin_field_implementsTypeNames: any = null as any;
-  __qin_field_typeParameters: any = null as any;
-  __qin_field_annotations: any = null as any;
-  __qin_field_fields: any = null as any;
-  __qin_field_methods: any = null as any;
-  __qin_field_staticInitializers: any = null as any;
-  __qin_field_nestedClasses: any = null as any;
-  __qin_field_recordClass: boolean | null = null as any;
+  __qin_field_implementsTypeNames: __QinJavaUtilList<string> | null = null as any;
+  __qin_field_typeParameters: __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter> | null = null as any;
+  __qin_field_annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation> | null = null as any;
+  __qin_field_fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration> | null = null as any;
+  __qin_field_methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration> | null = null as any;
+  __qin_field_staticInitializers: __QinJavaUtilList<com_slime_java_ast_JavaAstStaticInitializer> | null = null as any;
+  __qin_field_nestedClasses: __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration> | null = null as any;
+  __qin_field_recordClass: boolean | null = false as any;
+  __qin_field_interfaceClass: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_0_0();
-      return;
-    }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList)) {
-      const name: any = __qin_args[0];
-      const annotations: any = __qin_args[1];
-      const fields: any = __qin_args[2];
-      const methods: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_4_1(name, annotations, fields, methods);
-      return;
-    }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
-      const name: any = __qin_args[0];
-      const fields: any = __qin_args[1];
-      const methods: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_3_2(name, fields, methods);
-      return;
-    }
-    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList)) {
-      const name: any = __qin_args[0];
-      const superTypeName: any = __qin_args[1];
-      const annotations: any = __qin_args[2];
-      const fields: any = __qin_args[3];
-      const methods: any = __qin_args[4];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_5_3(name, superTypeName, annotations, fields, methods);
-      return;
-    }
-    if (__qin_args.length === 9 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_args[5] instanceof __QinJavaUtilArrayList || __qin_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_args[6] instanceof __QinJavaUtilArrayList || __qin_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_args[7] instanceof __QinJavaUtilArrayList || __qin_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_args[8] instanceof __QinJavaUtilArrayList || __qin_args[8] instanceof __QinJavaUtilUnmodifiableList)) {
-      const name: any = __qin_args[0];
-      const superTypeName: any = __qin_args[1];
-      const implementsTypeNames: any = __qin_args[2];
-      const typeParameters: any = __qin_args[3];
-      const annotations: any = __qin_args[4];
-      const fields: any = __qin_args[5];
-      const methods: any = __qin_args[6];
-      const staticInitializers: any = __qin_args[7];
-      const nestedClasses: any = __qin_args[8];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_9_4(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses);
-      return;
-    }
-    if (__qin_args.length === 7 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_args[5] instanceof __QinJavaUtilArrayList || __qin_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_args[6] instanceof __QinJavaUtilArrayList || __qin_args[6] instanceof __QinJavaUtilUnmodifiableList)) {
-      const name: any = __qin_args[0];
-      const superTypeName: any = __qin_args[1];
-      const typeParameters: any = __qin_args[2];
-      const annotations: any = __qin_args[3];
-      const fields: any = __qin_args[4];
-      const methods: any = __qin_args[5];
-      const nestedClasses: any = __qin_args[6];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_7_5(name, superTypeName, typeParameters, annotations, fields, methods, nestedClasses);
-      return;
-    }
-    if (__qin_args.length === 8 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_args[5] instanceof __QinJavaUtilArrayList || __qin_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_args[6] instanceof __QinJavaUtilArrayList || __qin_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_args[7] instanceof __QinJavaUtilArrayList || __qin_args[7] instanceof __QinJavaUtilUnmodifiableList)) {
-      const name: any = __qin_args[0];
-      const superTypeName: any = __qin_args[1];
-      const typeParameters: any = __qin_args[2];
-      const annotations: any = __qin_args[3];
-      const fields: any = __qin_args[4];
-      const methods: any = __qin_args[5];
-      const staticInitializers: any = __qin_args[6];
-      const nestedClasses: any = __qin_args[7];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_8_6(name, superTypeName, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses);
-      return;
-    }
-    if (__qin_args.length === 10 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_args[4] instanceof __QinJavaUtilArrayList || __qin_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_args[5] instanceof __QinJavaUtilArrayList || __qin_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_args[6] instanceof __QinJavaUtilArrayList || __qin_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_args[7] instanceof __QinJavaUtilArrayList || __qin_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_args[8] instanceof __QinJavaUtilArrayList || __qin_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_args[9] === "boolean") {
+    if (__qin_args.length === 11 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_instanceof__(__qin_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_instanceof__(__qin_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_instanceof__(__qin_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_args[9] === "boolean" && typeof __qin_args[10] === "boolean") {
       const name: any = __qin_args[0];
       const superTypeName: any = __qin_args[1];
       const implementsTypeNames: any = __qin_args[2];
@@ -92,12 +29,87 @@ class com_slime_java_ast_JavaAstClassDeclaration {
       const staticInitializers: any = __qin_args[7];
       const nestedClasses: any = __qin_args[8];
       const recordClass: any = __qin_args[9];
-      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, recordClass);
+      const interfaceClass: any = __qin_args[10];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_11_0(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, recordClass, interfaceClass);
+      return;
+    }
+    if (__qin_args.length === 10 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_instanceof__(__qin_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_instanceof__(__qin_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_instanceof__(__qin_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_args[9] === "boolean") {
+      const name: any = __qin_args[0];
+      const superTypeName: any = __qin_args[1];
+      const implementsTypeNames: any = __qin_args[2];
+      const typeParameters: any = __qin_args[3];
+      const annotations: any = __qin_args[4];
+      const fields: any = __qin_args[5];
+      const methods: any = __qin_args[6];
+      const staticInitializers: any = __qin_args[7];
+      const nestedClasses: any = __qin_args[8];
+      const recordClass: any = __qin_args[9];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, recordClass);
+      return;
+    }
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList))) {
+      const name: any = __qin_args[0];
+      const annotations: any = __qin_args[1];
+      const fields: any = __qin_args[2];
+      const methods: any = __qin_args[3];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_4_2(name, annotations, fields, methods);
+      return;
+    }
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
+      const name: any = __qin_args[0];
+      const fields: any = __qin_args[1];
+      const methods: any = __qin_args[2];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_3_3(name, fields, methods);
+      return;
+    }
+    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList))) {
+      const name: any = __qin_args[0];
+      const superTypeName: any = __qin_args[1];
+      const annotations: any = __qin_args[2];
+      const fields: any = __qin_args[3];
+      const methods: any = __qin_args[4];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_5_4(name, superTypeName, annotations, fields, methods);
+      return;
+    }
+    if (__qin_args.length === 9 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_instanceof__(__qin_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_instanceof__(__qin_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_instanceof__(__qin_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[8], __QinJavaUtilUnmodifiableList))) {
+      const name: any = __qin_args[0];
+      const superTypeName: any = __qin_args[1];
+      const implementsTypeNames: any = __qin_args[2];
+      const typeParameters: any = __qin_args[3];
+      const annotations: any = __qin_args[4];
+      const fields: any = __qin_args[5];
+      const methods: any = __qin_args[6];
+      const staticInitializers: any = __qin_args[7];
+      const nestedClasses: any = __qin_args[8];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_9_5(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses);
+      return;
+    }
+    if (__qin_args.length === 7 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_instanceof__(__qin_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[6], __QinJavaUtilUnmodifiableList))) {
+      const name: any = __qin_args[0];
+      const superTypeName: any = __qin_args[1];
+      const typeParameters: any = __qin_args[2];
+      const annotations: any = __qin_args[3];
+      const fields: any = __qin_args[4];
+      const methods: any = __qin_args[5];
+      const nestedClasses: any = __qin_args[6];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_7_6(name, superTypeName, typeParameters, annotations, fields, methods, nestedClasses);
+      return;
+    }
+    if (__qin_args.length === 8 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_args[4] === null || Array.isArray(__qin_args[4]) || __qin_instanceof__(__qin_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || Array.isArray(__qin_args[6]) || __qin_instanceof__(__qin_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_args[7] === null || Array.isArray(__qin_args[7]) || __qin_instanceof__(__qin_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[7], __QinJavaUtilUnmodifiableList))) {
+      const name: any = __qin_args[0];
+      const superTypeName: any = __qin_args[1];
+      const typeParameters: any = __qin_args[2];
+      const annotations: any = __qin_args[3];
+      const fields: any = __qin_args[4];
+      const methods: any = __qin_args[5];
+      const staticInitializers: any = __qin_args[6];
+      const nestedClasses: any = __qin_args[7];
+      this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_8_7(name, superTypeName, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstClassDeclaration/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_11_0(name: string, superTypeName: string, implementsTypeNames: __QinJavaUtilList<string>, typeParameters: __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter>, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>, staticInitializers: __QinJavaUtilList<com_slime_java_ast_JavaAstStaticInitializer>, nestedClasses: __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration>, recordClass: boolean, interfaceClass: boolean): void {
     this.__qin_field_name = null;
     this.__qin_field_superTypeName = null;
     this.__qin_field_implementsTypeNames = null;
@@ -107,106 +119,101 @@ class com_slime_java_ast_JavaAstClassDeclaration {
     this.__qin_field_methods = null;
     this.__qin_field_staticInitializers = null;
     this.__qin_field_nestedClasses = null;
-    this.__qin_field_recordClass = null;
-    if ((__qin_binary__("!=", this.__qin_field_superTypeName, null) && __QinJavaLangString.isBlank(this.__qin_field_superTypeName))) {
-      this.__qin_field_superTypeName = null;
+    this.__qin_field_recordClass = false;
+    this.__qin_field_interfaceClass = false;
+    if ((__qin_binary__("!=", superTypeName, null) && __QinJavaLangString.isBlank(superTypeName))) {
+      superTypeName = null;
     }
-    this.__qin_field_implementsTypeNames = __QinJavaUtilList.copyOf(this.__qin_field_implementsTypeNames);
-    this.__qin_field_typeParameters = __QinJavaUtilList.copyOf(this.__qin_field_typeParameters);
-    this.__qin_field_annotations = __QinJavaUtilList.copyOf(this.__qin_field_annotations);
-    this.__qin_field_fields = __QinJavaUtilList.copyOf(this.__qin_field_fields);
-    this.__qin_field_methods = __QinJavaUtilList.copyOf(this.__qin_field_methods);
-    this.__qin_field_staticInitializers = __QinJavaUtilList.copyOf(this.__qin_field_staticInitializers);
-    this.__qin_field_nestedClasses = __QinJavaUtilList.copyOf(this.__qin_field_nestedClasses);
+    implementsTypeNames = __QinJavaUtilList.copyOf(implementsTypeNames);
+    typeParameters = __QinJavaUtilList.copyOf(typeParameters);
+    annotations = __QinJavaUtilList.copyOf(annotations);
+    fields = __QinJavaUtilList.copyOf(fields);
+    methods = __QinJavaUtilList.copyOf(methods);
+    staticInitializers = __QinJavaUtilList.copyOf(staticInitializers);
+    nestedClasses = __QinJavaUtilList.copyOf(nestedClasses);
+    this.__qin_field_name = name;
+    this.__qin_field_superTypeName = superTypeName;
+    this.__qin_field_implementsTypeNames = implementsTypeNames;
+    this.__qin_field_typeParameters = typeParameters;
+    this.__qin_field_annotations = annotations;
+    this.__qin_field_fields = fields;
+    this.__qin_field_methods = methods;
+    this.__qin_field_staticInitializers = staticInitializers;
+    this.__qin_field_nestedClasses = nestedClasses;
+    this.__qin_field_recordClass = recordClass;
+    this.__qin_field_interfaceClass = interfaceClass;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_4_1(name: string, annotations: any, fields: any, methods: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_delegate_args[5] instanceof __QinJavaUtilArrayList || __qin_delegate_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_delegate_args[6] instanceof __QinJavaUtilArrayList || __qin_delegate_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_delegate_args[7] instanceof __QinJavaUtilArrayList || __qin_delegate_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_delegate_args[8] instanceof __QinJavaUtilArrayList || __qin_delegate_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, null, __QinJavaUtilList.of(), __QinJavaUtilList.of(), annotations, fields, methods, __QinJavaUtilList.of(), __QinJavaUtilList.of(), false);
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(name: string, superTypeName: string, implementsTypeNames: __QinJavaUtilList<string>, typeParameters: __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter>, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>, staticInitializers: __QinJavaUtilList<com_slime_java_ast_JavaAstStaticInitializer>, nestedClasses: __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration>, recordClass: boolean): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 11 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean" && typeof __qin_delegate_args[10] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_11_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, recordClass, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_3_2(name: string, fields: any, methods: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_delegate_args[5] instanceof __QinJavaUtilArrayList || __qin_delegate_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_delegate_args[6] instanceof __QinJavaUtilArrayList || __qin_delegate_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_delegate_args[7] instanceof __QinJavaUtilArrayList || __qin_delegate_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_delegate_args[8] instanceof __QinJavaUtilArrayList || __qin_delegate_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, null, __QinJavaUtilList.of(), __QinJavaUtilList.of(), __QinJavaUtilList.of(), fields, methods, __QinJavaUtilList.of(), __QinJavaUtilList.of(), false);
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_4_2(name: string, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, null, __QinJavaUtilList.of(), __QinJavaUtilList.of(), annotations, fields, methods, __QinJavaUtilList.of(), __QinJavaUtilList.of(), false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_5_3(name: string, superTypeName: string, annotations: any, fields: any, methods: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_delegate_args[5] instanceof __QinJavaUtilArrayList || __qin_delegate_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_delegate_args[6] instanceof __QinJavaUtilArrayList || __qin_delegate_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_delegate_args[7] instanceof __QinJavaUtilArrayList || __qin_delegate_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_delegate_args[8] instanceof __QinJavaUtilArrayList || __qin_delegate_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, __QinJavaUtilList.of(), __QinJavaUtilList.of(), annotations, fields, methods, __QinJavaUtilList.of(), __QinJavaUtilList.of(), false);
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_3_3(name: string, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, null, __QinJavaUtilList.of(), __QinJavaUtilList.of(), __QinJavaUtilList.of(), fields, methods, __QinJavaUtilList.of(), __QinJavaUtilList.of(), false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_9_4(name: string, superTypeName: string, implementsTypeNames: any, typeParameters: any, annotations: any, fields: any, methods: any, staticInitializers: any, nestedClasses: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_delegate_args[5] instanceof __QinJavaUtilArrayList || __qin_delegate_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_delegate_args[6] instanceof __QinJavaUtilArrayList || __qin_delegate_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_delegate_args[7] instanceof __QinJavaUtilArrayList || __qin_delegate_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_delegate_args[8] instanceof __QinJavaUtilArrayList || __qin_delegate_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, false);
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_5_4(name: string, superTypeName: string, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, __QinJavaUtilList.of(), __QinJavaUtilList.of(), annotations, fields, methods, __QinJavaUtilList.of(), __QinJavaUtilList.of(), false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_7_5(name: string, superTypeName: string, typeParameters: any, annotations: any, fields: any, methods: any, nestedClasses: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_delegate_args[5] instanceof __QinJavaUtilArrayList || __qin_delegate_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_delegate_args[6] instanceof __QinJavaUtilArrayList || __qin_delegate_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_delegate_args[7] instanceof __QinJavaUtilArrayList || __qin_delegate_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_delegate_args[8] instanceof __QinJavaUtilArrayList || __qin_delegate_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, __QinJavaUtilList.of(), typeParameters, annotations, fields, methods, __QinJavaUtilList.of(), nestedClasses, false);
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_9_5(name: string, superTypeName: string, implementsTypeNames: __QinJavaUtilList<string>, typeParameters: __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter>, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>, staticInitializers: __QinJavaUtilList<com_slime_java_ast_JavaAstStaticInitializer>, nestedClasses: __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, implementsTypeNames, typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_8_6(name: string, superTypeName: string, typeParameters: any, annotations: any, fields: any, methods: any, staticInitializers: any, nestedClasses: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_delegate_args[4] instanceof __QinJavaUtilArrayList || __qin_delegate_args[4] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_delegate_args[5] instanceof __QinJavaUtilArrayList || __qin_delegate_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_delegate_args[6] instanceof __QinJavaUtilArrayList || __qin_delegate_args[6] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_delegate_args[7] instanceof __QinJavaUtilArrayList || __qin_delegate_args[7] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_delegate_args[8] instanceof __QinJavaUtilArrayList || __qin_delegate_args[8] instanceof __QinJavaUtilUnmodifiableList) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, __QinJavaUtilList.of(), typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, false);
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_7_6(name: string, superTypeName: string, typeParameters: __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter>, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>, nestedClasses: __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, __QinJavaUtilList.of(), typeParameters, annotations, fields, methods, __QinJavaUtilList.of(), nestedClasses, false);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_7(name: string, superTypeName: string, implementsTypeNames: any, typeParameters: any, annotations: any, fields: any, methods: any, staticInitializers: any, nestedClasses: any, recordClass: boolean): void {
-    this.__qin_field_name = null;
-    this.__qin_field_superTypeName = null;
-    this.__qin_field_implementsTypeNames = null;
-    this.__qin_field_typeParameters = null;
-    this.__qin_field_annotations = null;
-    this.__qin_field_fields = null;
-    this.__qin_field_methods = null;
-    this.__qin_field_staticInitializers = null;
-    this.__qin_field_nestedClasses = null;
-    this.__qin_field_recordClass = null;
-    (() => {
-      this.__qin_field_name = name;
-      this.__qin_field_superTypeName = superTypeName;
-      this.__qin_field_implementsTypeNames = implementsTypeNames;
-      this.__qin_field_typeParameters = typeParameters;
-      this.__qin_field_annotations = annotations;
-      this.__qin_field_fields = fields;
-      this.__qin_field_methods = methods;
-      this.__qin_field_staticInitializers = staticInitializers;
-      this.__qin_field_nestedClasses = nestedClasses;
-      this.__qin_field_recordClass = recordClass;
-      return null;
-    })();
+  __qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_8_7(name: string, superTypeName: string, typeParameters: __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter>, annotations: __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation>, fields: __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration>, methods: __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration>, staticInitializers: __QinJavaUtilList<com_slime_java_ast_JavaAstStaticInitializer>, nestedClasses: __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[4] === null || Array.isArray(__qin_delegate_args[4]) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[4], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[5] === null || Array.isArray(__qin_delegate_args[5]) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[6] === null || Array.isArray(__qin_delegate_args[6]) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[6], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[7] === null || Array.isArray(__qin_delegate_args[7]) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[7], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[8] === null || Array.isArray(__qin_delegate_args[8]) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[8], __QinJavaUtilUnmodifiableList)) && typeof __qin_delegate_args[9] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstClassDeclaration_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstClassDeclaration/" + __qin_delegate_args.length); })(name, superTypeName, __QinJavaUtilList.of(), typeParameters, annotations, fields, methods, staticInitializers, nestedClasses, false);
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  superTypeName(): any {
+  superTypeName(): string {
     return this.__qin_field_superTypeName;
   }
-  implementsTypeNames(): any {
+  implementsTypeNames(): __QinJavaUtilList<string> {
     return this.__qin_field_implementsTypeNames;
   }
-  typeParameters(): any {
+  typeParameters(): __QinJavaUtilList<com_slime_java_ast_JavaAstTypeParameter> {
     return this.__qin_field_typeParameters;
   }
-  annotations(): any {
+  annotations(): __QinJavaUtilList<com_slime_java_ast_JavaAstAnnotation> {
     return this.__qin_field_annotations;
   }
-  fields(): any {
+  fields(): __QinJavaUtilList<com_slime_java_ast_JavaAstFieldDeclaration> {
     return this.__qin_field_fields;
   }
-  methods(): any {
+  methods(): __QinJavaUtilList<com_slime_java_ast_JavaAstMethodDeclaration> {
     return this.__qin_field_methods;
   }
-  staticInitializers(): any {
+  staticInitializers(): __QinJavaUtilList<com_slime_java_ast_JavaAstStaticInitializer> {
     return this.__qin_field_staticInitializers;
   }
-  nestedClasses(): any {
+  nestedClasses(): __QinJavaUtilList<com_slime_java_ast_JavaAstClassDeclaration> {
     return this.__qin_field_nestedClasses;
   }
-  recordClass(): any {
+  recordClass(): boolean {
     return this.__qin_field_recordClass;
   }
-  equals(other) {
+  interfaceClass(): boolean {
+    return this.__qin_field_interfaceClass;
+  }
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstClassDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_superTypeName, other.__qin_field_superTypeName)
-      && __qin_java_values_equal__(this.__qin_field_implementsTypeNames, other.__qin_field_implementsTypeNames)
-      && __qin_java_values_equal__(this.__qin_field_typeParameters, other.__qin_field_typeParameters)
-      && __qin_java_values_equal__(this.__qin_field_annotations, other.__qin_field_annotations)
-      && __qin_java_values_equal__(this.__qin_field_fields, other.__qin_field_fields)
-      && __qin_java_values_equal__(this.__qin_field_methods, other.__qin_field_methods)
-      && __qin_java_values_equal__(this.__qin_field_staticInitializers, other.__qin_field_staticInitializers)
-      && __qin_java_values_equal__(this.__qin_field_nestedClasses, other.__qin_field_nestedClasses)
-      && __qin_java_values_equal__(this.__qin_field_recordClass, other.__qin_field_recordClass);
+    const __qin_record_other: com_slime_java_ast_JavaAstClassDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_superTypeName, __qin_record_other.__qin_field_superTypeName)
+      && __qin_java_values_equal__(this.__qin_field_implementsTypeNames, __qin_record_other.__qin_field_implementsTypeNames)
+      && __qin_java_values_equal__(this.__qin_field_typeParameters, __qin_record_other.__qin_field_typeParameters)
+      && __qin_java_values_equal__(this.__qin_field_annotations, __qin_record_other.__qin_field_annotations)
+      && __qin_java_values_equal__(this.__qin_field_fields, __qin_record_other.__qin_field_fields)
+      && __qin_java_values_equal__(this.__qin_field_methods, __qin_record_other.__qin_field_methods)
+      && __qin_java_values_equal__(this.__qin_field_staticInitializers, __qin_record_other.__qin_field_staticInitializers)
+      && __qin_java_values_equal__(this.__qin_field_nestedClasses, __qin_record_other.__qin_field_nestedClasses)
+      && __qin_java_values_equal__(this.__qin_field_recordClass, __qin_record_other.__qin_field_recordClass)
+      && __qin_java_values_equal__(this.__qin_field_interfaceClass, __qin_record_other.__qin_field_interfaceClass);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_superTypeName);
@@ -218,10 +225,11 @@ class com_slime_java_ast_JavaAstClassDeclaration {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_staticInitializers);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_nestedClasses);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_recordClass);
+    result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_interfaceClass);
     return result;
   }
-  toString() {
-    return ["JavaAstClassDeclaration[", "name=", this.__qin_field_name, ", ", "superTypeName=", this.__qin_field_superTypeName, ", ", "implementsTypeNames=", this.__qin_field_implementsTypeNames, ", ", "typeParameters=", this.__qin_field_typeParameters, ", ", "annotations=", this.__qin_field_annotations, ", ", "fields=", this.__qin_field_fields, ", ", "methods=", this.__qin_field_methods, ", ", "staticInitializers=", this.__qin_field_staticInitializers, ", ", "nestedClasses=", this.__qin_field_nestedClasses, ", ", "recordClass=", this.__qin_field_recordClass, "]"].join("");
+  toString(): string {
+    return ["JavaAstClassDeclaration[", "name=", this.__qin_field_name, ", ", "superTypeName=", this.__qin_field_superTypeName, ", ", "implementsTypeNames=", this.__qin_field_implementsTypeNames, ", ", "typeParameters=", this.__qin_field_typeParameters, ", ", "annotations=", this.__qin_field_annotations, ", ", "fields=", this.__qin_field_fields, ", ", "methods=", this.__qin_field_methods, ", ", "staticInitializers=", this.__qin_field_staticInitializers, ", ", "nestedClasses=", this.__qin_field_nestedClasses, ", ", "recordClass=", this.__qin_field_recordClass, ", ", "interfaceClass=", this.__qin_field_interfaceClass, "]"].join("");
   }
 }
 const JavaAstClassDeclaration = com_slime_java_ast_JavaAstClassDeclaration;

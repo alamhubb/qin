@@ -7,83 +7,71 @@ function __qin_structural_object__(value) {
 }
 const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstTryStatement {
-  __qin_field_resources: any = null as any;
-  __qin_field_tryStatements: any = null as any;
-  __qin_field_catchClauses: any = null as any;
-  __qin_field_finallyStatements: any = null as any;
+  __qin_field_resources: __QinJavaUtilList<com_slime_java_ast_JavaAstTryResource> | null = null as any;
+  __qin_field_tryStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
+  __qin_field_catchClauses: __QinJavaUtilList<com_slime_java_ast_JavaAstCatchClause> | null = null as any;
+  __qin_field_finallyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstTryStatement_0_0();
+    if (__qin_args.length === 4 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList))) {
+      const resources: any = __qin_args[0];
+      const tryStatements: any = __qin_args[1];
+      const catchClauses: any = __qin_args[2];
+      const finallyStatements: any = __qin_args[3];
+      this.__qin_constructor_com_slime_java_ast_JavaAstTryStatement_4_0(resources, tryStatements, catchClauses, finallyStatements);
       return;
     }
-    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList))) {
       const tryStatements: any = __qin_args[0];
       const catchClauses: any = __qin_args[1];
       const finallyStatements: any = __qin_args[2];
       this.__qin_constructor_com_slime_java_ast_JavaAstTryStatement_3_1(tryStatements, catchClauses, finallyStatements);
       return;
     }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList)) {
-      const resources: any = __qin_args[0];
-      const tryStatements: any = __qin_args[1];
-      const catchClauses: any = __qin_args[2];
-      const finallyStatements: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstTryStatement_4_2(resources, tryStatements, catchClauses, finallyStatements);
-      return;
-    }
     throw new Error("Unsupported Java constructor overload: JavaAstTryStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTryStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstTryStatement_4_0(resources: __QinJavaUtilList<com_slime_java_ast_JavaAstTryResource>, tryStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>, catchClauses: __QinJavaUtilList<com_slime_java_ast_JavaAstCatchClause>, finallyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_resources = null;
     this.__qin_field_tryStatements = null;
     this.__qin_field_catchClauses = null;
     this.__qin_field_finallyStatements = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_resources, "resources cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_tryStatements, "tryStatements cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_catchClauses, "catchClauses cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_finallyStatements, "finallyStatements cannot be null");
-    this.__qin_field_resources = __QinJavaUtilList.copyOf(this.__qin_field_resources);
-    this.__qin_field_tryStatements = __QinJavaUtilList.copyOf(this.__qin_field_tryStatements);
-    this.__qin_field_catchClauses = __QinJavaUtilList.copyOf(this.__qin_field_catchClauses);
-    this.__qin_field_finallyStatements = __QinJavaUtilList.copyOf(this.__qin_field_finallyStatements);
+    __QinJavaUtilObjects.requireNonNull(resources, "resources cannot be null");
+    __QinJavaUtilObjects.requireNonNull(tryStatements, "tryStatements cannot be null");
+    __QinJavaUtilObjects.requireNonNull(catchClauses, "catchClauses cannot be null");
+    __QinJavaUtilObjects.requireNonNull(finallyStatements, "finallyStatements cannot be null");
+    resources = __QinJavaUtilList.copyOf(resources);
+    tryStatements = __QinJavaUtilList.copyOf(tryStatements);
+    catchClauses = __QinJavaUtilList.copyOf(catchClauses);
+    finallyStatements = __QinJavaUtilList.copyOf(finallyStatements);
+    this.__qin_field_resources = resources;
+    this.__qin_field_tryStatements = tryStatements;
+    this.__qin_field_catchClauses = catchClauses;
+    this.__qin_field_finallyStatements = finallyStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTryStatement_3_1(tryStatements: any, catchClauses: any, finallyStatements: any): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || Array.isArray(__qin_delegate_args[0]) || __qin_delegate_args[0] instanceof __QinJavaUtilArrayList || __qin_delegate_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_delegate_args[1] instanceof __QinJavaUtilArrayList || __qin_delegate_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_delegate_args[2] instanceof __QinJavaUtilArrayList || __qin_delegate_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_delegate_args[3] instanceof __QinJavaUtilArrayList || __qin_delegate_args[3] instanceof __QinJavaUtilUnmodifiableList)) { return this.__qin_constructor_com_slime_java_ast_JavaAstTryStatement_4_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstTryStatement/" + __qin_delegate_args.length); })(__QinJavaUtilList.of(), tryStatements, catchClauses, finallyStatements);
+  __qin_constructor_com_slime_java_ast_JavaAstTryStatement_3_1(tryStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>, catchClauses: __QinJavaUtilList<com_slime_java_ast_JavaAstCatchClause>, finallyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 4 && (__qin_delegate_args[0] === null || Array.isArray(__qin_delegate_args[0]) || __qin_instanceof__(__qin_delegate_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[1] === null || Array.isArray(__qin_delegate_args[1]) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[2] === null || Array.isArray(__qin_delegate_args[2]) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_delegate_args[3] === null || Array.isArray(__qin_delegate_args[3]) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_delegate_args[3], __QinJavaUtilUnmodifiableList))) { return this.__qin_constructor_com_slime_java_ast_JavaAstTryStatement_4_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstTryStatement/" + __qin_delegate_args.length); })(__QinJavaUtilList.of(), tryStatements, catchClauses, finallyStatements);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTryStatement_4_2(resources: any, tryStatements: any, catchClauses: any, finallyStatements: any): void {
-    this.__qin_field_resources = null;
-    this.__qin_field_tryStatements = null;
-    this.__qin_field_catchClauses = null;
-    this.__qin_field_finallyStatements = null;
-    (() => {
-      this.__qin_field_resources = resources;
-      this.__qin_field_tryStatements = tryStatements;
-      this.__qin_field_catchClauses = catchClauses;
-      this.__qin_field_finallyStatements = finallyStatements;
-      return null;
-    })();
-  }
-  resources(): any {
+  resources(): __QinJavaUtilList<com_slime_java_ast_JavaAstTryResource> {
     return this.__qin_field_resources;
   }
-  tryStatements(): any {
+  tryStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_tryStatements;
   }
-  catchClauses(): any {
+  catchClauses(): __QinJavaUtilList<com_slime_java_ast_JavaAstCatchClause> {
     return this.__qin_field_catchClauses;
   }
-  finallyStatements(): any {
+  finallyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_finallyStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstTryStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_resources, other.__qin_field_resources)
-      && __qin_java_values_equal__(this.__qin_field_tryStatements, other.__qin_field_tryStatements)
-      && __qin_java_values_equal__(this.__qin_field_catchClauses, other.__qin_field_catchClauses)
-      && __qin_java_values_equal__(this.__qin_field_finallyStatements, other.__qin_field_finallyStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstTryStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_resources, __qin_record_other.__qin_field_resources)
+      && __qin_java_values_equal__(this.__qin_field_tryStatements, __qin_record_other.__qin_field_tryStatements)
+      && __qin_java_values_equal__(this.__qin_field_catchClauses, __qin_record_other.__qin_field_catchClauses)
+      && __qin_java_values_equal__(this.__qin_field_finallyStatements, __qin_record_other.__qin_field_finallyStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_resources);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_tryStatements);
@@ -91,7 +79,7 @@ class com_slime_java_ast_JavaAstTryStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_finallyStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstTryStatement[", "resources=", this.__qin_field_resources, ", ", "tryStatements=", this.__qin_field_tryStatements, ", ", "catchClauses=", this.__qin_field_catchClauses, ", ", "finallyStatements=", this.__qin_field_finallyStatements, "]"].join("");
   }
 }

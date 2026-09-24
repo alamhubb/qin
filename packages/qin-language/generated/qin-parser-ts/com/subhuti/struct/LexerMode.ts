@@ -8,7 +8,7 @@ function __qin_structural_object__(value) {
 const Objects = __QinJavaUtilObjects;
 class com_subhuti_struct_LexerMode {
   __qin_field_name: string | null = null as any;
-  __qin_field_hashCode: number | null = null as any;
+  __qin_field_hashCode: number | null = 0 as any;
   static __qin_field_DEFAULT_MODE: com_subhuti_struct_LexerMode | null = null as any;
   static __qin_field_TEMPLATE_TAIL: com_subhuti_struct_LexerMode | null = null as any;
   static __qin_field_REGEXP: com_subhuti_struct_LexerMode | null = null as any;
@@ -22,33 +22,33 @@ class com_subhuti_struct_LexerMode {
   }
   __qin_constructor_com_subhuti_struct_LexerMode_1_0(name: string): void {
     this.__qin_field_name = null;
-    this.__qin_field_hashCode = null;
+    this.__qin_field_hashCode = 0;
     this.__qin_field_name = (__qin_binary__("!=", name, null) ? name : "");
     this.__qin_field_hashCode = __qin_binary__("+", 31.0, __QinJavaLangString.hashCode(this.__qin_field_name));
   }
-  static create(name: string): any {
+  static create(name: string): com_subhuti_struct_LexerMode {
     return new com_subhuti_struct_LexerMode(name);
   }
-  getName(): any {
+  getName(): string {
     return this.__qin_field_name;
   }
-  isDefault(): any {
+  isDefault(): boolean {
     return __QinJavaLangString.isEmpty(this.__qin_field_name);
   }
-  equals(obj: any): any {
+  equals(obj: any): boolean {
     if (__qin_binary__("==", this, obj)) {
       return true;
     }
     if ((__qin_binary__("==", obj, null) || __qin_binary__("!=", this.getClass(), obj.getClass()))) {
       return false;
     }
-    let other: any = (obj);
+    let other: com_subhuti_struct_LexerMode = (obj as com_subhuti_struct_LexerMode);
     return __QinJavaUtilObjects.equals(this.__qin_field_name, other.__qin_field_name);
   }
-  hashCode(): any {
+  hashCode(): number {
     return this.__qin_field_hashCode;
   }
-  toString(): any {
+  toString(): string {
     if (this.isDefault()) {
       return "LexerMode(default)";
     }

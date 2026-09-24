@@ -6,44 +6,35 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_java_ast_JavaAstStaticInitializer {
-  __qin_field_statements: any = null as any;
+  __qin_field_statements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstStaticInitializer_0_0();
-      return;
-    }
-    if (__qin_args.length === 1 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 1 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList))) {
       const statements: any = __qin_args[0];
-      this.__qin_constructor_com_slime_java_ast_JavaAstStaticInitializer_1_1(statements);
+      this.__qin_constructor_com_slime_java_ast_JavaAstStaticInitializer_1_0(statements);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstStaticInitializer/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstStaticInitializer_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstStaticInitializer_1_0(statements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_statements = null;
-    this.__qin_field_statements = (__qin_binary__("==", this.__qin_field_statements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_statements));
+    statements = (__qin_binary__("==", statements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(statements));
+    this.__qin_field_statements = statements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstStaticInitializer_1_1(statements: any): void {
-    this.__qin_field_statements = null;
-    (() => {
-      this.__qin_field_statements = statements;
-      return null;
-    })();
-  }
-  statements(): any {
+  statements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_statements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstStaticInitializer)) return false;
-    return __qin_java_values_equal__(this.__qin_field_statements, other.__qin_field_statements);
+    const __qin_record_other: com_slime_java_ast_JavaAstStaticInitializer = other;
+    return __qin_java_values_equal__(this.__qin_field_statements, __qin_record_other.__qin_field_statements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_statements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstStaticInitializer[", "statements=", this.__qin_field_statements, "]"].join("");
   }
 }

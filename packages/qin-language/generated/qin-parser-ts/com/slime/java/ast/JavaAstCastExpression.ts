@@ -12,52 +12,42 @@ class com_slime_java_ast_JavaAstCastExpression {
   __qin_field_typeName: string | null = null as any;
   __qin_field_expression: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstCastExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression"))) {
       const typeName: any = __qin_args[0];
       const expression: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstCastExpression_2_1(typeName, expression);
+      this.__qin_constructor_com_slime_java_ast_JavaAstCastExpression_2_0(typeName, expression);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstCastExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstCastExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstCastExpression_2_0(typeName: string, expression: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_typeName = null;
     this.__qin_field_expression = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_expression, "expression cannot be null");
+    __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(expression, "expression cannot be null");
+    this.__qin_field_typeName = typeName;
+    this.__qin_field_expression = expression;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstCastExpression_2_1(typeName: string, expression: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_typeName = null;
-    this.__qin_field_expression = null;
-    (() => {
-      this.__qin_field_typeName = typeName;
-      this.__qin_field_expression = expression;
-      return null;
-    })();
-  }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  expression(): any {
+  expression(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_expression;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstCastExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_expression, other.__qin_field_expression);
+    const __qin_record_other: com_slime_java_ast_JavaAstCastExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_expression, __qin_record_other.__qin_field_expression);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_expression);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstCastExpression[", "typeName=", this.__qin_field_typeName, ", ", "expression=", this.__qin_field_expression, "]"].join("");
   }
 }

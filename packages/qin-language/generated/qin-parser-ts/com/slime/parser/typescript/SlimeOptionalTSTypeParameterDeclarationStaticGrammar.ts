@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeOptionalTSTypeParameterDeclarationStaticG
   __qin_constructor_com_slime_parser_typescript_SlimeOptionalTSTypeParameterDeclarationStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeParameterDeclaration").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalTSTypeParameterDeclaration", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeParameterDeclaration")))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeParameterDeclaration").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalTSTypeParameterDeclaration", com_subhuti_parser_SubhutiStaticGrammar.option(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeParameterDeclaration")))).build();
   }
 }
 const SlimeOptionalTSTypeParameterDeclarationStaticGrammar = com_slime_parser_typescript_SlimeOptionalTSTypeParameterDeclarationStaticGrammar;

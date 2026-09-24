@@ -19,11 +19,11 @@ class com_slime_parser_statements_SlimeStatementIfStaticGrammar {
   __qin_constructor_com_slime_parser_statements_SlimeStatementIfStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("IfStatementBody").declareAction(com_slime_parser_statements_SlimeStatementIfStaticGrammar.__qin_field_ACTION_CONDITION_EXPRESSION).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("IfStatement", com_subhuti_parser_SubhutiStaticGrammar.seq(com_slime_parser_statements_SlimeStatementIfStaticGrammar.ifPrefix(), com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("Else"), com_subhuti_parser_SubhutiStaticGrammar.call("IfStatementBody"))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("IfStatementBody").declareAction(com_slime_parser_statements_SlimeStatementIfStaticGrammar.__qin_field_ACTION_CONDITION_EXPRESSION).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("IfStatement", com_subhuti_parser_SubhutiStaticGrammar.seq(com_slime_parser_statements_SlimeStatementIfStaticGrammar.ifPrefix(), com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("Else"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("IfStatementBody"))))).build();
   }
-  static ifPrefix(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("If"), com_subhuti_parser_SubhutiStaticGrammar.consume("LParen"), com_subhuti_parser_SubhutiStaticGrammar.action(com_slime_parser_statements_SlimeStatementIfStaticGrammar.__qin_field_ACTION_CONDITION_EXPRESSION), com_subhuti_parser_SubhutiStaticGrammar.consume("RParen"), com_subhuti_parser_SubhutiStaticGrammar.call("IfStatementBody"));
+  static ifPrefix(): com_subhuti_parser_SubhutiStaticGrammar$Node {
+    return com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("If"), com_subhuti_parser_SubhutiStaticGrammar.consume("LParen"), com_subhuti_parser_SubhutiStaticGrammar.action(com_slime_parser_statements_SlimeStatementIfStaticGrammar.__qin_field_ACTION_CONDITION_EXPRESSION), com_subhuti_parser_SubhutiStaticGrammar.consume("RParen"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("IfStatementBody"));
   }
 }
 const SlimeStatementIfStaticGrammar = com_slime_parser_statements_SlimeStatementIfStaticGrammar;

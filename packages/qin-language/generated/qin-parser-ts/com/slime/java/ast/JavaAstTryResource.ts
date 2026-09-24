@@ -15,77 +15,65 @@ class com_slime_java_ast_JavaAstTryResource {
   __qin_field_initializer: com_slime_java_ast_JavaAstExpression | null = null as any;
   __qin_field_reference: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstTryResource_0_0();
-      return;
-    }
     if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[3] === null || __qin_java_implements(__qin_args[3], "com.slime.java.ast.JavaAstExpression"))) {
       const typeName: any = __qin_args[0];
       const name: any = __qin_args[1];
       const initializer: any = __qin_args[2];
       const reference: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstTryResource_4_1(typeName, name, initializer, reference);
+      this.__qin_constructor_com_slime_java_ast_JavaAstTryResource_4_0(typeName, name, initializer, reference);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstTryResource/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTryResource_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstTryResource_4_0(typeName: string, name: string, initializer: com_slime_java_ast_JavaAstExpression, reference: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_typeName = null;
     this.__qin_field_name = null;
     this.__qin_field_initializer = null;
     this.__qin_field_reference = null;
-    if ((__qin_binary__("==", this.__qin_field_name, null) || __QinJavaLangString.isBlank(this.__qin_field_name))) {
+    if ((__qin_binary__("==", name, null) || __QinJavaLangString.isBlank(name))) {
       throw new __QinJavaLangIllegalArgumentException("name cannot be blank");
     }
-    this.__qin_field_name = this.__qin_field_name.trim();
-    if ((__qin_binary__("==", this.__qin_field_initializer, null) && __qin_binary__("==", this.__qin_field_reference, null))) {
+    name = name.trim();
+    if ((__qin_binary__("==", initializer, null) && __qin_binary__("==", reference, null))) {
       throw new __QinJavaLangIllegalArgumentException("try resource must have an initializer or reference");
     }
-    if (__qin_binary__("!=", this.__qin_field_initializer, null)) {
-      __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null for declared try resources");
-      if (__QinJavaLangString.isBlank(this.__qin_field_typeName)) {
+    if (__qin_binary__("!=", initializer, null)) {
+      __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null for declared try resources");
+      if (__QinJavaLangString.isBlank(typeName)) {
         throw new __QinJavaLangIllegalArgumentException("typeName cannot be blank");
       }
-      this.__qin_field_typeName = this.__qin_field_typeName.trim();
+      typeName = typeName.trim();
     }
+    this.__qin_field_typeName = typeName;
+    this.__qin_field_name = name;
+    this.__qin_field_initializer = initializer;
+    this.__qin_field_reference = reference;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstTryResource_4_1(typeName: string, name: string, initializer: com_slime_java_ast_JavaAstExpression, reference: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_typeName = null;
-    this.__qin_field_name = null;
-    this.__qin_field_initializer = null;
-    this.__qin_field_reference = null;
-    (() => {
-      this.__qin_field_typeName = typeName;
-      this.__qin_field_name = name;
-      this.__qin_field_initializer = initializer;
-      this.__qin_field_reference = reference;
-      return null;
-    })();
-  }
-  declaration(): any {
+  declaration(): boolean {
     return __qin_binary__("!=", this.__qin_field_initializer, null);
   }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  initializer(): any {
+  initializer(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_initializer;
   }
-  reference(): any {
+  reference(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_reference;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstTryResource)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_initializer, other.__qin_field_initializer)
-      && __qin_java_values_equal__(this.__qin_field_reference, other.__qin_field_reference);
+    const __qin_record_other: com_slime_java_ast_JavaAstTryResource = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_initializer, __qin_record_other.__qin_field_initializer)
+      && __qin_java_values_equal__(this.__qin_field_reference, __qin_record_other.__qin_field_reference);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
@@ -93,7 +81,7 @@ class com_slime_java_ast_JavaAstTryResource {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_reference);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstTryResource[", "typeName=", this.__qin_field_typeName, ", ", "name=", this.__qin_field_name, ", ", "initializer=", this.__qin_field_initializer, ", ", "reference=", this.__qin_field_reference, "]"].join("");
   }
 }

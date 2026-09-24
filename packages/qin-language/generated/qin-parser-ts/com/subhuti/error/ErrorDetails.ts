@@ -16,12 +16,12 @@ class com_subhuti_error_ErrorDetails {
   __qin_field_found: com_subhuti_struct_SubhutiMatchToken | null = null as any;
   __qin_field_position: com_subhuti_error_ErrorPosition | null = null as any;
   __qin_field_cacheStats: com_subhuti_cache_CacheStats | null = null as any;
-  __qin_field_loopTokenContext: any = null as any;
+  __qin_field_loopTokenContext: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken> | null = null as any;
   __qin_field_hint: string | null = null as any;
   __qin_field_rulePath: string | null = null as any;
-  __qin_field_suggestions: any = null as any;
+  __qin_field_suggestions: __QinJavaUtilList<string> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 9 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_subhuti_error_SubhutiErrorTypes)) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_SubhutiMatchToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_error_ErrorPosition) || __qin_args[3].__qinJavaRecordClass === com_subhuti_error_ErrorPosition.__qinJavaRecordClass) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_subhuti_cache_CacheStats)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_args[5] instanceof __QinJavaUtilArrayList || __qin_args[5] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[6] === null || typeof __qin_args[6] === "string") && (__qin_args[7] === null || typeof __qin_args[7] === "string") && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_args[8] instanceof __QinJavaUtilArrayList || __qin_args[8] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 9 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_subhuti_error_SubhutiErrorTypes)) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_SubhutiMatchToken)) && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_error_ErrorPosition)) && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_subhuti_cache_CacheStats)) && (__qin_args[5] === null || Array.isArray(__qin_args[5]) || __qin_instanceof__(__qin_args[5], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[5], __QinJavaUtilUnmodifiableList)) && (__qin_args[6] === null || typeof __qin_args[6] === "string") && (__qin_args[7] === null || typeof __qin_args[7] === "string") && (__qin_args[8] === null || Array.isArray(__qin_args[8]) || __qin_instanceof__(__qin_args[8], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[8], __QinJavaUtilUnmodifiableList))) {
       const errorType: any = __qin_args[0];
       const expected: any = __qin_args[1];
       const found: any = __qin_args[2];
@@ -36,7 +36,7 @@ class com_subhuti_error_ErrorDetails {
     }
     throw new Error("Unsupported Java constructor overload: ErrorDetails/" + __qin_args.length);
   }
-  __qin_constructor_com_subhuti_error_ErrorDetails_9_0(errorType: com_subhuti_error_SubhutiErrorTypes, expected: string, found: com_subhuti_struct_SubhutiMatchToken, position: com_subhuti_error_ErrorPosition, cacheStats: com_subhuti_cache_CacheStats, loopTokenContext: any, hint: string, rulePath: string, suggestions: any): void {
+  __qin_constructor_com_subhuti_error_ErrorDetails_9_0(errorType: com_subhuti_error_SubhutiErrorTypes, expected: string, found: com_subhuti_struct_SubhutiMatchToken, position: com_subhuti_error_ErrorPosition, cacheStats: com_subhuti_cache_CacheStats, loopTokenContext: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken>, hint: string, rulePath: string, suggestions: __QinJavaUtilList<string>): void {
     this.__qin_field_errorType = null;
     this.__qin_field_expected = null;
     this.__qin_field_found = null;
@@ -59,62 +59,63 @@ class com_subhuti_error_ErrorDetails {
       return null;
     })();
   }
-  static tokenMismatch(expected: string, found: com_subhuti_struct_SubhutiMatchToken, position: com_subhuti_error_ErrorPosition): any {
+  static tokenMismatch(expected: string, found: com_subhuti_struct_SubhutiMatchToken, position: com_subhuti_error_ErrorPosition): com_subhuti_error_ErrorDetails {
     return new com_subhuti_error_ErrorDetails(com_subhuti_error_SubhutiErrorTypes.__qin_field_TOKEN_MISMATCH, expected, found, position, null, null, null, null, null);
   }
-  static unexpectedEof(expected: string, position: com_subhuti_error_ErrorPosition): any {
+  static unexpectedEof(expected: string, position: com_subhuti_error_ErrorPosition): com_subhuti_error_ErrorDetails {
     return new com_subhuti_error_ErrorDetails(com_subhuti_error_SubhutiErrorTypes.__qin_field_UNEXPECTED_EOF, expected, null, position, null, null, "Unexpected end of file while parsing", null, null);
   }
-  static loopDetected(ruleName: string, position: com_subhuti_error_ErrorPosition, tokenContext: any): any {
+  static loopDetected(ruleName: string, position: com_subhuti_error_ErrorPosition, tokenContext: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken>): com_subhuti_error_ErrorDetails {
     return new com_subhuti_error_ErrorDetails(com_subhuti_error_SubhutiErrorTypes.__qin_field_LOOP_DETECTED, null, null, position, null, tokenContext, ("Infinite loop detected in rule: " + ruleName), ruleName, __QinJavaUtilList.of("Check for left recursion", "Add explicit termination condition"));
   }
-  static leftRecursion(ruleName: string, rulePath: string, position: com_subhuti_error_ErrorPosition): any {
+  static leftRecursion(ruleName: string, rulePath: string, position: com_subhuti_error_ErrorPosition): com_subhuti_error_ErrorDetails {
     return new com_subhuti_error_ErrorDetails(com_subhuti_error_SubhutiErrorTypes.__qin_field_LEFT_RECURSION, null, null, position, null, null, "Left recursion detected", rulePath, __QinJavaUtilList.of("Refactor the grammar to eliminate left recursion", "Use iterative approach instead of recursive"));
   }
-  static builder(): any {
+  static builder(): com_subhuti_error_ErrorDetails$Builder {
     return new com_subhuti_error_ErrorDetails$Builder();
   }
-  errorType(): any {
+  errorType(): com_subhuti_error_SubhutiErrorTypes {
     return this.__qin_field_errorType;
   }
-  expected(): any {
+  expected(): string {
     return this.__qin_field_expected;
   }
-  found(): any {
+  found(): com_subhuti_struct_SubhutiMatchToken {
     return this.__qin_field_found;
   }
-  position(): any {
+  position(): com_subhuti_error_ErrorPosition {
     return this.__qin_field_position;
   }
-  cacheStats(): any {
+  cacheStats(): com_subhuti_cache_CacheStats {
     return this.__qin_field_cacheStats;
   }
-  loopTokenContext(): any {
+  loopTokenContext(): __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken> {
     return this.__qin_field_loopTokenContext;
   }
-  hint(): any {
+  hint(): string {
     return this.__qin_field_hint;
   }
-  rulePath(): any {
+  rulePath(): string {
     return this.__qin_field_rulePath;
   }
-  suggestions(): any {
+  suggestions(): __QinJavaUtilList<string> {
     return this.__qin_field_suggestions;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_subhuti_error_ErrorDetails)) return false;
-    return __qin_java_values_equal__(this.__qin_field_errorType, other.__qin_field_errorType)
-      && __qin_java_values_equal__(this.__qin_field_expected, other.__qin_field_expected)
-      && __qin_java_values_equal__(this.__qin_field_found, other.__qin_field_found)
-      && __qin_java_values_equal__(this.__qin_field_position, other.__qin_field_position)
-      && __qin_java_values_equal__(this.__qin_field_cacheStats, other.__qin_field_cacheStats)
-      && __qin_java_values_equal__(this.__qin_field_loopTokenContext, other.__qin_field_loopTokenContext)
-      && __qin_java_values_equal__(this.__qin_field_hint, other.__qin_field_hint)
-      && __qin_java_values_equal__(this.__qin_field_rulePath, other.__qin_field_rulePath)
-      && __qin_java_values_equal__(this.__qin_field_suggestions, other.__qin_field_suggestions);
+    const __qin_record_other: com_subhuti_error_ErrorDetails = other;
+    return __qin_java_values_equal__(this.__qin_field_errorType, __qin_record_other.__qin_field_errorType)
+      && __qin_java_values_equal__(this.__qin_field_expected, __qin_record_other.__qin_field_expected)
+      && __qin_java_values_equal__(this.__qin_field_found, __qin_record_other.__qin_field_found)
+      && __qin_java_values_equal__(this.__qin_field_position, __qin_record_other.__qin_field_position)
+      && __qin_java_values_equal__(this.__qin_field_cacheStats, __qin_record_other.__qin_field_cacheStats)
+      && __qin_java_values_equal__(this.__qin_field_loopTokenContext, __qin_record_other.__qin_field_loopTokenContext)
+      && __qin_java_values_equal__(this.__qin_field_hint, __qin_record_other.__qin_field_hint)
+      && __qin_java_values_equal__(this.__qin_field_rulePath, __qin_record_other.__qin_field_rulePath)
+      && __qin_java_values_equal__(this.__qin_field_suggestions, __qin_record_other.__qin_field_suggestions);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_errorType);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_expected);
@@ -127,7 +128,7 @@ class com_subhuti_error_ErrorDetails {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_suggestions);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["ErrorDetails[", "errorType=", this.__qin_field_errorType, ", ", "expected=", this.__qin_field_expected, ", ", "found=", this.__qin_field_found, ", ", "position=", this.__qin_field_position, ", ", "cacheStats=", this.__qin_field_cacheStats, ", ", "loopTokenContext=", this.__qin_field_loopTokenContext, ", ", "hint=", this.__qin_field_hint, ", ", "rulePath=", this.__qin_field_rulePath, ", ", "suggestions=", this.__qin_field_suggestions, "]"].join("");
   }
 }
@@ -138,10 +139,10 @@ class com_subhuti_error_ErrorDetails$Builder {
   __qin_field_found: com_subhuti_struct_SubhutiMatchToken | null = null as any;
   __qin_field_position: com_subhuti_error_ErrorPosition | null = null as any;
   __qin_field_cacheStats: com_subhuti_cache_CacheStats | null = null as any;
-  __qin_field_loopTokenContext: any = null as any;
+  __qin_field_loopTokenContext: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken> | null = null as any;
   __qin_field_hint: string | null = null as any;
   __qin_field_rulePath: string | null = null as any;
-  __qin_field_suggestions: any = null as any;
+  __qin_field_suggestions: __QinJavaUtilList<string> | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length !== 0) {
       throw new Error("Unsupported Java constructor arity: ErrorDetails$Builder/" + __qin_args.length);
@@ -156,43 +157,43 @@ class com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_rulePath = null;
     this.__qin_field_suggestions = null;
   }
-  errorType(errorType: com_subhuti_error_SubhutiErrorTypes): any {
+  errorType(errorType: com_subhuti_error_SubhutiErrorTypes): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_errorType = errorType;
     return this;
   }
-  expected(expected: string): any {
+  expected(expected: string): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_expected = expected;
     return this;
   }
-  found(found: com_subhuti_struct_SubhutiMatchToken): any {
+  found(found: com_subhuti_struct_SubhutiMatchToken): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_found = found;
     return this;
   }
-  position(position: com_subhuti_error_ErrorPosition): any {
+  position(position: com_subhuti_error_ErrorPosition): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_position = position;
     return this;
   }
-  cacheStats(cacheStats: com_subhuti_cache_CacheStats): any {
+  cacheStats(cacheStats: com_subhuti_cache_CacheStats): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_cacheStats = cacheStats;
     return this;
   }
-  loopTokenContext(loopTokenContext: any): any {
+  loopTokenContext(loopTokenContext: __QinJavaUtilList<com_subhuti_struct_SubhutiMatchToken>): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_loopTokenContext = loopTokenContext;
     return this;
   }
-  hint(hint: string): any {
+  hint(hint: string): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_hint = hint;
     return this;
   }
-  rulePath(rulePath: string): any {
+  rulePath(rulePath: string): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_rulePath = rulePath;
     return this;
   }
-  suggestions(suggestions: any): any {
+  suggestions(suggestions: __QinJavaUtilList<string>): com_subhuti_error_ErrorDetails$Builder {
     this.__qin_field_suggestions = suggestions;
     return this;
   }
-  build(): any {
+  build(): com_subhuti_error_ErrorDetails {
     return new com_subhuti_error_ErrorDetails(this.__qin_field_errorType, this.__qin_field_expected, this.__qin_field_found, this.__qin_field_position, this.__qin_field_cacheStats, this.__qin_field_loopTokenContext, this.__qin_field_hint, this.__qin_field_rulePath, this.__qin_field_suggestions);
   }
 }

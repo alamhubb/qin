@@ -14,10 +14,8 @@ class com_subhuti_lookahead_SubhutiTokenMatchParser {
       throw new Error("Unsupported Java constructor arity: SubhutiTokenMatchParser/" + __qin_args.length);
     }
   }
-  _consumeTokenMatch(tokenName: string, mode: com_subhuti_struct_LexerMode): any {
-    throw new Error("Abstract Java method is not implemented: _consumeTokenMatch");
-  }
 }
+com_subhuti_lookahead_SubhutiTokenMatchParser.__qin_java_interface = true;
 const SubhutiTokenMatchParser = com_subhuti_lookahead_SubhutiTokenMatchParser;
 
 function run() {

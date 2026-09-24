@@ -9,53 +9,43 @@ function __qin_structural_object__(value) {
 }
 class com_slime_java_ast_JavaAstSynchronizedStatement {
   __qin_field_lockExpression: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_bodyStatements: any = null as any;
+  __qin_field_bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstSynchronizedStatement_0_0();
-      return;
-    }
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList))) {
       const lockExpression: any = __qin_args[0];
       const bodyStatements: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstSynchronizedStatement_2_1(lockExpression, bodyStatements);
+      this.__qin_constructor_com_slime_java_ast_JavaAstSynchronizedStatement_2_0(lockExpression, bodyStatements);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstSynchronizedStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstSynchronizedStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstSynchronizedStatement_2_0(lockExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_lockExpression = null;
     this.__qin_field_bodyStatements = null;
-    this.__qin_field_bodyStatements = (__qin_binary__("==", this.__qin_field_bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_bodyStatements));
+    bodyStatements = (__qin_binary__("==", bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(bodyStatements));
+    this.__qin_field_lockExpression = lockExpression;
+    this.__qin_field_bodyStatements = bodyStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstSynchronizedStatement_2_1(lockExpression: com_slime_java_ast_JavaAstExpression, bodyStatements: any): void {
-    this.__qin_field_lockExpression = null;
-    this.__qin_field_bodyStatements = null;
-    (() => {
-      this.__qin_field_lockExpression = lockExpression;
-      this.__qin_field_bodyStatements = bodyStatements;
-      return null;
-    })();
-  }
-  lockExpression(): any {
+  lockExpression(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_lockExpression;
   }
-  bodyStatements(): any {
+  bodyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_bodyStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstSynchronizedStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_lockExpression, other.__qin_field_lockExpression)
-      && __qin_java_values_equal__(this.__qin_field_bodyStatements, other.__qin_field_bodyStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstSynchronizedStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_lockExpression, __qin_record_other.__qin_field_lockExpression)
+      && __qin_java_values_equal__(this.__qin_field_bodyStatements, __qin_record_other.__qin_field_bodyStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_lockExpression);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_bodyStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstSynchronizedStatement[", "lockExpression=", this.__qin_field_lockExpression, ", ", "bodyStatements=", this.__qin_field_bodyStatements, "]"].join("");
   }
 }

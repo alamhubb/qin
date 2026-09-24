@@ -133,8 +133,11 @@ and `.bind`, rejects unproven shapes such as `method.call(receiver)`, and only
 allows patterns that preserve fixed Java/Qin facts, including generated static
 class methods named `call`, generated bound receivers, Java functional
 receivers emitted through `__qin_java_functional(...)`, and fixed helper
-wrappers whose receiver and arity are known. `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain`
-must keep this audit active whenever generated parser ESM files are validated.
+wrappers whose receiver and arity are known. The shared
+`QinJavaProjectJsCompiler.compileSuperclassClosureEsmTsFiles(...)` exit now runs
+that audit before writing the generated ESM package, so
+`QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain` and the other TS ESM smokes
+exercise the same compiler gate.
 
 The long-term invariant is: supported Java source constructs must compile to
 generated TypeScript that remains statically admissible under this gate. Existing
@@ -159,6 +162,15 @@ resolve to that local generated class/interface before falling back to a real
 Java SDK class. Emitting the original Java class token in that case breaks
 static `instanceof`/filter contracts for generated nodes and is a backend
 resolution defect, not permission for runtime dynamic adaptation.
+
+Generated class values are source-visible static class values. When Qin admits
+`typeof` on a statically known generated Java/Qin/Slime/Subhuti class value,
+the JVM module-class runtime must preserve JavaScript class semantics and
+return `"function"`. Returning `"object"` for a `Class<?>` value is a runtime
+semantic defect, not permission to add dynamic export probing or package-shape
+fallback. This rule is limited to statically known class values; unknown
+receivers and string-selected lookups remain governed by the Static Admission
+Gate.
 
 ### 1.2 Source-Shape Preservation Rule
 

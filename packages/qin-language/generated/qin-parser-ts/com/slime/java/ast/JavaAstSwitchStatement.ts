@@ -10,54 +10,44 @@ function __qin_structural_object__(value) {
 const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstSwitchStatement {
   __qin_field_discriminant: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_cases: any = null as any;
+  __qin_field_cases: __QinJavaUtilList<com_slime_java_ast_JavaAstSwitchCase> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstSwitchStatement_0_0();
-      return;
-    }
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList))) {
       const discriminant: any = __qin_args[0];
       const cases: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstSwitchStatement_2_1(discriminant, cases);
+      this.__qin_constructor_com_slime_java_ast_JavaAstSwitchStatement_2_0(discriminant, cases);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstSwitchStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstSwitchStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstSwitchStatement_2_0(discriminant: com_slime_java_ast_JavaAstExpression, cases: __QinJavaUtilList<com_slime_java_ast_JavaAstSwitchCase>): void {
     this.__qin_field_discriminant = null;
     this.__qin_field_cases = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_discriminant, "discriminant cannot be null");
-    this.__qin_field_cases = (__qin_binary__("==", this.__qin_field_cases, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_cases));
+    __QinJavaUtilObjects.requireNonNull(discriminant, "discriminant cannot be null");
+    cases = (__qin_binary__("==", cases, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(cases));
+    this.__qin_field_discriminant = discriminant;
+    this.__qin_field_cases = cases;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstSwitchStatement_2_1(discriminant: com_slime_java_ast_JavaAstExpression, cases: any): void {
-    this.__qin_field_discriminant = null;
-    this.__qin_field_cases = null;
-    (() => {
-      this.__qin_field_discriminant = discriminant;
-      this.__qin_field_cases = cases;
-      return null;
-    })();
-  }
-  discriminant(): any {
+  discriminant(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_discriminant;
   }
-  cases(): any {
+  cases(): __QinJavaUtilList<com_slime_java_ast_JavaAstSwitchCase> {
     return this.__qin_field_cases;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstSwitchStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_discriminant, other.__qin_field_discriminant)
-      && __qin_java_values_equal__(this.__qin_field_cases, other.__qin_field_cases);
+    const __qin_record_other: com_slime_java_ast_JavaAstSwitchStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_discriminant, __qin_record_other.__qin_field_discriminant)
+      && __qin_java_values_equal__(this.__qin_field_cases, __qin_record_other.__qin_field_cases);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_discriminant);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_cases);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstSwitchStatement[", "discriminant=", this.__qin_field_discriminant, ", ", "cases=", this.__qin_field_cases, "]"].join("");
   }
 }

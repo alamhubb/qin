@@ -12,7 +12,7 @@ const Boolean = __QinJavaLangBoolean;
 const StringBuilder = __QinJavaLangStringBuilder;
 class com_subhuti_struct_SubhutiMatchToken {
   __qin_field_tokenName: string | null = null as any;
-  __qin_field_tokenTypeId: number | null = null as any;
+  __qin_field_tokenTypeId: number | null = 0 as any;
   __qin_field_tokenValue: string | null = null as any;
   __qin_field_rowNum: number | null = null as any;
   __qin_field_columnStartNum: number | null = null as any;
@@ -56,12 +56,12 @@ class com_subhuti_struct_SubhutiMatchToken {
     }
     throw new Error("Unsupported Java constructor overload: SubhutiMatchToken/" + __qin_args.length);
   }
-  __qin_constructor_com_subhuti_struct_SubhutiMatchToken_7_0(tokenName: string, tokenValue: string, rowNum: number, columnStartNum: number, columnEndNum: number, index: number, hasLineBreakBefore: boolean): void {
+  __qin_constructor_com_subhuti_struct_SubhutiMatchToken_7_0(tokenName: string, tokenValue: string, rowNum: number | null, columnStartNum: number | null, columnEndNum: number | null, index: number | null, hasLineBreakBefore: boolean | null): void {
     ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 8 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && typeof __qin_delegate_args[2] === "number" && (__qin_delegate_args[3] === null || typeof __qin_delegate_args[3] === "number") && (__qin_delegate_args[4] === null || typeof __qin_delegate_args[4] === "number") && (__qin_delegate_args[5] === null || typeof __qin_delegate_args[5] === "number") && (__qin_delegate_args[6] === null || typeof __qin_delegate_args[6] === "number") && (__qin_delegate_args[7] === null || typeof __qin_delegate_args[7] === "boolean")) { return this.__qin_constructor_com_subhuti_struct_SubhutiMatchToken_8_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiMatchToken/" + __qin_delegate_args.length); })(tokenName, tokenValue, __qin_binary__("-", 0.0, 1.0), rowNum, columnStartNum, columnEndNum, index, hasLineBreakBefore);
   }
-  __qin_constructor_com_subhuti_struct_SubhutiMatchToken_8_1(tokenName: string, tokenValue: string, tokenTypeId: number, rowNum: number, columnStartNum: number, columnEndNum: number, index: number, hasLineBreakBefore: boolean): void {
+  __qin_constructor_com_subhuti_struct_SubhutiMatchToken_8_1(tokenName: string, tokenValue: string, tokenTypeId: number, rowNum: number | null, columnStartNum: number | null, columnEndNum: number | null, index: number | null, hasLineBreakBefore: boolean | null): void {
     this.__qin_field_tokenName = null;
-    this.__qin_field_tokenTypeId = null;
+    this.__qin_field_tokenTypeId = 0;
     this.__qin_field_tokenValue = null;
     this.__qin_field_rowNum = null;
     this.__qin_field_columnStartNum = null;
@@ -85,7 +85,7 @@ class com_subhuti_struct_SubhutiMatchToken {
   }
   __qin_constructor_com_subhuti_struct_SubhutiMatchToken_1_2(other: com_subhuti_struct_SubhutiMatchToken): void {
     this.__qin_field_tokenName = null;
-    this.__qin_field_tokenTypeId = null;
+    this.__qin_field_tokenTypeId = 0;
     this.__qin_field_tokenValue = null;
     this.__qin_field_rowNum = null;
     this.__qin_field_columnStartNum = null;
@@ -104,94 +104,94 @@ class com_subhuti_struct_SubhutiMatchToken {
   __qin_constructor_com_subhuti_struct_SubhutiMatchToken_2_3(tokenName: string, tokenValue: string): void {
     ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 7 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || typeof __qin_delegate_args[2] === "number") && (__qin_delegate_args[3] === null || typeof __qin_delegate_args[3] === "number") && (__qin_delegate_args[4] === null || typeof __qin_delegate_args[4] === "number") && (__qin_delegate_args[5] === null || typeof __qin_delegate_args[5] === "number") && (__qin_delegate_args[6] === null || typeof __qin_delegate_args[6] === "boolean")) { return this.__qin_constructor_com_subhuti_struct_SubhutiMatchToken_7_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiMatchToken/" + __qin_delegate_args.length); })(tokenName, tokenValue, null, null, null, null, null);
   }
-  getTokenName(): any {
+  getTokenName(): string {
     return this.__qin_field_tokenName;
   }
-  getTokenTypeId(): any {
+  getTokenTypeId(): number {
     return this.__qin_field_tokenTypeId;
   }
-  getTokenValue(): any {
+  getTokenValue(): string {
     return this.__qin_field_tokenValue;
   }
-  getRowNum(): any {
+  getRowNum(): number | null {
     return this.__qin_field_rowNum;
   }
-  getColumnStartNum(): any {
+  getColumnStartNum(): number | null {
     return this.__qin_field_columnStartNum;
   }
-  getColumnEndNum(): any {
+  getColumnEndNum(): number | null {
     return this.__qin_field_columnEndNum;
   }
-  getIndex(): any {
+  getIndex(): number | null {
     return this.__qin_field_index;
   }
-  getHasLineBreakBefore(): any {
+  getHasLineBreakBefore(): boolean | null {
     return this.__qin_field_hasLineBreakBefore;
   }
-  hasLineBreakBefore(): any {
+  hasLineBreakBefore(): boolean {
     return __QinJavaLangBoolean.TRUE.equals(this.__qin_field_hasLineBreakBefore);
   }
-  getLength(): any {
+  getLength(): number {
     return __QinJavaLangString.length(this.__qin_field_tokenValue);
   }
-  tokenName(): any {
+  tokenName(): string {
     return this.__qin_field_tokenName;
   }
-  tokenTypeId(): any {
+  tokenTypeId(): number {
     return this.__qin_field_tokenTypeId;
   }
-  tokenValue(): any {
+  tokenValue(): string {
     return this.__qin_field_tokenValue;
   }
-  value(): any {
+  value(): string {
     return this.__qin_field_tokenValue;
   }
-  index(): any {
+  index(): number | null {
     return this.__qin_field_index;
   }
-  rowNum(): any {
+  rowNum(): number | null {
     return this.__qin_field_rowNum;
   }
-  columnStartNum(): any {
+  columnStartNum(): number | null {
     return this.__qin_field_columnStartNum;
   }
-  columnEndNum(): any {
+  columnEndNum(): number | null {
     return this.__qin_field_columnEndNum;
   }
-  isEof(): any {
+  isEof(): boolean {
     return __QinJavaLangString.equals("EOF", this.__qin_field_tokenName);
   }
-  endOffset(): any {
+  endOffset(): number {
     if ((__qin_binary__("==", this.__qin_field_index, null) || __qin_binary__("==", this.__qin_field_tokenValue, null))) {
       return 0.0;
     }
     return __qin_binary__("+", this.__qin_field_index, __QinJavaLangString.length(this.__qin_field_tokenValue));
   }
-  startPosition(): any {
+  startPosition(): com_subhuti_struct_SubhutiPosition {
     if ((__qin_binary__("==", this.__qin_field_rowNum, null) || __qin_binary__("==", this.__qin_field_columnStartNum, null) || __qin_binary__("==", this.__qin_field_index, null))) {
       return com_subhuti_struct_SubhutiPosition.start();
     }
     return com_subhuti_struct_SubhutiPosition.of(this.__qin_field_rowNum, this.__qin_field_columnStartNum, this.__qin_field_index);
   }
-  endPosition(): any {
+  endPosition(): com_subhuti_struct_SubhutiPosition {
     if ((__qin_binary__("==", this.__qin_field_rowNum, null) || __qin_binary__("==", this.__qin_field_columnEndNum, null))) {
       return com_subhuti_struct_SubhutiPosition.start();
     }
     return com_subhuti_struct_SubhutiPosition.of(this.__qin_field_rowNum, this.__qin_field_columnEndNum, this.endOffset());
   }
-  static create(template: com_subhuti_struct_SubhutiMatchToken): any {
+  static create(template: com_subhuti_struct_SubhutiMatchToken): com_subhuti_struct_SubhutiMatchToken {
     return new com_subhuti_struct_SubhutiMatchToken(template);
   }
-  static builder(): any {
+  static builder(): com_subhuti_struct_SubhutiMatchToken$Builder {
     return new com_subhuti_struct_SubhutiMatchToken$Builder();
   }
-  toString(): any {
-    let displayValue: any = this.__qin_field_tokenValue;
+  toString(): string {
+    let displayValue: string = this.__qin_field_tokenValue;
     if (__qin_binary__(">", __QinJavaLangString.length(displayValue), 20.0)) {
       displayValue = (__QinJavaLangString.substring(displayValue, 0.0, 17.0) + "...");
     }
     displayValue = displayValue.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
-    let sb: any = new __QinJavaLangStringBuilder();
+    let sb: __QinJavaLangStringBuilder = new __QinJavaLangStringBuilder();
     sb.append(this.__qin_field_tokenName).append("(\"").append(displayValue).append("\")");
     if ((__qin_binary__("!=", this.__qin_field_rowNum, null) && __qin_binary__("!=", this.__qin_field_columnStartNum, null))) {
       sb.append(" [").append(this.__qin_field_rowNum).append(":").append(this.__qin_field_columnStartNum);
@@ -202,8 +202,8 @@ class com_subhuti_struct_SubhutiMatchToken {
     }
     return sb.toString();
   }
-  toShortString(): any {
-    let displayValue: any = this.__qin_field_tokenValue;
+  toShortString(): string {
+    let displayValue: string = this.__qin_field_tokenValue;
     if (__qin_binary__(">", __QinJavaLangString.length(displayValue), 10.0)) {
       displayValue = (__QinJavaLangString.substring(displayValue, 0.0, 7.0) + "...");
     }
@@ -214,7 +214,7 @@ class com_subhuti_struct_SubhutiMatchToken {
 const SubhutiMatchToken = com_subhuti_struct_SubhutiMatchToken;
 class com_subhuti_struct_SubhutiMatchToken$Builder {
   __qin_field_tokenName: string | null = null as any;
-  __qin_field_tokenTypeId: number | null = null as any;
+  __qin_field_tokenTypeId: number | null = 0 as any;
   __qin_field_tokenValue: string | null = null as any;
   __qin_field_rowNum: number | null = null as any;
   __qin_field_columnStartNum: number | null = null as any;
@@ -234,39 +234,39 @@ class com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_index = null;
     this.__qin_field_hasLineBreakBefore = null;
   }
-  tokenName(tokenName: string): any {
+  tokenName(tokenName: string): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_tokenName = tokenName;
     return this;
   }
-  tokenTypeId(tokenTypeId: number): any {
+  tokenTypeId(tokenTypeId: number): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_tokenTypeId = tokenTypeId;
     return this;
   }
-  tokenValue(tokenValue: string): any {
+  tokenValue(tokenValue: string): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_tokenValue = tokenValue;
     return this;
   }
-  rowNum(rowNum: number): any {
+  rowNum(rowNum: number | null): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_rowNum = rowNum;
     return this;
   }
-  columnStartNum(columnStartNum: number): any {
+  columnStartNum(columnStartNum: number | null): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_columnStartNum = columnStartNum;
     return this;
   }
-  columnEndNum(columnEndNum: number): any {
+  columnEndNum(columnEndNum: number | null): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_columnEndNum = columnEndNum;
     return this;
   }
-  index(index: number): any {
+  index(index: number | null): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_index = index;
     return this;
   }
-  hasLineBreakBefore(hasLineBreakBefore: boolean): any {
+  hasLineBreakBefore(hasLineBreakBefore: boolean | null): com_subhuti_struct_SubhutiMatchToken$Builder {
     this.__qin_field_hasLineBreakBefore = hasLineBreakBefore;
     return this;
   }
-  build(): any {
+  build(): com_subhuti_struct_SubhutiMatchToken {
     return new com_subhuti_struct_SubhutiMatchToken(this.__qin_field_tokenName, this.__qin_field_tokenValue, this.__qin_field_tokenTypeId, this.__qin_field_rowNum, this.__qin_field_columnStartNum, this.__qin_field_columnEndNum, this.__qin_field_index, this.__qin_field_hasLineBreakBefore);
   }
 }

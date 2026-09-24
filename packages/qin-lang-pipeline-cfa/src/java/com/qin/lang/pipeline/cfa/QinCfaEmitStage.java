@@ -1,5 +1,8 @@
 package com.qin.lang.pipeline.cfa;
 
+import com.qin.lang.ir.QinIrClassDeclaration;
+
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -19,5 +22,13 @@ public final class QinCfaEmitStage {
     public byte[] emit(QinCfaIrStageResult irStageResult, String className) {
         Objects.requireNonNull(irStageResult, "irStageResult cannot be null");
         return classFileEmitter.emit(irStageResult.cfaProgram(), className);
+    }
+
+    public byte[] emit(
+            QinCfaIrStageResult irStageResult,
+            String className,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        Objects.requireNonNull(irStageResult, "irStageResult cannot be null");
+        return classFileEmitter.emit(irStageResult.cfaProgram(), className, declarationIndex);
     }
 }

@@ -30,7 +30,7 @@ public final class QinGeneratedTsSlimeSourceShapeFactorySmokeTestMain {
                   arraySize: array.elements().size(),
                   callWithoutLocPresent: callWithoutLoc != null,
                   callWithoutLocOptional: callWithoutLoc.optional(),
-                  callWithLocArgCount: callWithLoc.__qin_arguments().size(),
+                  callWithLocArgCount: callWithLoc.arguments().size(),
                   memberPresent: member != null,
                   memberComputed: member.computed(),
                   memberOptional: member.optional(),

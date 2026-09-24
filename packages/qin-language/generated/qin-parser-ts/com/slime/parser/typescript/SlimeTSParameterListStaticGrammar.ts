@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeTSParameterListStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSParameterListStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSParameter").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSParameterList", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.call("TSParameter"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.consume("Comma"), com_subhuti_parser_SubhutiStaticGrammar.call("TSParameter"))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSParameter").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSParameterList", com_subhuti_parser_SubhutiStaticGrammar.seq(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSParameter"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.consume("Comma"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSParameter"))))).build();
   }
 }
 const SlimeTSParameterListStaticGrammar = com_slime_parser_typescript_SlimeTSParameterListStaticGrammar;

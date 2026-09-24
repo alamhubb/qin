@@ -44,7 +44,7 @@ class com_subhuti_struct_SubhutiSourceLocation {
     }
     throw new Error("Unsupported Java constructor overload: SubhutiSourceLocation/" + __qin_args.length);
   }
-  __qin_constructor_com_subhuti_struct_SubhutiSourceLocation_7_0(type: string, value: string, newLine: boolean, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition, filename: string, identifierName: string): void {
+  __qin_constructor_com_subhuti_struct_SubhutiSourceLocation_7_0(type: string, value: string, newLine: boolean | null, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition, filename: string, identifierName: string): void {
     this.__qin_field_type = null;
     this.__qin_field_value = null;
     this.__qin_field_newLine = null;
@@ -66,54 +66,54 @@ class com_subhuti_struct_SubhutiSourceLocation {
   __qin_constructor_com_subhuti_struct_SubhutiSourceLocation_4_2(type: string, value: string, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): void {
     ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 7 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || typeof __qin_delegate_args[2] === "boolean") && (__qin_delegate_args[3] === null || __qin_instanceof__(__qin_delegate_args[3], com_subhuti_struct_SubhutiPosition)) && (__qin_delegate_args[4] === null || __qin_instanceof__(__qin_delegate_args[4], com_subhuti_struct_SubhutiPosition)) && (__qin_delegate_args[5] === null || typeof __qin_delegate_args[5] === "string") && (__qin_delegate_args[6] === null || typeof __qin_delegate_args[6] === "string")) { return this.__qin_constructor_com_subhuti_struct_SubhutiSourceLocation_7_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiSourceLocation/" + __qin_delegate_args.length); })(type, value, null, start, end, null, null);
   }
-  getType(): any {
+  getType(): string {
     return this.__qin_field_type;
   }
-  getValue(): any {
+  getValue(): string {
     return this.__qin_field_value;
   }
-  getNewLine(): any {
+  getNewLine(): boolean | null {
     return this.__qin_field_newLine;
   }
-  getStart(): any {
+  getStart(): com_subhuti_struct_SubhutiPosition {
     return this.__qin_field_start;
   }
-  getEnd(): any {
+  getEnd(): com_subhuti_struct_SubhutiPosition {
     return this.__qin_field_end;
   }
-  getFilename(): any {
+  getFilename(): string {
     return this.__qin_field_filename;
   }
-  getIdentifierName(): any {
+  getIdentifierName(): string {
     return this.__qin_field_identifierName;
   }
-  static of(...__qin_args: any[]): any {
+  static of(...__qin_args: any[]): com_subhuti_struct_SubhutiSourceLocation {
     if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_subhuti_struct_SubhutiPosition)) && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_subhuti_struct_SubhutiPosition))) return this.__qin_overload_of_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_subhuti_struct_SubhutiPosition)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_SubhutiPosition))) return this.__qin_overload_of_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: of/" + __qin_args.length);
   }
-  static __qin_overload_of_2_0(start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): any {
+  static __qin_overload_of_2_0(start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): com_subhuti_struct_SubhutiSourceLocation {
     return new com_subhuti_struct_SubhutiSourceLocation(null, start, end);
   }
-  static __qin_overload_of_3_1(type: string, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): any {
+  static __qin_overload_of_3_1(type: string, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): com_subhuti_struct_SubhutiSourceLocation {
     return new com_subhuti_struct_SubhutiSourceLocation(type, start, end);
   }
-  static ofWithValue(type: string, value: string, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): any {
+  static ofWithValue(type: string, value: string, start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): com_subhuti_struct_SubhutiSourceLocation {
     return new com_subhuti_struct_SubhutiSourceLocation(type, value, start, end);
   }
-  merge(other: com_subhuti_struct_SubhutiSourceLocation): any {
+  merge(other: com_subhuti_struct_SubhutiSourceLocation): com_subhuti_struct_SubhutiSourceLocation {
     return new com_subhuti_struct_SubhutiSourceLocation(this.__qin_field_type, (__qin_binary__("<=", this.__qin_field_start.getIndex(), other.__qin_field_start.getIndex()) ? this.__qin_field_start : other.__qin_field_start), (__qin_binary__(">=", this.__qin_field_end.getIndex(), other.__qin_field_end.getIndex()) ? this.__qin_field_end : other.__qin_field_end));
   }
-  static builder(): any {
+  static builder(): com_subhuti_struct_SubhutiSourceLocation$Builder {
     return new com_subhuti_struct_SubhutiSourceLocation$Builder();
   }
-  start(): any {
+  start(): com_subhuti_struct_SubhutiPosition {
     return this.__qin_field_start;
   }
-  end(): any {
+  end(): com_subhuti_struct_SubhutiPosition {
     return this.__qin_field_end;
   }
-  toString(): any {
+  toString(): string {
     if ((__qin_binary__("!=", this.__qin_field_start, null) && __qin_binary__("!=", this.__qin_field_end, null))) {
       return __QinJavaLangString.format("[%s - %s]", this.__qin_field_start, this.__qin_field_end);
     }
@@ -141,35 +141,35 @@ class com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_filename = null;
     this.__qin_field_identifierName = null;
   }
-  type(type: string): any {
+  type(type: string): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_type = type;
     return this;
   }
-  value(value: string): any {
+  value(value: string): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_value = value;
     return this;
   }
-  newLine(newLine: boolean): any {
+  newLine(newLine: boolean | null): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_newLine = newLine;
     return this;
   }
-  start(start: com_subhuti_struct_SubhutiPosition): any {
+  start(start: com_subhuti_struct_SubhutiPosition): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_start = start;
     return this;
   }
-  end(end: com_subhuti_struct_SubhutiPosition): any {
+  end(end: com_subhuti_struct_SubhutiPosition): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_end = end;
     return this;
   }
-  filename(filename: string): any {
+  filename(filename: string): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_filename = filename;
     return this;
   }
-  identifierName(identifierName: string): any {
+  identifierName(identifierName: string): com_subhuti_struct_SubhutiSourceLocation$Builder {
     this.__qin_field_identifierName = identifierName;
     return this;
   }
-  build(): any {
+  build(): com_subhuti_struct_SubhutiSourceLocation {
     return new com_subhuti_struct_SubhutiSourceLocation(this.__qin_field_type, this.__qin_field_value, this.__qin_field_newLine, this.__qin_field_start, this.__qin_field_end, this.__qin_field_filename, this.__qin_field_identifierName);
   }
 }

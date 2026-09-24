@@ -11,42 +11,33 @@ const Objects = __QinJavaUtilObjects;
 class com_slime_java_ast_JavaAstExpressionStatement {
   __qin_field_expression: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstExpressionStatement_0_0();
-      return;
-    }
     if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression"))) {
       const expression: any = __qin_args[0];
-      this.__qin_constructor_com_slime_java_ast_JavaAstExpressionStatement_1_1(expression);
+      this.__qin_constructor_com_slime_java_ast_JavaAstExpressionStatement_1_0(expression);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstExpressionStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstExpressionStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstExpressionStatement_1_0(expression: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_expression = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_expression, "expression cannot be null");
+    __QinJavaUtilObjects.requireNonNull(expression, "expression cannot be null");
+    this.__qin_field_expression = expression;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstExpressionStatement_1_1(expression: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_expression = null;
-    (() => {
-      this.__qin_field_expression = expression;
-      return null;
-    })();
-  }
-  expression(): any {
+  expression(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_expression;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstExpressionStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_expression, other.__qin_field_expression);
+    const __qin_record_other: com_slime_java_ast_JavaAstExpressionStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_expression, __qin_record_other.__qin_field_expression);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_expression);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstExpressionStatement[", "expression=", this.__qin_field_expression, "]"].join("");
   }
 }

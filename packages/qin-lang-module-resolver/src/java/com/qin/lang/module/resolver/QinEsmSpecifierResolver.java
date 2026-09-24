@@ -41,6 +41,22 @@ public final class QinEsmSpecifierResolver {
     private static final Pattern EXPORTS_IMPORT_DEFAULT_FALLBACK_ROOT = Pattern.compile(
             "\"exports\"\\s*:\\s*\\{[\\s\\S]*?\"import\"\\s*:\\s*\\{[\\s\\S]*?\"default\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.DOTALL);
+    private static final Pattern QIN_PACKAGE_OVERRIDES_BLOCK = Pattern.compile(
+            "\\bpackageOverrides\\s*:\\s*\\{([\\s\\S]*?)\\}",
+            Pattern.DOTALL);
+    private static final Pattern QIN_PACKAGE_OVERRIDE_ENTRY = Pattern.compile(
+            "['\"]([^'\"]+)['\"]\\s*:\\s*['\"]([^'\"]+)['\"]");
+    private final Path projectOverrideRoot;
+
+    public QinEsmSpecifierResolver() {
+        this(null);
+    }
+
+    public QinEsmSpecifierResolver(Path projectOverrideRoot) {
+        this.projectOverrideRoot = projectOverrideRoot == null
+                ? null
+                : projectOverrideRoot.toAbsolutePath().normalize();
+    }
 
     public static boolean isHostRuntimeModule(String specifier) {
         if (specifier == null || specifier.isBlank()) {
@@ -177,6 +193,36 @@ public final class QinEsmSpecifierResolver {
         if (selfReference != null) {
             return selfReference;
         }
+        Path projectOverridePackageDir = resolveQinPackageOverride(projectOverrideRoot, bare.packageName());
+        if (projectOverridePackageDir != null) {
+            Path resolved = resolvePackageEntry(projectOverridePackageDir, bare.subPath());
+            if (resolved != null) {
+                return resolved;
+            }
+            throw new IllegalArgumentException(
+                    "Cannot resolve bare module import \"" + specifier + "\" from Qin project package override "
+                            + projectOverridePackageDir.toAbsolutePath());
+        }
+        Path projectQinNpmHostPackageDir = resolveQinNpmHostPackage(projectOverrideRoot, bare.packageName());
+        if (projectQinNpmHostPackageDir != null) {
+            Path resolved = resolvePackageEntry(projectQinNpmHostPackageDir, bare.subPath());
+            if (resolved != null) {
+                return resolved;
+            }
+            throw new IllegalArgumentException(
+                    "Cannot resolve bare module import \"" + specifier + "\" from Qin project npm host package "
+                            + projectQinNpmHostPackageDir.toAbsolutePath());
+        }
+        Path overridePackageDir = resolveNearestQinPackageOverride(importerFile.getParent(), bare.packageName());
+        if (overridePackageDir != null) {
+            Path resolved = resolvePackageEntry(overridePackageDir, bare.subPath());
+            if (resolved != null) {
+                return resolved;
+            }
+            throw new IllegalArgumentException(
+                    "Cannot resolve bare module import \"" + specifier + "\" from Qin package override "
+                            + overridePackageDir.toAbsolutePath());
+        }
         Path resolved = resolveBareModuleFromSearch(importerFile.getParent(), bare, specifier, false);
         if (resolved != null) {
             return resolved;
@@ -219,6 +265,32 @@ public final class QinEsmSpecifierResolver {
             String specifier,
             boolean optional) {
         while (search != null) {
+            Path overridePackageDir = resolveQinPackageOverride(search, bare.packageName());
+            if (overridePackageDir != null) {
+                Path resolved = resolvePackageEntry(overridePackageDir, bare.subPath());
+                if (resolved != null) {
+                    return resolved;
+                }
+                if (optional) {
+                    return null;
+                }
+                throw new IllegalArgumentException(
+                        "Cannot resolve bare module import \"" + specifier + "\" from Qin package override "
+                                + overridePackageDir.toAbsolutePath());
+            }
+            Path fileDependencyPackageDir = resolvePackageFileDependency(search, bare.packageName());
+            if (fileDependencyPackageDir != null) {
+                Path resolved = resolvePackageEntry(fileDependencyPackageDir, bare.subPath());
+                if (resolved != null) {
+                    return resolved;
+                }
+                if (optional) {
+                    return null;
+                }
+                throw new IllegalArgumentException(
+                        "Cannot resolve bare module import \"" + specifier + "\" from file dependency "
+                                + fileDependencyPackageDir.toAbsolutePath());
+            }
             Path qinNpmHostPackageDir = search.resolve(".qin")
                     .resolve("runtime")
                     .resolve("npm-host")
@@ -252,6 +324,109 @@ public final class QinEsmSpecifierResolver {
             search = search.getParent();
         }
         return null;
+    }
+
+    private Path resolveNearestQinPackageOverride(Path search, String packageName) {
+        Path current = search == null ? null : search.toAbsolutePath().normalize();
+        while (current != null) {
+            Path overridePackageDir = resolveQinPackageOverride(current, packageName);
+            if (overridePackageDir != null) {
+                return overridePackageDir;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
+    private Path resolveQinNpmHostPackage(Path projectRoot, String packageName) {
+        if (projectRoot == null || packageName == null || packageName.isBlank()) {
+            return null;
+        }
+        Path packageDir = projectRoot.resolve(".qin")
+                .resolve("runtime")
+                .resolve("npm-host")
+                .resolve("node_modules")
+                .resolve(packageName.replace('/', java.io.File.separatorChar))
+                .normalize();
+        return Files.isDirectory(packageDir) ? packageDir : null;
+    }
+
+    private Path resolvePackageFileDependency(Path packageDir, String packageName) {
+        if (packageDir == null || packageName == null || packageName.isBlank()) {
+            return null;
+        }
+        Path packageJson = packageDir.resolve("package.json");
+        if (!Files.isRegularFile(packageJson)) {
+            return null;
+        }
+        try {
+            String json = Files.readString(packageJson);
+            String specifier = readPackageDependencySpecifier(json, packageName);
+            if (specifier == null || !specifier.startsWith("file:")) {
+                return null;
+            }
+            Path dependencyDir = packageDir.resolve(specifier.substring("file:".length()))
+                    .toAbsolutePath()
+                    .normalize();
+            if (Files.isDirectory(dependencyDir)) {
+                return dependencyDir;
+            }
+            return null;
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Failed to resolve file dependency \""
+                    + packageName
+                    + "\" from "
+                    + packageJson.toAbsolutePath(), error);
+        }
+    }
+
+    private Path resolveQinPackageOverride(Path candidateRoot, String packageName) {
+        if (candidateRoot == null || packageName == null || packageName.isBlank()) {
+            return null;
+        }
+        Path qinConfig = candidateRoot.resolve("qin.config.js");
+        if (!Files.isRegularFile(qinConfig)) {
+            return null;
+        }
+        try {
+            String config = Files.readString(qinConfig);
+            String overridePath = readQinPackageOverride(config, packageName);
+            if (overridePath == null || overridePath.isBlank()) {
+                return null;
+            }
+            Path packageDir = candidateRoot.resolve(overridePath).toAbsolutePath().normalize();
+            if (Files.isDirectory(packageDir)) {
+                return packageDir;
+            }
+            return null;
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Failed to resolve Qin package override for \""
+                    + packageName
+                    + "\" from "
+                    + qinConfig.toAbsolutePath(), error);
+        }
+    }
+
+    private String readQinPackageOverride(String config, String packageName) {
+        Matcher blockMatcher = QIN_PACKAGE_OVERRIDES_BLOCK.matcher(config);
+        if (!blockMatcher.find()) {
+            return null;
+        }
+        Matcher entryMatcher = QIN_PACKAGE_OVERRIDE_ENTRY.matcher(blockMatcher.group(1));
+        while (entryMatcher.find()) {
+            if (packageName.equals(entryMatcher.group(1))) {
+                return entryMatcher.group(2);
+            }
+        }
+        return null;
+    }
+
+    private String readPackageDependencySpecifier(String json, String packageName) {
+        Matcher matcher = Pattern.compile("\""
+                        + Pattern.quote(packageName)
+                        + "\"\\s*:\\s*\"([^\"]+)\"")
+                .matcher(json);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private Path resolvePackageImport(Path importerFile, String specifier) {
@@ -391,6 +566,22 @@ public final class QinEsmSpecifierResolver {
     private Path resolveQinLocalPackageEntry(Path packageDir) {
         Path sourceMarker = packageDir.resolve(".qin-source-root");
         Path qinConfig = packageDir.resolve("qin.config.js");
+        Path packageJson = packageDir.resolve("package.json");
+        if (Files.isRegularFile(packageJson)) {
+            try {
+                String json = Files.readString(packageJson);
+                String local = readField(json, "local");
+                if (local != null && !local.isBlank()) {
+                    Path resolved = resolveAsFile(packageDir.resolve(local));
+                    if (resolved != null) {
+                        return resolved;
+                    }
+                }
+            } catch (Exception error) {
+                throw new IllegalArgumentException("Failed to resolve Qin local package entry: "
+                        + packageJson.toAbsolutePath(), error);
+            }
+        }
         if (!Files.isRegularFile(qinConfig)) {
             return null;
         }

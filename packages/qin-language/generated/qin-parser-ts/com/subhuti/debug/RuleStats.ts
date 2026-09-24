@@ -7,12 +7,12 @@ function __qin_structural_object__(value) {
 }
 class com_subhuti_debug_RuleStats {
   __qin_field_ruleName: string | null = null as any;
-  __qin_field_totalCalls: number | null = null as any;
-  __qin_field_actualExecutions: number | null = null as any;
-  __qin_field_cacheHits: number | null = null as any;
-  __qin_field_totalTime: number | null = null as any;
-  __qin_field_executionTime: number | null = null as any;
-  __qin_field_avgTime: number | null = null as any;
+  __qin_field_totalCalls: number | null = 0 as any;
+  __qin_field_actualExecutions: number | null = 0 as any;
+  __qin_field_cacheHits: number | null = 0 as any;
+  __qin_field_totalTime: number | null = 0 as any;
+  __qin_field_executionTime: number | null = 0 as any;
+  __qin_field_avgTime: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) {
       const ruleName: any = __qin_args[0];
@@ -31,25 +31,25 @@ class com_subhuti_debug_RuleStats {
     this.__qin_field_avgTime = 0.0;
     this.__qin_field_ruleName = ruleName;
   }
-  recordCall(): any {
+  recordCall(): void {
     this.__qin_field_totalCalls++;
     return null;
   }
-  recordExecution(elapsedMs: number): any {
+  recordExecution(elapsedMs: number): void {
     this.__qin_field_actualExecutions++;
     this.__qin_field_executionTime += elapsedMs;
     this.__qin_field_totalTime += elapsedMs;
     this.__qin_field_avgTime = (__qin_binary__(">", this.__qin_field_actualExecutions, 0.0) ? __qin_binary__("/", this.__qin_field_executionTime, this.__qin_field_actualExecutions) : 0.0);
     return null;
   }
-  recordCacheHit(): any {
+  recordCacheHit(): void {
     this.__qin_field_cacheHits++;
     return null;
   }
-  getCacheHitRate(): any {
+  getCacheHitRate(): number {
     return (__qin_binary__(">", this.__qin_field_totalCalls, 0.0) ? __qin_binary__("*", __qin_binary__("/", Number(this.__qin_field_cacheHits), this.__qin_field_totalCalls), 100.0) : 0.0);
   }
-  toString(): any {
+  toString(): string {
     return __QinJavaLangString.format("%s: %d次 | 执行%d次 | 耗时%.2fms | 缓存%.1f%%", this.__qin_field_ruleName, this.__qin_field_totalCalls, this.__qin_field_actualExecutions, this.__qin_field_executionTime, this.getCacheHitRate());
   }
 }

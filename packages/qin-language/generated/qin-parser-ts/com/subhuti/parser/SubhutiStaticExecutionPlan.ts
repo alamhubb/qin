@@ -29,71 +29,71 @@ class com_subhuti_parser_SubhutiStaticExecutionPlan {
     this.__qin_field_grammarPlan = grammarPlan;
     this.__qin_field_decisionsById = decisionsById;
   }
-  static requireVocabulary(grammarPlan: com_subhuti_parser_SubhutiStaticGrammarPlan, lexer: com_subhuti_lexer_SubhutiLexer): any {
+  static requireVocabulary(grammarPlan: com_subhuti_parser_SubhutiStaticGrammarPlan, lexer: com_subhuti_lexer_SubhutiLexer): void {
     if ((__qin_binary__("==", grammarPlan, null) || !grammarPlan.hasGeneratedMetadata())) {
       throw new __QinJavaLangIllegalStateException("generated static execution requires generated grammar metadata");
     }
-    let runtimeFingerprint: any = lexer.tokenVocabularyFingerprint();
-    let generatedFingerprint: any = grammarPlan.tokenVocabularyFingerprint();
+    let runtimeFingerprint: string = lexer.tokenVocabularyFingerprint();
+    let generatedFingerprint: string = grammarPlan.tokenVocabularyFingerprint();
     if ((!__QinJavaLangString.equals(generatedFingerprint, runtimeFingerprint))) {
       throw new __QinJavaLangIllegalStateException(("generated parser token vocabulary mismatch: metadata=" + generatedFingerprint + ", runtime=" + runtimeFingerprint));
     }
     return null;
   }
-  occurrence(ruleId: number, variantId: number, occurrenceId: number): any {
+  occurrence(ruleId: number, variantId: number, occurrenceId: number): com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence {
     return this.__qin_field_grammarPlan.occurrence(ruleId, variantId, occurrenceId);
   }
-  decision(...__qin_args: any[]): any {
+  decision(...__qin_args: any[]): com_subhuti_parser_SubhutiDecisionPlan {
     if (__qin_args.length === 4 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && (__qin_args[3] === null || __qin_instanceof__(__qin_args[3], com_subhuti_parser_SubhutiStaticGrammarPlan$Kind))) return this.__qin_overload_decision_4_0(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3]);
     if (__qin_args.length === 2 && typeof __qin_args[0] === "number" && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_subhuti_parser_SubhutiStaticGrammarPlan$Kind))) return this.__qin_overload_decision_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: decision/" + __qin_args.length);
   }
-  __qin_overload_decision_4_0(ruleId: number, variantId: number, occurrenceId: number, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): any {
-    let decision: any = this.__qin_field_grammarPlan.occurrenceDecisionPlan(ruleId, variantId, occurrenceId);
+  __qin_overload_decision_4_0(ruleId: number, variantId: number, occurrenceId: number, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): com_subhuti_parser_SubhutiDecisionPlan {
+    let decision: com_subhuti_parser_SubhutiDecisionPlan = this.__qin_field_grammarPlan.occurrenceDecisionPlan(ruleId, variantId, occurrenceId);
     if ((__qin_binary__("==", decision, null) || __qin_binary__("!=", decision.kind(), expectedKind))) {
       throw new __QinJavaLangIllegalStateException(("static decision kind mismatch: expected " + expectedKind + " but found " + (__qin_binary__("==", decision, null) ? "missing" : decision.kind())));
     }
     return decision;
   }
-  __qin_overload_decision_2_1(decisionId: number, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): any {
+  __qin_overload_decision_2_1(decisionId: number, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): com_subhuti_parser_SubhutiDecisionPlan {
     if ((!this.__qin_field_grammarPlan.hasGeneratedMetadata())) {
       throw new __QinJavaLangIllegalStateException("dense linked decisions require generated grammar metadata");
     }
     return this.decisionPlan(decisionId, expectedKind);
   }
-  invocation(...__qin_args: any[]): any {
+  invocation(...__qin_args: any[]): com_subhuti_parser_SubhutiStaticGrammarPlan$StaticRuleInvocationPlan {
     if (__qin_args.length === 2 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number") return this.__qin_overload_invocation_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 1 && typeof __qin_args[0] === "number") return this.__qin_overload_invocation_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: invocation/" + __qin_args.length);
   }
-  __qin_overload_invocation_2_0(ruleId: number, variantId: number): any {
+  __qin_overload_invocation_2_0(ruleId: number, variantId: number): com_subhuti_parser_SubhutiStaticGrammarPlan$StaticRuleInvocationPlan {
     return this.__qin_field_grammarPlan.staticRuleInvocationPlan(ruleId, variantId);
   }
-  __qin_overload_invocation_1_1(invocationId: number): any {
+  __qin_overload_invocation_1_1(invocationId: number): com_subhuti_parser_SubhutiStaticGrammarPlan$StaticRuleInvocationPlan {
     return this.__qin_field_grammarPlan.staticRuleInvocationPlan(invocationId);
   }
-  decisionPlan(decisionId: number, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): any {
+  decisionPlan(decisionId: number, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): com_subhuti_parser_SubhutiDecisionPlan {
     if ((__qin_binary__("<", decisionId, 0.0) || __qin_binary__(">=", decisionId, this.__qin_field_decisionsById.length))) {
       throw new __QinJavaLangIllegalArgumentException(("unknown static decision id: " + decisionId));
     }
     return com_subhuti_parser_SubhutiStaticExecutionPlan.requireKind(this.__qin_field_decisionsById[decisionId], expectedKind);
   }
-  static requireKind(plan: com_subhuti_parser_SubhutiDecisionPlan, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): any {
+  static requireKind(plan: com_subhuti_parser_SubhutiDecisionPlan, expectedKind: com_subhuti_parser_SubhutiStaticGrammarPlan$Kind): com_subhuti_parser_SubhutiDecisionPlan {
     if ((__qin_binary__("==", plan, null) || __qin_binary__("!=", plan.kind(), expectedKind))) {
       throw new __QinJavaLangIllegalStateException(("static decision kind mismatch: expected " + expectedKind + " but found " + (__qin_binary__("==", plan, null) ? "missing" : plan.kind())));
     }
     return plan;
   }
-  static build(grammarPlan: com_subhuti_parser_SubhutiStaticGrammarPlan): any {
-    let plansById: any = [];
-    for (let decisionId: any = 0.0; __qin_binary__("<", decisionId, plansById.length); decisionId++) {
-      let decision: any = grammarPlan.decisionPlan(decisionId);
+  static build(grammarPlan: com_subhuti_parser_SubhutiStaticGrammarPlan): com_subhuti_parser_SubhutiStaticExecutionPlan {
+    let plansById: com_subhuti_parser_SubhutiDecisionPlan[] = Array.from({ length: grammarPlan.decisionCount() }, () => null);
+    for (let decisionId: number = 0.0; __qin_binary__("<", decisionId, plansById.length); decisionId++) {
+      let decision: com_subhuti_parser_SubhutiDecisionPlan = grammarPlan.decisionPlan(decisionId);
       if ((decision.planned() && !decision.hasCompiledLookahead())) {
         throw new __QinJavaLangIllegalStateException(("generated lookahead is missing for decision " + decisionId));
       }
       plansById[decisionId] = decision;
     }
-    if (__QinJavaUtilArrays.stream(plansById).anyMatch(((...__qin_args) => { const __qin_method = __QinJavaUtilObjects.isNull; if (typeof __qin_method === "function") { return __qin_method.apply(__QinJavaUtilObjects, __qin_args); } const __qin_receiver = __qin_args[0]; return __qin_receiver.isNull(...__qin_args.slice(1)); }))) {
+    if (__QinJavaUtilArrays.stream(plansById).anyMatch(((...__qin_args) => __QinJavaUtilObjects.isNull(...__qin_args.slice(0, 1))))) {
       throw new __QinJavaLangIllegalStateException("static decision ids must be dense");
     }
     return new com_subhuti_parser_SubhutiStaticExecutionPlan(grammarPlan, plansById);

@@ -11,13 +11,8 @@ class com_subhuti_debug_LogWriter {
       throw new Error("Unsupported Java constructor arity: LogWriter/" + __qin_args.length);
     }
   }
-  write(message: string): any {
-    throw new Error("Abstract Java method is not implemented: write");
-  }
-  close(): any {
-    throw new Error("Abstract Java method is not implemented: close");
-  }
 }
+com_subhuti_debug_LogWriter.__qin_java_interface = true;
 const LogWriter = com_subhuti_debug_LogWriter;
 
 function run() {

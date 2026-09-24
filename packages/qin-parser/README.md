@@ -27,6 +27,19 @@ Where:
 - `SlimeParser` provides TypeScript-oriented grammar extensions
 - `QinParser` provides Qin-oriented grammar extensions
 
+## Static Parser Build
+
+`generate-static-parser.ps1` is the only standard generation entry for
+`QinParserStaticEnhanced`. It compiles the handwritten grammar without the old
+wrapper, runs Subhuti generator-time GAST/LL(k) self-analysis, validates the
+instrumented parent grammar ABI, instruments the Qin-owned `.class`, emits the
+immutable static grammar metadata wrapper, and compiles that wrapper.
+
+The generated parser and its metadata are one atomic artifact. Do not hand-edit
+the wrapper, retain an old wrapper after grammar or Subhuti metadata changes, or
+fall back to the handwritten parser when generation fails. A parent grammar ABI
+mismatch is a build error and requires regenerating that parent parser first.
+
 ## Why This Package Exists
 
 Before this package, parser-facing logic had started to accumulate inside

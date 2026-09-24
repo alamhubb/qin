@@ -43,258 +43,336 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser extends com_slime_par
   __qin_constructor_com_slime_parser_typescript_SlimeTSDeclarationParser_1_0(sourceCode: string): void {
     null;
   }
-  TSInterfaceDeclaration(): any {
+  TSInterfaceDeclaration(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSInterfaceDeclaration();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSInterfaceDeclaration receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSInterfaceDeclaration.call(this);
     }), "TSInterfaceDeclaration", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSInterfaceDeclaration(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSInterfaceDeclaration", this.tsInterfaceDeclarationStaticRuntime());
+  __qin_subhuti_raw_TSInterfaceDeclaration(): void {
+    {
+      const __qin_typed_receiver_1307: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1307.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSInterfaceDeclaration", this.tsInterfaceDeclarationStaticRuntime());
+    }
     return null;
   }
-  TSInterfaceExtends(): any {
+  TSInterfaceExtends(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSInterfaceExtends();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSInterfaceExtends receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSInterfaceExtends.call(this);
     }), "TSInterfaceExtends", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSInterfaceExtends(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSInterfaceExtends", this.tsInterfaceExtendsStaticRuntime());
+  __qin_subhuti_raw_TSInterfaceExtends(): void {
+    {
+      const __qin_typed_receiver_1308: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1308.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSInterfaceExtends", this.tsInterfaceExtendsStaticRuntime());
+    }
     return null;
   }
-  TSInterfaceBody(): any {
+  TSInterfaceBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSInterfaceBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSInterfaceBody receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSInterfaceBody.call(this);
     }), "TSInterfaceBody", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSInterfaceBody(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSInterfaceBody", this.tsInterfaceBodyStaticRuntime());
+  __qin_subhuti_raw_TSInterfaceBody(): void {
+    {
+      const __qin_typed_receiver_1309: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1309.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSInterfaceBody", this.tsInterfaceBodyStaticRuntime());
+    }
     return null;
   }
-  TSTypeAliasDeclaration(): any {
+  TSTypeAliasDeclaration(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSTypeAliasDeclaration();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSTypeAliasDeclaration receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSTypeAliasDeclaration.call(this);
     }), "TSTypeAliasDeclaration", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSTypeAliasDeclaration(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSTypeAliasDeclaration", this.tsTypeAliasDeclarationStaticRuntime());
+  __qin_subhuti_raw_TSTypeAliasDeclaration(): void {
+    {
+      const __qin_typed_receiver_1310: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1310.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSTypeAliasDeclaration", this.tsTypeAliasDeclarationStaticRuntime());
+    }
     return null;
   }
-  TSEnumDeclaration(): any {
+  TSEnumDeclaration(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSEnumDeclaration();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSEnumDeclaration receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSEnumDeclaration.call(this);
     }), "TSEnumDeclaration", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSEnumDeclaration(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumDeclaration", this.tsEnumDeclarationStaticRuntime());
+  __qin_subhuti_raw_TSEnumDeclaration(): void {
+    {
+      const __qin_typed_receiver_1311: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1311.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumDeclaration", this.tsEnumDeclarationStaticRuntime());
+    }
     return null;
   }
-  TSEnumBody(): any {
+  TSEnumBody(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSEnumBody();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSEnumBody receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSEnumBody.call(this);
     }), "TSEnumBody", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSEnumBody(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumBody", this.tsEnumBodyStaticRuntime());
+  __qin_subhuti_raw_TSEnumBody(): void {
+    {
+      const __qin_typed_receiver_1312: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1312.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumBody", this.tsEnumBodyStaticRuntime());
+    }
     return null;
   }
-  TSEnumMemberList(): any {
+  TSEnumMemberList(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSEnumMemberList();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSEnumMemberList receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSEnumMemberList.call(this);
     }), "TSEnumMemberList", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSEnumMemberList(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumMemberList", this.tsEnumMemberListStaticRuntime());
+  __qin_subhuti_raw_TSEnumMemberList(): void {
+    {
+      const __qin_typed_receiver_1313: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1313.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumMemberList", this.tsEnumMemberListStaticRuntime());
+    }
     return null;
   }
-  TSEnumMember(): any {
+  TSEnumMember(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSEnumMember();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSEnumMember receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSEnumMember.call(this);
     }), "TSEnumMember", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSEnumMember(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumMember", this.tsEnumMemberStaticRuntime());
+  __qin_subhuti_raw_TSEnumMember(): void {
+    {
+      const __qin_typed_receiver_1314: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1314.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSEnumMember", this.tsEnumMemberStaticRuntime());
+    }
     return null;
   }
-  TSEnumMemberInitializer(): any {
+  TSEnumMemberInitializer(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSEnumMemberInitializer();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSEnumMemberInitializer receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSEnumMemberInitializer.call(this);
     }), "TSEnumMemberInitializer", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSEnumMemberInitializer(): any {
-    this.__qin_field_tokenConsumer.Assign();
-    this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, false, false));
+  __qin_subhuti_raw_TSEnumMemberInitializer(): void {
+    {
+      const __qin_typed_receiver_1315: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+      __qin_typed_receiver_1315.Assign();
+    }
+    {
+      const __qin_typed_receiver_1316: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1316.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, false, false));
+    }
     return null;
   }
-  TSModuleDeclaration(): any {
+  TSModuleDeclaration(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSModuleDeclaration();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSModuleDeclaration receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSModuleDeclaration.call(this);
     }), "TSModuleDeclaration", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSModuleDeclaration(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSModuleDeclaration", this.tsModuleDeclarationStaticRuntime());
+  __qin_subhuti_raw_TSModuleDeclaration(): void {
+    {
+      const __qin_typed_receiver_1317: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1317.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSModuleDeclaration", this.tsModuleDeclarationStaticRuntime());
+    }
     return null;
   }
-  TSModuleName(): any {
+  TSModuleName(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSModuleName();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSModuleName receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSModuleName.call(this);
     }), "TSModuleName", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSModuleName(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSModuleName", this.tsModuleNameStaticRuntime());
+  __qin_subhuti_raw_TSModuleName(): void {
+    {
+      const __qin_typed_receiver_1318: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1318.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSModuleName", this.tsModuleNameStaticRuntime());
+    }
     return null;
   }
-  TSModuleBlock(): any {
+  TSModuleBlock(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSModuleBlock();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSModuleBlock receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSModuleBlock.call(this);
     }), "TSModuleBlock", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSModuleBlock(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSModuleBlock", this.tsModuleBlockStaticRuntime());
+  __qin_subhuti_raw_TSModuleBlock(): void {
+    {
+      const __qin_typed_receiver_1319: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1319.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSModuleBlock", this.tsModuleBlockStaticRuntime());
+    }
     return null;
   }
-  TSDeclareStatement(): any {
+  TSDeclareStatement(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSDeclareStatement();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSDeclareStatement receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSDeclareStatement.call(this);
     }), "TSDeclareStatement", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSDeclareStatement(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSDeclareStatement", this.tsDeclareStatementStaticRuntime());
+  __qin_subhuti_raw_TSDeclareStatement(): void {
+    {
+      const __qin_typed_receiver_1320: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1320.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSDeclareStatement", this.tsDeclareStatementStaticRuntime());
+    }
     return null;
   }
-  TSImportType(): any {
+  TSImportType(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSImportType();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSImportType receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSImportType.call(this);
     }), "TSImportType", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSImportType(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSImportType", this.tsImportTypeStaticRuntime());
+  __qin_subhuti_raw_TSImportType(): void {
+    {
+      const __qin_typed_receiver_1321: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1321.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSImportType", this.tsImportTypeStaticRuntime());
+    }
     return null;
   }
-  TSExportAssignment(): any {
+  TSExportAssignment(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSExportAssignment();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSExportAssignment receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSExportAssignment.call(this);
     }), "TSExportAssignment", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSExportAssignment(): any {
-    this.__qin_field_tokenConsumer.Export();
-    this.__qin_field_tokenConsumer.Assign();
-    this.Expression();
-    this.SemicolonASI();
+  __qin_subhuti_raw_TSExportAssignment(): void {
+    {
+      const __qin_typed_receiver_1322: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+      __qin_typed_receiver_1322.Export();
+    }
+    {
+      const __qin_typed_receiver_1323: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+      __qin_typed_receiver_1323.Assign();
+    }
+    {
+      const __qin_typed_receiver_1324: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1324.Expression();
+    }
+    {
+      const __qin_typed_receiver_1325: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1325.SemicolonASI();
+    }
     return null;
   }
-  TSExpressionWithTypeArguments(): any {
+  TSExpressionWithTypeArguments(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSExpressionWithTypeArguments();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSExpressionWithTypeArguments receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSExpressionWithTypeArguments.call(this);
     }), "TSExpressionWithTypeArguments", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSExpressionWithTypeArguments(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSExpressionWithTypeArguments", this.tsExpressionWithTypeArgumentsStaticRuntime());
+  __qin_subhuti_raw_TSExpressionWithTypeArguments(): void {
+    {
+      const __qin_typed_receiver_1326: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1326.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSExpressionWithTypeArguments", this.tsExpressionWithTypeArgumentsStaticRuntime());
+    }
     return null;
   }
-  TSClassImplements(): any {
+  TSClassImplements(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSClassImplements();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSClassImplements receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSClassImplements.call(this);
     }), "TSClassImplements", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSClassImplements(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSClassImplements", this.tsClassImplementsStaticRuntime());
+  __qin_subhuti_raw_TSClassImplements(): void {
+    {
+      const __qin_typed_receiver_1327: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1327.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSClassImplements", this.tsClassImplementsStaticRuntime());
+    }
     return null;
   }
-  TSModuleIdentifier(): any {
+  TSModuleIdentifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSModuleIdentifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSModuleIdentifier receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSModuleIdentifier.call(this);
     }), "TSModuleIdentifier", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSModuleIdentifier(): any {
-    this.TSModuleName();
+  __qin_subhuti_raw_TSModuleIdentifier(): void {
+    {
+      const __qin_typed_receiver_1328: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1328.TSModuleName();
+    }
     return null;
   }
-  tsInterfaceDeclarationStaticRuntime(): any {
+  tsInterfaceDeclarationStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceDeclarationStaticRuntime(this);
   }
-  tsInterfaceExtendsStaticRuntime(): any {
+  tsInterfaceExtendsStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceExtendsStaticRuntime(this);
   }
-  tsInterfaceBodyStaticRuntime(): any {
+  tsInterfaceBodyStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceBodyStaticRuntime(this);
   }
-  tsTypeAliasDeclarationStaticRuntime(): any {
+  tsTypeAliasDeclarationStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSTypeAliasDeclarationStaticRuntime(this);
   }
-  tsExpressionWithTypeArgumentsStaticRuntime(): any {
+  tsExpressionWithTypeArgumentsStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSExpressionWithTypeArgumentsStaticRuntime(this);
   }
-  TSThisParameter(): any {
+  TSThisParameter(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSThisParameter();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSThisParameter receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSThisParameter.call(this);
     }), "TSThisParameter", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSThisParameter(): any {
-    this.__qin_field_tokenConsumer.This();
-    this.TSTypeAnnotation();
+  __qin_subhuti_raw_TSThisParameter(): void {
+    {
+      const __qin_typed_receiver_1329: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+      __qin_typed_receiver_1329.This();
+    }
+    {
+      const __qin_typed_receiver_1330: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1330.TSTypeAnnotation();
+    }
     return null;
   }
-  TSParameterProperty(): any {
+  TSParameterProperty(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSParameterProperty();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSParameterProperty receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSParameterProperty.call(this);
     }), "TSParameterProperty", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSParameterProperty(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSParameterProperty", this.tsParameterPropertyStaticRuntime());
+  __qin_subhuti_raw_TSParameterProperty(): void {
+    {
+      const __qin_typed_receiver_1331: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1331.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSParameterProperty", this.tsParameterPropertyStaticRuntime());
+    }
     return null;
   }
-  TSAccessibilityModifier(): any {
+  TSAccessibilityModifier(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_TSAccessibilityModifier();
+      return /* @qin-static-admission member=call owner=com.slime.parser.typescript.SlimeTSDeclarationParser method=__qin_subhuti_raw_TSAccessibilityModifier receiver=this arity=0 */ com_slime_parser_typescript_SlimeTSDeclarationParser.prototype.__qin_subhuti_raw_TSAccessibilityModifier.call(this);
     }), "TSAccessibilityModifier", "SlimeTSDeclarationParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_TSAccessibilityModifier(): any {
-    this.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSAccessibilityModifier", new com_subhuti_parser_SubhutiParser$StaticGrammarRuntime());
+  __qin_subhuti_raw_TSAccessibilityModifier(): void {
+    {
+      const __qin_typed_receiver_1332: com_slime_parser_typescript_SlimeTSDeclarationParser = this;
+      __qin_typed_receiver_1332.executeStaticRule(com_slime_parser_typescript_SlimeTSDeclarationParser.__qin_field_STATIC_TS_DECLARATION_GRAMMAR, "TSAccessibilityModifier", new com_subhuti_parser_SubhutiParser$StaticGrammarRuntime());
+    }
     return null;
   }
-  canStartTSAccessibilityModifier(lookaheadOffset: number): any {
+  canStartTSAccessibilityModifier(lookaheadOffset: number): boolean {
     return (this.matchIdentifierValue("public", lookaheadOffset) || this.matchIdentifierValue("private", lookaheadOffset) || this.matchIdentifierValue("protected", lookaheadOffset));
   }
-  canStartTSParameterPropertyExpression(lookaheadOffset: number): any {
+  canStartTSParameterPropertyExpression(lookaheadOffset: number): boolean {
     return __qin_binary__("!=", this.tokenNameAt(lookaheadOffset), null);
   }
-  tsParameterPropertyStaticRuntime(): any {
+  tsParameterPropertyStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_subhuti_parser_SubhutiParser$StaticGrammarRuntime();
   }
-  tsClassImplementsStaticRuntime(): any {
+  tsClassImplementsStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSClassImplementsStaticRuntime(this);
   }
-  tsDeclareStatementStaticRuntime(): any {
+  tsDeclareStatementStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_subhuti_parser_SubhutiParser$StaticGrammarRuntime();
   }
-  tsEnumDeclarationStaticRuntime(): any {
+  tsEnumDeclarationStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumDeclarationStaticRuntime(this);
   }
-  tsEnumBodyStaticRuntime(): any {
+  tsEnumBodyStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumBodyStaticRuntime(this);
   }
-  tsEnumMemberListStaticRuntime(): any {
+  tsEnumMemberListStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberListStaticRuntime(this);
   }
-  tsEnumMemberStaticRuntime(): any {
+  tsEnumMemberStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberStaticRuntime(this);
   }
-  canStartTSEnumMember(lookaheadOffset: number): any {
+  canStartTSEnumMember(lookaheadOffset: number): boolean {
     return (this.canStartIdentifier(lookaheadOffset) || __QinJavaLangString.equals("StringLiteral", this.tokenNameAt(lookaheadOffset)));
   }
-  tsModuleDeclarationStaticRuntime(): any {
+  tsModuleDeclarationStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleDeclarationStaticRuntime(this);
   }
-  tsModuleNameStaticRuntime(): any {
+  tsModuleNameStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleNameStaticRuntime(this);
   }
-  tsModuleBlockStaticRuntime(): any {
+  tsModuleBlockStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleBlockStaticRuntime(this);
   }
-  canStartTSModuleName(lookaheadOffset: number): any {
+  canStartTSModuleName(lookaheadOffset: number): boolean {
     return (this.canStartIdentifier(lookaheadOffset) || __QinJavaLangString.equals("StringLiteral", this.tokenNameAt(lookaheadOffset)));
   }
-  tsImportTypeStaticRuntime(): any {
+  tsImportTypeStaticRuntime(): com_subhuti_parser_SubhutiParser$StaticGrammarRuntime {
     return new com_subhuti_parser_SubhutiParser$StaticGrammarRuntime();
   }
 }
@@ -313,7 +391,7 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceDeclaratio
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  testStaticGate(gateId: string): any {
+  testStaticGate(gateId: string): boolean {
     if (__QinJavaLangString.equals("TSDeclareStatement.constEnumStart", gateId)) {
       return (__QinJavaLangString.equals("Const", this.__qin_field_parser.tokenNameAt(1.0)) && __QinJavaLangString.equals("Enum", this.__qin_field_parser.tokenNameAt(2.0)));
     }
@@ -346,15 +424,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceDeclaratio
     }
     return false;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceDeclaration static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -372,24 +450,36 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceDeclaratio
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceDeclaration static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceDeclaration static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("Identifier", ruleName)) {
-      this.__qin_field_parser.Identifier();
+      {
+        const __qin_typed_receiver_1333: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1333.Identifier();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSTypeParameterDeclaration", ruleName)) {
-      this.__qin_field_parser.TSTypeParameterDeclaration();
+      {
+        const __qin_typed_receiver_1334: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1334.TSTypeParameterDeclaration();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSInterfaceExtends", ruleName)) {
-      this.__qin_field_parser.TSInterfaceExtends();
+      {
+        const __qin_typed_receiver_1335: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1335.TSInterfaceExtends();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSInterfaceBody", ruleName)) {
-      this.__qin_field_parser.TSInterfaceBody();
+      {
+        const __qin_typed_receiver_1336: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1336.TSInterfaceBody();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceDeclaration static rule call: " + ruleName + "@" + variantKey));
@@ -411,15 +501,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceExtendsSta
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceExtends static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -428,12 +518,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceExtendsSta
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceExtends static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceExtends static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSExpressionWithTypeArguments", ruleName)) {
-      this.__qin_field_parser.TSExpressionWithTypeArguments();
+      {
+        const __qin_typed_receiver_1337: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1337.TSExpressionWithTypeArguments();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceExtends static rule call: " + ruleName + "@" + variantKey));
@@ -455,15 +548,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceBodyStatic
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceBody static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -472,12 +565,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceBodyStatic
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceBody static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceBody static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSTypeLiteral", ruleName)) {
-      this.__qin_field_parser.TSTypeLiteral();
+      {
+        const __qin_typed_receiver_1338: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1338.TSTypeLiteral();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSInterfaceBody static rule call: " + ruleName + "@" + variantKey));
@@ -499,15 +595,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSTypeAliasDeclaratio
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSTypeAliasDeclaration static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -522,20 +618,29 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSTypeAliasDeclaratio
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSTypeAliasDeclaration static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSTypeAliasDeclaration static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("Identifier", ruleName)) {
-      this.__qin_field_parser.Identifier();
+      {
+        const __qin_typed_receiver_1339: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1339.Identifier();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSTypeParameterDeclaration", ruleName)) {
-      this.__qin_field_parser.TSTypeParameterDeclaration();
+      {
+        const __qin_typed_receiver_1340: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1340.TSTypeParameterDeclaration();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSType", ruleName)) {
-      this.__qin_field_parser.TSType();
+      {
+        const __qin_typed_receiver_1341: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1341.TSType();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSTypeAliasDeclaration static rule call: " + ruleName + "@" + variantKey));
@@ -557,15 +662,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSExpressionWithTypeA
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSExpressionWithTypeArguments static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -577,16 +682,22 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSExpressionWithTypeA
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSExpressionWithTypeArguments static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSExpressionWithTypeArguments static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSTypeName", ruleName)) {
-      this.__qin_field_parser.TSTypeName();
+      {
+        const __qin_typed_receiver_1342: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1342.TSTypeName();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSTypeParameterInstantiation", ruleName)) {
-      this.__qin_field_parser.TSTypeParameterInstantiation();
+      {
+        const __qin_typed_receiver_1343: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1343.TSTypeParameterInstantiation();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSExpressionWithTypeArguments static rule call: " + ruleName + "@" + variantKey));
@@ -608,15 +719,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSClassImplementsStat
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSClassImplements static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -625,12 +736,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSClassImplementsStat
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSClassImplements static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSClassImplements static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSExpressionWithTypeArguments", ruleName)) {
-      this.__qin_field_parser.TSExpressionWithTypeArguments();
+      {
+        const __qin_typed_receiver_1344: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1344.TSExpressionWithTypeArguments();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSClassImplements static rule call: " + ruleName + "@" + variantKey));
@@ -652,15 +766,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumDeclarationStat
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumDeclaration static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -672,16 +786,22 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumDeclarationStat
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumDeclaration static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumDeclaration static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("Identifier", ruleName)) {
-      this.__qin_field_parser.Identifier();
+      {
+        const __qin_typed_receiver_1345: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1345.Identifier();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSEnumBody", ruleName)) {
-      this.__qin_field_parser.TSEnumBody();
+      {
+        const __qin_typed_receiver_1346: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1346.TSEnumBody();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumDeclaration static rule call: " + ruleName + "@" + variantKey));
@@ -703,15 +823,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumBodyStaticRunti
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumBody static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -720,12 +840,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumBodyStaticRunti
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumBody static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumBody static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSEnumMemberList", ruleName)) {
-      this.__qin_field_parser.TSEnumMemberList();
+      {
+        const __qin_typed_receiver_1347: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1347.TSEnumMemberList();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumBody static rule call: " + ruleName + "@" + variantKey));
@@ -747,15 +870,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberListStati
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMemberList static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -764,12 +887,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberListStati
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMemberList static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMemberList static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSEnumMember", ruleName)) {
-      this.__qin_field_parser.TSEnumMember();
+      {
+        const __qin_typed_receiver_1348: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1348.TSEnumMember();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMemberList static rule call: " + ruleName + "@" + variantKey));
@@ -791,15 +917,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberStaticRun
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMember static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -814,20 +940,29 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberStaticRun
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMember static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMember static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("Identifier", ruleName)) {
-      this.__qin_field_parser.Identifier();
+      {
+        const __qin_typed_receiver_1349: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1349.Identifier();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("StringLiteral", ruleName)) {
-      this.__qin_field_parser.StringLiteral();
+      {
+        const __qin_typed_receiver_1350: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1350.StringLiteral();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSEnumMemberInitializer", ruleName)) {
-      this.__qin_field_parser.TSEnumMemberInitializer();
+      {
+        const __qin_typed_receiver_1351: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1351.TSEnumMemberInitializer();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSEnumMember static rule call: " + ruleName + "@" + variantKey));
@@ -849,15 +984,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleDeclarationSt
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleDeclaration static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -869,16 +1004,22 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleDeclarationSt
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleDeclaration static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleDeclaration static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("TSModuleName", ruleName)) {
-      this.__qin_field_parser.TSModuleName();
+      {
+        const __qin_typed_receiver_1352: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1352.TSModuleName();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("TSModuleBlock", ruleName)) {
-      this.__qin_field_parser.TSModuleBlock();
+      {
+        const __qin_typed_receiver_1353: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1353.TSModuleBlock();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleDeclaration static rule call: " + ruleName + "@" + variantKey));
@@ -900,15 +1041,15 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleNameStaticRun
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleName static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
@@ -920,16 +1061,22 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleNameStaticRun
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleName static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleName static rule call variant: " + ruleName + "@" + variantKey));
     }
     if (__QinJavaLangString.equals("Identifier", ruleName)) {
-      this.__qin_field_parser.Identifier();
+      {
+        const __qin_typed_receiver_1354: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1354.Identifier();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     if (__QinJavaLangString.equals("StringLiteral", ruleName)) {
-      this.__qin_field_parser.StringLiteral();
+      {
+        const __qin_typed_receiver_1355: com_slime_parser_typescript_SlimeTSDeclarationParser = this.__qin_field_parser;
+        __qin_typed_receiver_1355.StringLiteral();
+      }
       return (!this.__qin_field_parser.isParserFail());
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleName static rule call: " + ruleName + "@" + variantKey));
@@ -951,25 +1098,25 @@ class com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleBlockStaticRu
     this.__qin_field_parser = null;
     this.__qin_field_parser = parser;
   }
-  canStartStaticRule(...__qin_args: any[]): any {
+  canStartStaticRule(...__qin_args: any[]): boolean {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined")) return this.__qin_overload_canStartStaticRule_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] !== "undefined") && typeof __qin_args[2] === "number") return this.__qin_overload_canStartStaticRule_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: canStartStaticRule/" + __qin_args.length);
   }
-  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): any {
+  __qin_overload_canStartStaticRule_2_0(ruleName: string, variantKey: any): boolean {
     return this.canStartStaticRule(ruleName, variantKey, 1.0);
   }
-  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): any {
+  __qin_overload_canStartStaticRule_3_1(ruleName: string, variantKey: any, lookaheadOffset: number): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleBlock static rule start variant: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
     }
     if (__QinJavaLangString.equals("ModuleBody", ruleName)) {
-      let tokenName: any = this.__qin_field_parser.tokenNameAt(lookaheadOffset);
+      let tokenName: string = this.__qin_field_parser.tokenNameAt(lookaheadOffset);
       return (__qin_binary__("!=", tokenName, null) && !__QinJavaLangString.equals("RBrace", tokenName));
     }
     throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleBlock static rule start: " + ruleName + "@" + variantKey + " offset=" + lookaheadOffset));
   }
-  callStaticRule(ruleName: string, variantKey: any): any {
+  callStaticRule(ruleName: string, variantKey: any): boolean {
     if (__qin_binary__("!=", variantKey, null)) {
       throw new __QinJavaLangUnsupportedOperationException(("unsupported TSModuleBlock static rule call variant: " + ruleName + "@" + variantKey));
     }

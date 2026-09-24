@@ -15,70 +15,70 @@ class com_subhuti_lexer_TokenFactory {
       throw new Error("Unsupported Java constructor arity: TokenFactory/" + __qin_args.length);
     }
   }
-  static createKeywordToken(...__qin_args: any[]): any {
+  static createKeywordToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createKeywordToken_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_LexerMode))) return this.__qin_overload_createKeywordToken_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: createKeywordToken/" + __qin_args.length);
   }
-  static __qin_overload_createKeywordToken_2_0(name: string, keyword: string): any {
+  static __qin_overload_createKeywordToken_2_0(name: string, keyword: string): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createKeywordToken(name, keyword, null);
   }
-  static __qin_overload_createKeywordToken_3_1(name: string, keyword: string, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createKeywordToken_3_1(name: string, keyword: string, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.builder().name(name).pattern(com_subhuti_lexer_RegexUtils.escapeRegex(keyword)).fixedValue(keyword).mode(mode).negativeLookahead("[a-zA-Z0-9_$]").build();
   }
-  static createValueRegToken(...__qin_args: any[]): any {
+  static createValueRegToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean") return this.__qin_overload_createValueRegToken_4_0(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3]);
     if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_subhuti_struct_LexerMode))) return this.__qin_overload_createValueRegToken_5_1(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3], __qin_args[4]);
     throw new Error("Unsupported Java overload: createValueRegToken/" + __qin_args.length);
   }
-  static __qin_overload_createValueRegToken_4_0(name: string, pattern: string, value: string, skip: boolean): any {
+  static __qin_overload_createValueRegToken_4_0(name: string, pattern: string, value: string, skip: boolean): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createValueRegToken(name, pattern, value, skip, null);
   }
-  static __qin_overload_createValueRegToken_5_1(name: string, pattern: string, value: string, skip: boolean, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createValueRegToken_5_1(name: string, pattern: string, value: string, skip: boolean, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.builder().name(name).pattern(pattern).fixedValue(value).skip(skip).mode(mode).build();
   }
-  static createEmptyValueRegToken(...__qin_args: any[]): any {
+  static createEmptyValueRegToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_LexerMode))) return this.__qin_overload_createEmptyValueRegToken_3_0(__qin_args[0], __qin_args[1], __qin_args[2]);
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createEmptyValueRegToken_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: createEmptyValueRegToken/" + __qin_args.length);
   }
-  static __qin_overload_createEmptyValueRegToken_3_0(name: string, pattern: string, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createEmptyValueRegToken_3_0(name: string, pattern: string, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.builder().name(name).pattern(pattern).mode(mode).build();
   }
-  static __qin_overload_createEmptyValueRegToken_2_1(name: string, pattern: string): any {
+  static __qin_overload_createEmptyValueRegToken_2_1(name: string, pattern: string): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createEmptyValueRegToken(name, pattern, null);
   }
-  static createSkipToken(...__qin_args: any[]): any {
+  static createSkipToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createSkipToken_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_LexerMode))) return this.__qin_overload_createSkipToken_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: createSkipToken/" + __qin_args.length);
   }
-  static __qin_overload_createSkipToken_2_0(name: string, pattern: string): any {
+  static __qin_overload_createSkipToken_2_0(name: string, pattern: string): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createSkipToken(name, pattern, null);
   }
-  static __qin_overload_createSkipToken_3_1(name: string, pattern: string, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createSkipToken_3_1(name: string, pattern: string, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.builder().name(name).pattern(pattern).skip(true).mode(mode).build();
   }
-  static createOperatorToken(...__qin_args: any[]): any {
+  static createOperatorToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createOperatorToken_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_LexerMode))) return this.__qin_overload_createOperatorToken_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: createOperatorToken/" + __qin_args.length);
   }
-  static __qin_overload_createOperatorToken_2_0(name: string, operator: string): any {
+  static __qin_overload_createOperatorToken_2_0(name: string, operator: string): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createOperatorToken(name, operator, null);
   }
-  static __qin_overload_createOperatorToken_3_1(name: string, operator: string, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createOperatorToken_3_1(name: string, operator: string, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createValueRegToken(name, com_subhuti_lexer_RegexUtils.escapeRegex(operator), operator, false, mode);
   }
-  static createPunctuationToken(...__qin_args: any[]): any {
+  static createPunctuationToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createPunctuationToken_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_LexerMode))) return this.__qin_overload_createPunctuationToken_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: createPunctuationToken/" + __qin_args.length);
   }
-  static __qin_overload_createPunctuationToken_2_0(name: string, punctuation: string): any {
+  static __qin_overload_createPunctuationToken_2_0(name: string, punctuation: string): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createPunctuationToken(name, punctuation, null);
   }
-  static __qin_overload_createPunctuationToken_3_1(name: string, punctuation: string, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createPunctuationToken_3_1(name: string, punctuation: string, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_lexer_TokenFactory.createValueRegToken(name, com_subhuti_lexer_RegexUtils.escapeRegex(punctuation), punctuation, false, mode);
   }
 }

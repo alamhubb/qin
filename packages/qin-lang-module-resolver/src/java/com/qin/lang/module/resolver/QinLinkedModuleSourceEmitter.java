@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  * Emits one linked source string from module graph for current Qin frontend.
  */
 public final class QinLinkedModuleSourceEmitter {
-    private final QinEsmSpecifierResolver specifierResolver = new QinEsmSpecifierResolver();
+    private final QinEsmSpecifierResolver specifierResolver;
     private static final Pattern IMPORT_FROM_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+(?!type\\b)([\\s\\S]*?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern IMPORT_TYPE_FROM_PATTERN = Pattern.compile(
@@ -100,6 +100,14 @@ public final class QinLinkedModuleSourceEmitter {
             "abstract",
             "namespace",
             "module");
+
+    public QinLinkedModuleSourceEmitter() {
+        this(null);
+    }
+
+    public QinLinkedModuleSourceEmitter(Path projectOverrideRoot) {
+        this.specifierResolver = new QinEsmSpecifierResolver(projectOverrideRoot);
+    }
 
     public QinLinkedModuleSource emit(QinModuleGraph graph) {
         StringBuilder output = new StringBuilder();
@@ -1080,6 +1088,10 @@ public final class QinLinkedModuleSourceEmitter {
                 i++;
                 continue;
             }
+            if (ch == '/' && startsRegexLiteral(source, i)) {
+                i = skipRegexLiteral(source, i);
+                continue;
+            }
             if (ch == '\'') {
                 inSingle = true;
                 continue;
@@ -1093,6 +1105,47 @@ public final class QinLinkedModuleSourceEmitter {
             }
         }
         return inSingle || inDouble || inTemplate || inLineComment || inBlockComment;
+    }
+
+    private boolean startsRegexLiteral(String source, int slashIndex) {
+        int previous = slashIndex - 1;
+        while (previous >= 0 && Character.isWhitespace(source.charAt(previous))) {
+            previous--;
+        }
+        if (previous < 0) {
+            return true;
+        }
+        char ch = source.charAt(previous);
+        return "([{:;,=!?&|+-*~^<>%".indexOf(ch) >= 0;
+    }
+
+    private int skipRegexLiteral(String source, int slashIndex) {
+        boolean inClass = false;
+        for (int i = slashIndex + 1; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            if (ch == '\n' || ch == '\r') {
+                return i - 1;
+            }
+            if (ch == '[' && !isEscaped(source, i)) {
+                inClass = true;
+            } else if (ch == ']' && !isEscaped(source, i)) {
+                inClass = false;
+            } else if (ch == '/' && !isEscaped(source, i) && !inClass) {
+                while (i + 1 < source.length() && Character.isLetter(source.charAt(i + 1))) {
+                    i++;
+                }
+                return i;
+            }
+        }
+        return slashIndex;
+    }
+
+    private boolean isEscaped(String source, int index) {
+        int backslashes = 0;
+        for (int i = index - 1; i >= 0 && source.charAt(i) == '\\'; i--) {
+            backslashes++;
+        }
+        return (backslashes & 1) == 1;
     }
 
     private boolean isLikelyTopLevelStatementStart(String source, int index) {

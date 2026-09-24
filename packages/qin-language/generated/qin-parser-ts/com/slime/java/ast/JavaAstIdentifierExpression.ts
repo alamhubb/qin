@@ -22,20 +22,21 @@ class com_slime_java_ast_JavaAstIdentifierExpression {
       return null;
     })();
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstIdentifierExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name);
+    const __qin_record_other: com_slime_java_ast_JavaAstIdentifierExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstIdentifierExpression[", "name=", this.__qin_field_name, "]"].join("");
   }
 }

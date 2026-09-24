@@ -29,13 +29,13 @@ class com_slime_parser_cstToAst_statements_SlimeTryStatementCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createTryStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let block: any = null;
-    let handler: any = null;
-    let finalizer: any = null;
+  createTryStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_TryStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let block: com_slime_ast_nodes_statements_BlockStatement = null;
+    let handler: com_slime_ast_nodes_misc_CatchClause = null;
+    let finalizer: com_slime_ast_nodes_statements_BlockStatement = null;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Block", name) && __qin_binary__("==", block, null))) {
         block = this.createBlockAst(child);
       } else {
@@ -50,12 +50,12 @@ class com_slime_parser_cstToAst_statements_SlimeTryStatementCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createTryStatement(block, handler, finalizer, cst.getLocation());
   }
-  createCatchClauseAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let param: any = null;
-    let body: any = null;
+  createCatchClauseAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_misc_CatchClause {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let param: com_slime_ast_Pattern = null;
+    let body: com_slime_ast_nodes_statements_BlockStatement = null;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if (__QinJavaLangString.equals("CatchParameter", name)) {
         param = this.createCatchParameterAst(child);
       } else {
@@ -66,10 +66,10 @@ class com_slime_parser_cstToAst_statements_SlimeTryStatementCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createCatchClause(param, body, cst.getLocation());
   }
-  createBlockAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createBlockAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_BlockStatement {
     return this.__qin_field_transformer.createBlockStatementAst(cst);
   }
-  createFinallyAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createFinallyAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_BlockStatement {
     for (const child of com_slime_parser_cstToAst_statements_SlimeTryStatementCstToAst.safeChildren(cst)) {
       if ((__qin_binary__("!=", child, null) && __QinJavaLangString.equals("Block", child.getName()))) {
         return this.createBlockAst(child);
@@ -77,24 +77,24 @@ class com_slime_parser_cstToAst_statements_SlimeTryStatementCstToAst {
     }
     return this.createBlockAst(cst);
   }
-  createCatchParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createCatchParameterAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Pattern {
     if (__qin_binary__("==", cst, null)) {
-      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("error", (null));
+      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("error", (null as com_subhuti_struct_SubhutiSourceLocation));
     }
-    let children: any = cst.getChildren();
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
     if (__qin_binary__("!=", children, null)) {
       for (const child of children) {
         if (__qin_binary__("==", child, null)) {
           continue;
         }
-        let name: any = child.getName();
+        let name: string = child.getName();
         if ((__QinJavaLangString.equals("BindingIdentifier", name) || __QinJavaLangString.equals("Identifier", name) || __QinJavaLangString.equals("IdentifierReference", name))) {
           return com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst.createIdentifierAst(child);
         }
         if ((__QinJavaLangString.equals("BindingPattern", name) || __QinJavaLangString.equals("ArrayBindingPattern", name) || __QinJavaLangString.equals("ObjectBindingPattern", name))) {
           return this.__qin_field_transformer.createBindingTargetAst(child);
         }
-        let nested: any = this.createCatchParameterAst(child);
+        let nested: com_slime_ast_Pattern = this.createCatchParameterAst(child);
         if (__qin_binary__("!=", nested, null)) {
           return nested;
         }
@@ -102,7 +102,7 @@ class com_slime_parser_cstToAst_statements_SlimeTryStatementCstToAst {
     }
     return com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst.createIdentifierAst(cst);
   }
-  static safeChildren(cst: com_subhuti_struct_SubhutiCst): any {
+  static safeChildren(cst: com_subhuti_struct_SubhutiCst): __QinJavaUtilList<com_subhuti_struct_SubhutiCst> {
     return (__qin_binary__("==", (__qin_binary__("==", cst, null) ? null : cst.getChildren()), null) ? __QinJavaUtilList.of() : (__qin_binary__("==", cst, null) ? null : cst.getChildren()));
   }
 }

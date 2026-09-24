@@ -9,10 +9,10 @@ function __qin_structural_object__(value) {
 }
 const Objects = __QinJavaUtilObjects;
 class com_subhuti_parser_SubhutiTokenCacheKey {
-  __qin_field_index: number | null = null as any;
+  __qin_field_index: number | null = 0 as any;
   __qin_field_mode: com_subhuti_struct_LexerMode | null = null as any;
   __qin_field_previousTokenName: string | null = null as any;
-  __qin_field_hashCode: number | null = null as any;
+  __qin_field_hashCode: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 3 && typeof __qin_args[0] === "number" && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], com_subhuti_struct_LexerMode)) && (__qin_args[2] === null || typeof __qin_args[2] === "string")) {
       const index: any = __qin_args[0];
@@ -24,32 +24,32 @@ class com_subhuti_parser_SubhutiTokenCacheKey {
     throw new Error("Unsupported Java constructor overload: SubhutiTokenCacheKey/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_parser_SubhutiTokenCacheKey_3_0(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string): void {
-    this.__qin_field_index = null;
+    this.__qin_field_index = 0;
     this.__qin_field_mode = null;
     this.__qin_field_previousTokenName = null;
-    this.__qin_field_hashCode = null;
+    this.__qin_field_hashCode = 0;
     this.__qin_field_index = index;
     this.__qin_field_mode = (__qin_binary__("==", mode, null) ? com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE : mode);
     this.__qin_field_previousTokenName = previousTokenName;
-    let hash: any = index;
+    let hash: number = index;
     hash = __qin_binary__("+", __qin_binary__("*", 31.0, hash), this.__qin_field_mode.hashCode());
     hash = __qin_binary__("+", __qin_binary__("*", 31.0, hash), (__qin_binary__("==", previousTokenName, null) ? 0.0 : __QinJavaLangString.hashCode(previousTokenName)));
     this.__qin_field_hashCode = hash;
   }
-  equals(other: any): any {
-    let that: any = null;
+  equals(other: any): boolean {
+    let that: com_subhuti_parser_SubhutiTokenCacheKey = null as any;
     if (__qin_binary__("==", this, other)) {
       return true;
     }
-    if ((!(() => { const __qin_pattern_value = other; return __qin_instanceof__(__qin_pattern_value, com_subhuti_parser_SubhutiTokenCacheKey) && (that = __qin_pattern_value, true); })())) {
+    if ((!(__qin_instanceof__(other, com_subhuti_parser_SubhutiTokenCacheKey) && (that = other, true)))) {
       return false;
     }
     return (__qin_binary__("==", this.__qin_field_index, that.__qin_field_index) && __qin_binary__("==", this.__qin_field_mode, that.__qin_field_mode) && __QinJavaUtilObjects.equals(this.__qin_field_previousTokenName, that.__qin_field_previousTokenName));
   }
-  hashCode(): any {
+  hashCode(): number {
     return this.__qin_field_hashCode;
   }
-  matches(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string): any {
+  matches(index: number, mode: com_subhuti_struct_LexerMode, previousTokenName: string): boolean {
     return (__qin_binary__("==", this.__qin_field_index, index) && __qin_binary__("==", this.__qin_field_mode, (__qin_binary__("==", mode, null) ? com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE : mode)) && __QinJavaUtilObjects.equals(this.__qin_field_previousTokenName, previousTokenName));
   }
 }

@@ -13,61 +13,50 @@ class com_slime_java_ast_JavaAstLocalVariableDeclaration {
   __qin_field_name: string | null = null as any;
   __qin_field_initializer: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstLocalVariableDeclaration_0_0();
-      return;
-    }
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.java.ast.JavaAstExpression"))) {
       const typeName: any = __qin_args[0];
       const name: any = __qin_args[1];
       const initializer: any = __qin_args[2];
-      this.__qin_constructor_com_slime_java_ast_JavaAstLocalVariableDeclaration_3_1(typeName, name, initializer);
+      this.__qin_constructor_com_slime_java_ast_JavaAstLocalVariableDeclaration_3_0(typeName, name, initializer);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstLocalVariableDeclaration/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstLocalVariableDeclaration_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstLocalVariableDeclaration_3_0(typeName: string, name: string, initializer: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_typeName = null;
     this.__qin_field_name = null;
     this.__qin_field_initializer = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_name, "name cannot be null");
+    __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null");
+    __QinJavaUtilObjects.requireNonNull(name, "name cannot be null");
+    this.__qin_field_typeName = typeName;
+    this.__qin_field_name = name;
+    this.__qin_field_initializer = initializer;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstLocalVariableDeclaration_3_1(typeName: string, name: string, initializer: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_typeName = null;
-    this.__qin_field_name = null;
-    this.__qin_field_initializer = null;
-    (() => {
-      this.__qin_field_typeName = typeName;
-      this.__qin_field_name = name;
-      this.__qin_field_initializer = initializer;
-      return null;
-    })();
-  }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  initializer(): any {
+  initializer(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_initializer;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstLocalVariableDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_initializer, other.__qin_field_initializer);
+    const __qin_record_other: com_slime_java_ast_JavaAstLocalVariableDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_initializer, __qin_record_other.__qin_field_initializer);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_initializer);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstLocalVariableDeclaration[", "typeName=", this.__qin_field_typeName, ", ", "name=", this.__qin_field_name, ", ", "initializer=", this.__qin_field_initializer, "]"].join("");
   }
 }

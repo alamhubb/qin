@@ -18,8 +18,8 @@ class com_slime_parser_SlimeJavascriptStaticGrammar {
   __qin_constructor_com_slime_parser_SlimeJavascriptStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("ModuleBody").declareExternalRule("ScriptBody").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalModuleBody", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.call("ModuleBody")))).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalScriptBody", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.call("ScriptBody")))).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("Script", com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.call("ScriptBody")))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("ModuleBody").declareExternalRule("ScriptBody").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalModuleBody", com_subhuti_parser_SubhutiStaticGrammar.option(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("ModuleBody")))).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("OptionalScriptBody", com_subhuti_parser_SubhutiStaticGrammar.option(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("ScriptBody")))).rule(com_subhuti_parser_SubhutiStaticGrammar.rule("Script", com_subhuti_parser_SubhutiStaticGrammar.option(/* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("ScriptBody")))).build();
   }
 }
 const SlimeJavascriptStaticGrammar = com_slime_parser_SlimeJavascriptStaticGrammar;

@@ -12,6 +12,7 @@ class com_slime_java_ast_JavaAstStatement {
     }
   }
 }
+com_slime_java_ast_JavaAstStatement.__qin_java_interface = true;
 const JavaAstStatement = com_slime_java_ast_JavaAstStatement;
 
 function run() {

@@ -13,12 +13,12 @@ function __qin_structural_object__(value) {
 }
 class com_slime_ast_nodes_misc_FunctionParameter {
   __qin_field_pattern: com_slime_ast_Pattern | null = null as any;
-  __qin_field_decorators: any = null as any;
+  __qin_field_decorators: __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator> | null = null as any;
   __qin_field_typeAnnotation: com_slime_ast_AstNode | null = null as any;
-  __qin_field_optional: boolean | null = null as any;
+  __qin_field_optional: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Pattern")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.AstNode")) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.ast.Pattern")) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.AstNode")) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const pattern: any = __qin_args[0];
       const decorators: any = __qin_args[1];
       const typeAnnotation: any = __qin_args[2];
@@ -29,11 +29,11 @@ class com_slime_ast_nodes_misc_FunctionParameter {
     }
     throw new Error("Unsupported Java constructor overload: FunctionParameter/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_misc_FunctionParameter_5_0(pattern: com_slime_ast_Pattern, decorators: any, typeAnnotation: com_slime_ast_AstNode, optional: boolean, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_misc_FunctionParameter_5_0(pattern: com_slime_ast_Pattern, decorators: __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator>, typeAnnotation: com_slime_ast_AstNode, optional: boolean, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_pattern = null;
     this.__qin_field_decorators = null;
     this.__qin_field_typeAnnotation = null;
-    this.__qin_field_optional = null;
+    this.__qin_field_optional = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_pattern = pattern;
@@ -44,34 +44,35 @@ class com_slime_ast_nodes_misc_FunctionParameter {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_FUNCTION_PARAMETER;
   }
-  pattern(): any {
+  pattern(): com_slime_ast_Pattern {
     return this.__qin_field_pattern;
   }
-  decorators(): any {
+  decorators(): __QinJavaUtilList<com_slime_ast_nodes_misc_Decorator> {
     return this.__qin_field_decorators;
   }
-  typeAnnotation(): any {
+  typeAnnotation(): com_slime_ast_AstNode {
     return this.__qin_field_typeAnnotation;
   }
-  optional(): any {
+  optional(): boolean {
     return this.__qin_field_optional;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_misc_FunctionParameter)) return false;
-    return __qin_java_values_equal__(this.__qin_field_pattern, other.__qin_field_pattern)
-      && __qin_java_values_equal__(this.__qin_field_decorators, other.__qin_field_decorators)
-      && __qin_java_values_equal__(this.__qin_field_typeAnnotation, other.__qin_field_typeAnnotation)
-      && __qin_java_values_equal__(this.__qin_field_optional, other.__qin_field_optional)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_misc_FunctionParameter = other;
+    return __qin_java_values_equal__(this.__qin_field_pattern, __qin_record_other.__qin_field_pattern)
+      && __qin_java_values_equal__(this.__qin_field_decorators, __qin_record_other.__qin_field_decorators)
+      && __qin_java_values_equal__(this.__qin_field_typeAnnotation, __qin_record_other.__qin_field_typeAnnotation)
+      && __qin_java_values_equal__(this.__qin_field_optional, __qin_record_other.__qin_field_optional)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_pattern);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_decorators);
@@ -80,7 +81,7 @@ class com_slime_ast_nodes_misc_FunctionParameter {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["FunctionParameter[", "pattern=", this.__qin_field_pattern, ", ", "decorators=", this.__qin_field_decorators, ", ", "typeAnnotation=", this.__qin_field_typeAnnotation, ", ", "optional=", this.__qin_field_optional, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

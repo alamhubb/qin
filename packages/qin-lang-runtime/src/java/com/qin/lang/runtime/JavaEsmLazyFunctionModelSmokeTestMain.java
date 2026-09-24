@@ -26,8 +26,20 @@ public final class JavaEsmLazyFunctionModelSmokeTestMain {
         if (function == null) {
             throw new IllegalStateException("Expected interpreted function");
         }
+        Object secondFunction = JavaEsmGlobal.__qin_make_function__(definition);
+        if (function != secondFunction) {
+            throw new IllegalStateException("Expected function model cache hit on repeated construction");
+        }
         if (resolveCount.get() != 0) {
             throw new IllegalStateException("Function astRef resolved during construction");
+        }
+
+        Map<String, Object> holder = new LinkedHashMap<>();
+        holder.put("handler", definition);
+        Object firstMember = JavaEsmGlobal.__qin_member_get__(holder, "handler");
+        Object secondMember = JavaEsmGlobal.__qin_member_get__(holder, "handler");
+        if (firstMember != secondMember) {
+            throw new IllegalStateException("Expected member lookup to reuse the interpreted function instance");
         }
 
         Object result = JavaEsmGlobal.__qin_call_function_definition__(definition, null, new Object[0]);

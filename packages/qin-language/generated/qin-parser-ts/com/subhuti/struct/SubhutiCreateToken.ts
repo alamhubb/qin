@@ -15,9 +15,9 @@ const StringBuilder = __QinJavaLangStringBuilder;
 class com_subhuti_struct_SubhutiCreateToken {
   __qin_field_name: string | null = null as any;
   __qin_field_type: string | null = null as any;
-  __qin_field_pattern: any = null as any;
-  __qin_field_isKeyword: boolean | null = null as any;
-  __qin_field_skip: boolean | null = null as any;
+  __qin_field_pattern: __QinJavaUtilRegexPattern | null = null as any;
+  __qin_field_isKeyword: boolean | null = false as any;
+  __qin_field_skip: boolean | null = false as any;
   __qin_field_value: string | null = null as any;
   __qin_field_fixedValue: string | null = null as any;
   __qin_field_lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead | null = null as any;
@@ -25,7 +25,7 @@ class com_subhuti_struct_SubhutiCreateToken {
   __qin_field_mode: com_subhuti_struct_LexerMode | null = null as any;
   static __qin_field_EMPTY_VALUE: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 9 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], __QinJavaUtilRegexPattern)) && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || typeof __qin_args[5] === "string") && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_subhuti_struct_SubhutiTokenLookahead) || __qin_args[6].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenLookahead.__qinJavaRecordClass) && (__qin_args[7] === null || __qin_instanceof__(__qin_args[7], com_subhuti_struct_SubhutiTokenContextConstraint) || __qin_args[7].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenContextConstraint.__qinJavaRecordClass) && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_subhuti_struct_LexerMode))) {
+    if (__qin_args.length === 9 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], __QinJavaUtilRegexPattern)) && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || typeof __qin_args[5] === "string") && (__qin_args[6] === null || __qin_instanceof__(__qin_args[6], com_subhuti_struct_SubhutiTokenLookahead)) && (__qin_args[7] === null || __qin_instanceof__(__qin_args[7], com_subhuti_struct_SubhutiTokenContextConstraint)) && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_subhuti_struct_LexerMode))) {
       const name: any = __qin_args[0];
       const type: any = __qin_args[1];
       const pattern: any = __qin_args[2];
@@ -38,7 +38,7 @@ class com_subhuti_struct_SubhutiCreateToken {
       this.__qin_constructor_com_subhuti_struct_SubhutiCreateToken_9_0(name, type, pattern, isKeyword, skip, value, lookaheadAfter, contextConstraint, mode);
       return;
     }
-    if (__qin_args.length === 10 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], __QinJavaUtilRegexPattern)) && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || typeof __qin_args[5] === "string") && (__qin_args[6] === null || typeof __qin_args[6] === "string") && (__qin_args[7] === null || __qin_instanceof__(__qin_args[7], com_subhuti_struct_SubhutiTokenLookahead) || __qin_args[7].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenLookahead.__qinJavaRecordClass) && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_subhuti_struct_SubhutiTokenContextConstraint) || __qin_args[8].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenContextConstraint.__qinJavaRecordClass) && (__qin_args[9] === null || __qin_instanceof__(__qin_args[9], com_subhuti_struct_LexerMode))) {
+    if (__qin_args.length === 10 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], __QinJavaUtilRegexPattern)) && typeof __qin_args[3] === "boolean" && typeof __qin_args[4] === "boolean" && (__qin_args[5] === null || typeof __qin_args[5] === "string") && (__qin_args[6] === null || typeof __qin_args[6] === "string") && (__qin_args[7] === null || __qin_instanceof__(__qin_args[7], com_subhuti_struct_SubhutiTokenLookahead)) && (__qin_args[8] === null || __qin_instanceof__(__qin_args[8], com_subhuti_struct_SubhutiTokenContextConstraint)) && (__qin_args[9] === null || __qin_instanceof__(__qin_args[9], com_subhuti_struct_LexerMode))) {
       const name: any = __qin_args[0];
       const type: any = __qin_args[1];
       const pattern: any = __qin_args[2];
@@ -54,15 +54,15 @@ class com_subhuti_struct_SubhutiCreateToken {
     }
     throw new Error("Unsupported Java constructor overload: SubhutiCreateToken/" + __qin_args.length);
   }
-  __qin_constructor_com_subhuti_struct_SubhutiCreateToken_9_0(name: string, type: string, pattern: any, isKeyword: boolean, skip: boolean, value: string, lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint, mode: com_subhuti_struct_LexerMode): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilRegexPattern)) && typeof __qin_delegate_args[3] === "boolean" && typeof __qin_delegate_args[4] === "boolean" && (__qin_delegate_args[5] === null || typeof __qin_delegate_args[5] === "string") && (__qin_delegate_args[6] === null || typeof __qin_delegate_args[6] === "string") && (__qin_delegate_args[7] === null || __qin_instanceof__(__qin_delegate_args[7], com_subhuti_struct_SubhutiTokenLookahead) || __qin_delegate_args[7].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenLookahead.__qinJavaRecordClass) && (__qin_delegate_args[8] === null || __qin_instanceof__(__qin_delegate_args[8], com_subhuti_struct_SubhutiTokenContextConstraint) || __qin_delegate_args[8].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenContextConstraint.__qinJavaRecordClass) && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_subhuti_struct_LexerMode))) { return this.__qin_constructor_com_subhuti_struct_SubhutiCreateToken_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiCreateToken/" + __qin_delegate_args.length); })(name, type, pattern, isKeyword, skip, value, null, lookaheadAfter, contextConstraint, mode);
+  __qin_constructor_com_subhuti_struct_SubhutiCreateToken_9_0(name: string, type: string, pattern: __QinJavaUtilRegexPattern, isKeyword: boolean, skip: boolean, value: string, lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint, mode: com_subhuti_struct_LexerMode): void {
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 10 && (__qin_delegate_args[0] === null || typeof __qin_delegate_args[0] === "string") && (__qin_delegate_args[1] === null || typeof __qin_delegate_args[1] === "string") && (__qin_delegate_args[2] === null || __qin_instanceof__(__qin_delegate_args[2], __QinJavaUtilRegexPattern)) && typeof __qin_delegate_args[3] === "boolean" && typeof __qin_delegate_args[4] === "boolean" && (__qin_delegate_args[5] === null || typeof __qin_delegate_args[5] === "string") && (__qin_delegate_args[6] === null || typeof __qin_delegate_args[6] === "string") && (__qin_delegate_args[7] === null || __qin_instanceof__(__qin_delegate_args[7], com_subhuti_struct_SubhutiTokenLookahead)) && (__qin_delegate_args[8] === null || __qin_instanceof__(__qin_delegate_args[8], com_subhuti_struct_SubhutiTokenContextConstraint)) && (__qin_delegate_args[9] === null || __qin_instanceof__(__qin_delegate_args[9], com_subhuti_struct_LexerMode))) { return this.__qin_constructor_com_subhuti_struct_SubhutiCreateToken_10_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: SubhutiCreateToken/" + __qin_delegate_args.length); })(name, type, pattern, isKeyword, skip, value, null, lookaheadAfter, contextConstraint, mode);
   }
-  __qin_constructor_com_subhuti_struct_SubhutiCreateToken_10_1(name: string, type: string, pattern: any, isKeyword: boolean, skip: boolean, value: string, fixedValue: string, lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint, mode: com_subhuti_struct_LexerMode): void {
+  __qin_constructor_com_subhuti_struct_SubhutiCreateToken_10_1(name: string, type: string, pattern: __QinJavaUtilRegexPattern, isKeyword: boolean, skip: boolean, value: string, fixedValue: string, lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint, mode: com_subhuti_struct_LexerMode): void {
     this.__qin_field_name = null;
     this.__qin_field_type = null;
     this.__qin_field_pattern = null;
-    this.__qin_field_isKeyword = null;
-    this.__qin_field_skip = null;
+    this.__qin_field_isKeyword = false;
+    this.__qin_field_skip = false;
     this.__qin_field_value = null;
     this.__qin_field_fixedValue = null;
     this.__qin_field_lookaheadAfter = null;
@@ -82,92 +82,92 @@ class com_subhuti_struct_SubhutiCreateToken {
     this.__qin_field_contextConstraint = contextConstraint;
     this.__qin_field_mode = mode;
   }
-  getName(): any {
+  getName(): string {
     return this.__qin_field_name;
   }
-  getType(): any {
+  getType(): string {
     return this.__qin_field_type;
   }
-  getPattern(): any {
+  getPattern(): __QinJavaUtilRegexPattern {
     return this.__qin_field_pattern;
   }
-  isKeyword(): any {
+  isKeyword(): boolean {
     return this.__qin_field_isKeyword;
   }
-  isSkip(): any {
+  isSkip(): boolean {
     return this.__qin_field_skip;
   }
-  getValue(): any {
+  getValue(): string {
     return this.__qin_field_value;
   }
-  getFixedValue(): any {
+  getFixedValue(): string {
     return this.__qin_field_fixedValue;
   }
-  getLookaheadAfter(): any {
+  getLookaheadAfter(): com_subhuti_struct_SubhutiTokenLookahead {
     return this.__qin_field_lookaheadAfter;
   }
-  getContextConstraint(): any {
+  getContextConstraint(): com_subhuti_struct_SubhutiTokenContextConstraint {
     return this.__qin_field_contextConstraint;
   }
-  getMode(): any {
+  getMode(): com_subhuti_struct_LexerMode {
     return this.__qin_field_mode;
   }
-  getEffectiveMode(): any {
+  getEffectiveMode(): com_subhuti_struct_LexerMode {
     return (__qin_binary__("!=", this.__qin_field_mode, null) ? this.__qin_field_mode : com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE);
   }
-  hasLookaheadAfter(): any {
+  hasLookaheadAfter(): boolean {
     return (__qin_binary__("!=", this.__qin_field_lookaheadAfter, null) && this.__qin_field_lookaheadAfter.hasConstraints());
   }
-  hasContextConstraint(): any {
+  hasContextConstraint(): boolean {
     return (__qin_binary__("!=", this.__qin_field_contextConstraint, null) && this.__qin_field_contextConstraint.hasConstraints());
   }
-  hasFixedValue(): any {
+  hasFixedValue(): boolean {
     return (__qin_binary__("!=", this.__qin_field_value, null) && !__QinJavaLangString.equals(com_subhuti_struct_SubhutiCreateToken.__qin_field_EMPTY_VALUE, this.__qin_field_value));
   }
-  hasExactFixedValue(): any {
+  hasExactFixedValue(): boolean {
     return __qin_binary__("!=", this.__qin_field_fixedValue, null);
   }
-  static createKeywordToken(name: string, keyword: string): any {
+  static createKeywordToken(name: string, keyword: string): com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern((__QinJavaUtilRegexPattern.quote(keyword) + "(?![a-zA-Z0-9_$])")).fixedValue(keyword).isKeyword(true).build();
   }
-  static createRegToken(...__qin_args: any[]): any {
+  static createRegToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createRegToken_2_0(__qin_args[0], __qin_args[1]);
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_instanceof__(__qin_args[1], __QinJavaUtilRegexPattern))) return this.__qin_overload_createRegToken_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: createRegToken/" + __qin_args.length);
   }
-  static __qin_overload_createRegToken_2_0(name: string, patternStr: string): any {
+  static __qin_overload_createRegToken_2_0(name: string, patternStr: string): com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern(patternStr).value(patternStr).build();
   }
-  static __qin_overload_createRegToken_2_1(name: string, pattern: any): any {
+  static __qin_overload_createRegToken_2_1(name: string, pattern: __QinJavaUtilRegexPattern): com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern(pattern).value(pattern.pattern()).build();
   }
-  static createValueRegToken(...__qin_args: any[]): any {
-    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_subhuti_struct_SubhutiTokenLookahead) || __qin_args[4].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenLookahead.__qinJavaRecordClass) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_subhuti_struct_SubhutiTokenContextConstraint) || __qin_args[5].__qinJavaRecordClass === com_subhuti_struct_SubhutiTokenContextConstraint.__qinJavaRecordClass)) return this.__qin_overload_createValueRegToken_6_0(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3], __qin_args[4], __qin_args[5]);
+  static createValueRegToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
+    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_subhuti_struct_SubhutiTokenLookahead)) && (__qin_args[5] === null || __qin_instanceof__(__qin_args[5], com_subhuti_struct_SubhutiTokenContextConstraint))) return this.__qin_overload_createValueRegToken_6_0(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3], __qin_args[4], __qin_args[5]);
     if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean") return this.__qin_overload_createValueRegToken_4_1(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3]);
     throw new Error("Unsupported Java overload: createValueRegToken/" + __qin_args.length);
   }
-  static __qin_overload_createValueRegToken_6_0(name: string, patternStr: string, value: string, skip: boolean, lookahead: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint): any {
+  static __qin_overload_createValueRegToken_6_0(name: string, patternStr: string, value: string, skip: boolean, lookahead: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint): com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern(patternStr).value(value).skip(skip).lookaheadAfter(lookahead).contextConstraint(contextConstraint).build();
   }
-  static __qin_overload_createValueRegToken_4_1(name: string, patternStr: string, value: string, skip: boolean): any {
+  static __qin_overload_createValueRegToken_4_1(name: string, patternStr: string, value: string, skip: boolean): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.createValueRegToken(name, patternStr, value, skip, null, null);
   }
-  static createEmptyValueRegToken(...__qin_args: any[]): any {
+  static createEmptyValueRegToken(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken {
     if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_subhuti_struct_LexerMode))) return this.__qin_overload_createEmptyValueRegToken_3_0(__qin_args[0], __qin_args[1], __qin_args[2]);
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createEmptyValueRegToken_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: createEmptyValueRegToken/" + __qin_args.length);
   }
-  static __qin_overload_createEmptyValueRegToken_3_0(name: string, patternStr: string, mode: com_subhuti_struct_LexerMode): any {
+  static __qin_overload_createEmptyValueRegToken_3_0(name: string, patternStr: string, mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern(patternStr).mode(mode).build();
   }
-  static __qin_overload_createEmptyValueRegToken_2_1(name: string, patternStr: string): any {
+  static __qin_overload_createEmptyValueRegToken_2_1(name: string, patternStr: string): com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.createEmptyValueRegToken(name, patternStr, null);
   }
-  static builder(): any {
+  static builder(): com_subhuti_struct_SubhutiCreateToken$Builder {
     return new com_subhuti_struct_SubhutiCreateToken$Builder();
   }
-  toString(): any {
-    let sb: any = new __QinJavaLangStringBuilder();
+  toString(): string {
+    let sb: __QinJavaLangStringBuilder = new __QinJavaLangStringBuilder();
     sb.append("Token(").append(this.__qin_field_name);
     if ((__qin_binary__("!=", this.__qin_field_mode, null) && !com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE.equals(this.__qin_field_mode))) {
       sb.append(", mode=").append(this.__qin_field_mode.getName());
@@ -189,9 +189,9 @@ const SubhutiCreateToken = com_subhuti_struct_SubhutiCreateToken;
 class com_subhuti_struct_SubhutiCreateToken$Builder {
   __qin_field_name: string | null = null as any;
   __qin_field_type: string | null = null as any;
-  __qin_field_pattern: any = null as any;
-  __qin_field_isKeyword: boolean | null = null as any;
-  __qin_field_skip: boolean | null = null as any;
+  __qin_field_pattern: __QinJavaUtilRegexPattern | null = null as any;
+  __qin_field_isKeyword: boolean | null = false as any;
+  __qin_field_skip: boolean | null = false as any;
   __qin_field_value: string | null = null as any;
   __qin_field_fixedValue: string | null = null as any;
   __qin_field_lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead | null = null as any;
@@ -212,61 +212,61 @@ class com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_contextConstraint = null;
     this.__qin_field_mode = null;
   }
-  name(name: string): any {
+  name(name: string): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_name = name;
     return this;
   }
-  type(type: string): any {
+  type(type: string): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_type = type;
     return this;
   }
-  pattern(...__qin_args: any[]): any {
+  pattern(...__qin_args: any[]): com_subhuti_struct_SubhutiCreateToken$Builder {
     if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_pattern_1_0(__qin_args[0]);
     if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], __QinJavaUtilRegexPattern))) return this.__qin_overload_pattern_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: pattern/" + __qin_args.length);
   }
-  __qin_overload_pattern_1_0(regex: string): any {
+  __qin_overload_pattern_1_0(regex: string): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_pattern = __QinJavaUtilRegexPattern.compile(regex);
     return this;
   }
-  __qin_overload_pattern_1_1(pattern: any): any {
+  __qin_overload_pattern_1_1(pattern: __QinJavaUtilRegexPattern): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_pattern = pattern;
     return this;
   }
-  isKeyword(isKeyword: boolean): any {
+  isKeyword(isKeyword: boolean): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_isKeyword = isKeyword;
     return this;
   }
-  skip(skip: boolean): any {
+  skip(skip: boolean): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_skip = skip;
     return this;
   }
-  value(value: string): any {
+  value(value: string): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_value = value;
     return this;
   }
-  fixedValue(value: string): any {
+  fixedValue(value: string): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_value = value;
     this.__qin_field_fixedValue = value;
     return this;
   }
-  lookaheadAfter(lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead): any {
+  lookaheadAfter(lookaheadAfter: com_subhuti_struct_SubhutiTokenLookahead): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_lookaheadAfter = lookaheadAfter;
     return this;
   }
-  contextConstraint(constraint: com_subhuti_struct_SubhutiTokenContextConstraint): any {
+  contextConstraint(constraint: com_subhuti_struct_SubhutiTokenContextConstraint): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_contextConstraint = constraint;
     return this;
   }
-  mode(mode: com_subhuti_struct_LexerMode): any {
+  mode(mode: com_subhuti_struct_LexerMode): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_mode = mode;
     return this;
   }
-  negativeLookahead(pattern: string): any {
+  negativeLookahead(pattern: string): com_subhuti_struct_SubhutiCreateToken$Builder {
     this.__qin_field_lookaheadAfter = new com_subhuti_struct_SubhutiTokenLookahead(null, __QinJavaUtilRegexPattern.compile(pattern), null, null);
     return this;
   }
-  build(): any {
+  build(): com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken(this.__qin_field_name, this.__qin_field_type, this.__qin_field_pattern, this.__qin_field_isKeyword, this.__qin_field_skip, this.__qin_field_value, this.__qin_field_fixedValue, this.__qin_field_lookaheadAfter, this.__qin_field_contextConstraint, this.__qin_field_mode);
   }
 }

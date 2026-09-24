@@ -1,6 +1,6 @@
 import { __qin_builtin_constructor__ } from "../core/runtime.js";
 
-export const __qin_java_hash_identity_ids__ = new (__qin_builtin_constructor__("WeakMap"))();
+export const __qin_java_hash_identity_ids__ = new Map();
 export let __qin_java_hash_identity_next__ = 1;
 export function __qin_java_string_hash_code__(value) {
   let hash = 0;

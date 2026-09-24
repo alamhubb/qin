@@ -9,10 +9,10 @@ function __qin_structural_object__(value) {
 }
 class com_subhuti_lexer_TokenCacheEntry {
   __qin_field_token: com_subhuti_struct_SubhutiMatchToken | null = null as any;
-  __qin_field_nextCodeIndex: number | null = null as any;
-  __qin_field_nextLine: number | null = null as any;
-  __qin_field_nextColumn: number | null = null as any;
-  __qin_field_tokenEndCodeIndex: number | null = null as any;
+  __qin_field_nextCodeIndex: number | null = 0 as any;
+  __qin_field_nextLine: number | null = 0 as any;
+  __qin_field_nextColumn: number | null = 0 as any;
+  __qin_field_tokenEndCodeIndex: number | null = 0 as any;
   __qin_field_lastTokenName: string | null = null as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_subhuti_struct_SubhutiMatchToken)) && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || typeof __qin_args[4] === "string")) {
@@ -41,10 +41,10 @@ class com_subhuti_lexer_TokenCacheEntry {
   }
   __qin_constructor_com_subhuti_lexer_TokenCacheEntry_6_1(token: com_subhuti_struct_SubhutiMatchToken, nextCodeIndex: number, nextLine: number, nextColumn: number, lastTokenName: string, tokenEndCodeIndex: number): void {
     this.__qin_field_token = null;
-    this.__qin_field_nextCodeIndex = null;
-    this.__qin_field_nextLine = null;
-    this.__qin_field_nextColumn = null;
-    this.__qin_field_tokenEndCodeIndex = null;
+    this.__qin_field_nextCodeIndex = 0;
+    this.__qin_field_nextLine = 0;
+    this.__qin_field_nextColumn = 0;
+    this.__qin_field_tokenEndCodeIndex = 0;
     this.__qin_field_lastTokenName = null;
     this.__qin_field_token = token;
     this.__qin_field_nextCodeIndex = nextCodeIndex;
@@ -53,25 +53,25 @@ class com_subhuti_lexer_TokenCacheEntry {
     this.__qin_field_lastTokenName = lastTokenName;
     this.__qin_field_tokenEndCodeIndex = tokenEndCodeIndex;
   }
-  getToken(): any {
+  getToken(): com_subhuti_struct_SubhutiMatchToken {
     return this.__qin_field_token;
   }
-  getNextCodeIndex(): any {
+  getNextCodeIndex(): number {
     return this.__qin_field_nextCodeIndex;
   }
-  getNextLine(): any {
+  getNextLine(): number {
     return this.__qin_field_nextLine;
   }
-  getNextColumn(): any {
+  getNextColumn(): number {
     return this.__qin_field_nextColumn;
   }
-  getLastTokenName(): any {
+  getLastTokenName(): string {
     return this.__qin_field_lastTokenName;
   }
-  getTokenEndCodeIndex(): any {
+  getTokenEndCodeIndex(): number {
     return this.__qin_field_tokenEndCodeIndex;
   }
-  toString(): any {
+  toString(): string {
     return __QinJavaLangString.format("TokenCacheEntry(%s, next=%d:%d:%d)", this.__qin_field_token.getTokenName(), this.__qin_field_nextCodeIndex, this.__qin_field_nextLine, this.__qin_field_nextColumn);
   }
 }

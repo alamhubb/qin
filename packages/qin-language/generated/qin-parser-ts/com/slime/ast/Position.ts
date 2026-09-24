@@ -7,12 +7,15 @@ function __qin_structural_object__(value) {
 }
 const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 class com_slime_ast_Position {
-  __qin_field_line: number | null = null as any;
-  __qin_field_column: number | null = null as any;
-  __qin_field_index: number | null = null as any;
+  __qin_field_line: number | null = 0 as any;
+  __qin_field_column: number | null = 0 as any;
+  __qin_field_index: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_ast_Position_0_0();
+    if (__qin_args.length === 3 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number") {
+      const line: any = __qin_args[0];
+      const column: any = __qin_args[1];
+      const index: any = __qin_args[2];
+      this.__qin_constructor_com_slime_ast_Position_3_0(line, column, index);
       return;
     }
     if (__qin_args.length === 2 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number") {
@@ -21,67 +24,53 @@ class com_slime_ast_Position {
       this.__qin_constructor_com_slime_ast_Position_2_1(line, column);
       return;
     }
-    if (__qin_args.length === 3 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number") {
-      const line: any = __qin_args[0];
-      const column: any = __qin_args[1];
-      const index: any = __qin_args[2];
-      this.__qin_constructor_com_slime_ast_Position_3_2(line, column, index);
-      return;
-    }
     throw new Error("Unsupported Java constructor overload: Position/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_Position_0_0(): void {
-    this.__qin_field_line = null;
-    this.__qin_field_column = null;
-    this.__qin_field_index = null;
-    if (__qin_binary__("<", this.__qin_field_line, 0.0)) {
+  __qin_constructor_com_slime_ast_Position_3_0(line: number, column: number, index: number): void {
+    this.__qin_field_line = 0;
+    this.__qin_field_column = 0;
+    this.__qin_field_index = 0;
+    if (__qin_binary__("<", line, 0.0)) {
       throw new __QinJavaLangIllegalArgumentException("line must be >= 0");
     }
-    if (__qin_binary__("<", this.__qin_field_column, 0.0)) {
+    if (__qin_binary__("<", column, 0.0)) {
       throw new __QinJavaLangIllegalArgumentException("column must be >= 0");
     }
-    if (__qin_binary__("<", this.__qin_field_index, 0.0)) {
+    if (__qin_binary__("<", index, 0.0)) {
       throw new __QinJavaLangIllegalArgumentException("index must be >= 0");
     }
+    this.__qin_field_line = line;
+    this.__qin_field_column = column;
+    this.__qin_field_index = index;
   }
   __qin_constructor_com_slime_ast_Position_2_1(line: number, column: number): void {
-    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 3 && typeof __qin_delegate_args[0] === "number" && typeof __qin_delegate_args[1] === "number" && typeof __qin_delegate_args[2] === "number") { return this.__qin_constructor_com_slime_ast_Position_3_2(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: Position/" + __qin_delegate_args.length); })(line, column, 0.0);
+    ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 3 && typeof __qin_delegate_args[0] === "number" && typeof __qin_delegate_args[1] === "number" && typeof __qin_delegate_args[2] === "number") { return this.__qin_constructor_com_slime_ast_Position_3_0(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: Position/" + __qin_delegate_args.length); })(line, column, 0.0);
   }
-  __qin_constructor_com_slime_ast_Position_3_2(line: number, column: number, index: number): void {
-    this.__qin_field_line = null;
-    this.__qin_field_column = null;
-    this.__qin_field_index = null;
-    (() => {
-      this.__qin_field_line = line;
-      this.__qin_field_column = column;
-      this.__qin_field_index = index;
-      return null;
-    })();
-  }
-  line(): any {
+  line(): number {
     return this.__qin_field_line;
   }
-  column(): any {
+  column(): number {
     return this.__qin_field_column;
   }
-  index(): any {
+  index(): number {
     return this.__qin_field_index;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_Position)) return false;
-    return __qin_java_values_equal__(this.__qin_field_line, other.__qin_field_line)
-      && __qin_java_values_equal__(this.__qin_field_column, other.__qin_field_column)
-      && __qin_java_values_equal__(this.__qin_field_index, other.__qin_field_index);
+    const __qin_record_other: com_slime_ast_Position = other;
+    return __qin_java_values_equal__(this.__qin_field_line, __qin_record_other.__qin_field_line)
+      && __qin_java_values_equal__(this.__qin_field_column, __qin_record_other.__qin_field_column)
+      && __qin_java_values_equal__(this.__qin_field_index, __qin_record_other.__qin_field_index);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_line);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_column);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_index);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["Position[", "line=", this.__qin_field_line, ", ", "column=", this.__qin_field_column, ", ", "index=", this.__qin_field_index, "]"].join("");
   }
 }

@@ -13,56 +13,46 @@ class com_slime_java_ast_JavaAstInstanceofExpression {
   __qin_field_value: com_slime_java_ast_JavaAstExpression | null = null as any;
   __qin_field_typeName: string | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstInstanceofExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || typeof __qin_args[1] === "string")) {
       const value: any = __qin_args[0];
       const typeName: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstInstanceofExpression_2_1(value, typeName);
+      this.__qin_constructor_com_slime_java_ast_JavaAstInstanceofExpression_2_0(value, typeName);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstInstanceofExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstInstanceofExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstInstanceofExpression_2_0(value: com_slime_java_ast_JavaAstExpression, typeName: string): void {
     this.__qin_field_value = null;
     this.__qin_field_typeName = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_value, "value cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_typeName, "typeName cannot be null");
-    if (__QinJavaLangString.isBlank(this.__qin_field_typeName)) {
+    __QinJavaUtilObjects.requireNonNull(value, "value cannot be null");
+    __QinJavaUtilObjects.requireNonNull(typeName, "typeName cannot be null");
+    if (__QinJavaLangString.isBlank(typeName)) {
       throw new __QinJavaLangIllegalArgumentException("typeName cannot be blank");
     }
-    this.__qin_field_typeName = this.__qin_field_typeName.trim();
+    typeName = typeName.trim();
+    this.__qin_field_value = value;
+    this.__qin_field_typeName = typeName;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstInstanceofExpression_2_1(value: com_slime_java_ast_JavaAstExpression, typeName: string): void {
-    this.__qin_field_value = null;
-    this.__qin_field_typeName = null;
-    (() => {
-      this.__qin_field_value = value;
-      this.__qin_field_typeName = typeName;
-      return null;
-    })();
-  }
-  value(): any {
+  value(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_value;
   }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstInstanceofExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName);
+    const __qin_record_other: com_slime_java_ast_JavaAstInstanceofExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstInstanceofExpression[", "value=", this.__qin_field_value, ", ", "typeName=", this.__qin_field_typeName, "]"].join("");
   }
 }

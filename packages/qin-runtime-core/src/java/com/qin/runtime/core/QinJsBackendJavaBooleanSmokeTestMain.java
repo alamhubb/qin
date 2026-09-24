@@ -33,6 +33,7 @@ public final class QinJsBackendJavaBooleanSmokeTestMain {
         require(generated.contains("const __QinJavaLangBoolean"), "Boolean runtime facade");
         require(generated.contains("const Boolean = __QinJavaLangBoolean;"), "Boolean alias");
         require(generated.contains("const truth = Boolean.TRUE;"), "Boolean.TRUE member access");
+        require(generated.contains("getBoolean(name)"), "Boolean.getBoolean facade");
 
         Path root = Files.createTempDirectory("qin-js-backend-java-boolean-");
         Files.writeString(root.resolve("qin.config.js"),
@@ -42,9 +43,10 @@ public final class QinJsBackendJavaBooleanSmokeTestMain {
                 root,
                 generated
                         + "\ntruth.equals(true) + \":\" + Boolean.FALSE.equals(false)"
-                        + " + \":\" + Boolean.TRUE.equals(false);\n",
+                        + " + \":\" + Boolean.TRUE.equals(false)"
+                        + " + \":\" + Boolean.getBoolean('qin.missing.boolean');\n",
                 "js_backend_java_boolean");
-        if (!"true:true:false".equals(result)) {
+        if (!"true:true:false:false".equals(result)) {
             throw new IllegalStateException("Expected Boolean TRUE/FALSE equals result, got: " + result);
         }
         System.out.println("QinJsBackendJavaBooleanSmokeTestMain OK");

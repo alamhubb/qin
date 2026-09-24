@@ -415,16 +415,17 @@ final class QinJsPackageRunner {
             return;
         }
         if ("subhuti".equals(packageName)) {
-            materializeQinSubhutiShim(runtimeNodeModules);
-            materializeDependency(
+            Path generatedParserPackageDir = packageOverrides.getOrDefault(
                     "@qin/generated-qin-parser-ts",
-                    "file:" + workspaceRoot.resolve("qin")
+                    workspaceRoot.resolve("qin")
                             .resolve("packages")
                             .resolve("qin-language")
                             .resolve("generated")
-                            .resolve("qin-parser-ts")
-                            .toString()
-                            .replace('\\', '/'),
+                            .resolve("qin-parser-ts"));
+            materializeQinSubhutiShim(runtimeNodeModules, generatedParserPackageDir);
+            materializeDependency(
+                    "@qin/generated-qin-parser-ts",
+                    fileDependencySpecifier(runtimeNodeModules.resolve("subhuti"), generatedParserPackageDir),
                     projectRoot,
                     projectRoot,
                     runtimeNodeModules,
@@ -596,10 +597,26 @@ final class QinJsPackageRunner {
         return null;
     }
 
+    private String fileDependencySpecifier(Path dependencyBaseDir, Path packageDir) {
+        Path normalizedBase = dependencyBaseDir.toAbsolutePath().normalize();
+        Path normalizedPackage = packageDir.toAbsolutePath().normalize();
+        String pathText;
+        try {
+            pathText = normalizedBase.relativize(normalizedPackage).toString();
+        } catch (IllegalArgumentException ignored) {
+            pathText = normalizedPackage.toString();
+        }
+        if (pathText.isBlank()) {
+            pathText = ".";
+        }
+        return "file:" + pathText.replace('\\', '/');
+    }
+
     private void patchVitePluginVueForQinStaticCompilerImport(Path packageDir) throws IOException {
         Path entry = packageDir.resolve("dist").resolve("index.mjs");
         Files.createDirectories(entry.getParent());
         Files.writeString(entry, qinVitePluginVueShimSource(), StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(packageDir);
     }
 
     private String qinVitePluginVueShimSource() {
@@ -681,8 +698,9 @@ final class QinJsPackageRunner {
                 }
                 function vuePlugin(rawOptions = {}) {
                   const options = rawOptions || {};
-                  return {
+                  const plugin = {
                     name: "vite:vue",
+                    api: { version: "6.0.7" },
                     config() {
                       return { define: { __VUE_OPTIONS_API__: true, __VUE_PROD_DEVTOOLS__: false } };
                     },
@@ -696,25 +714,32 @@ final class QinJsPackageRunner {
                       if (String(id || "").includes("plugin-vue:export-helper")) return "plugin-vue:qin-helper";
                       return null;
                     },
-                    load(id) {
+                    load: {
+                      handler(id) {
                       if (id === "plugin-vue:qin-helper") {
                         return __qinExportDefaultPrefix + "(sfc, props) => { for (const [key, val] of props) sfc[key] = val; return sfc; }";
                       }
                       return null;
+                      }
                     },
-                    transform(code, id) {
-                      const text = String(id || "");
-                      if (!text.includes(".vue")) return null;
-                      if (text.includes("?vue")) return __qinCompileVueQuery(code, id, options);
-                      return __qinCompileVueMain(code, id, options);
+                    transform: {
+                      handler(code, id) {
+                        const text = String(id || "");
+                        if (!text.includes(".vue")) return null;
+                        if (text.includes("?vue")) return __qinCompileVueQuery(code, id, options);
+                        return __qinCompileVueMain(code, id, options);
+                      }
                     },
                     handleHotUpdate(ctx) {
                       if (ctx && ctx.server && ctx.server.ws) {
                         ctx.server.ws.send({ type: "full-reload", path: ctx.file });
                       }
                       return ctx && ctx.modules ? ctx.modules : [];
-                    }
+                    },
+                    options() {},
+                    buildStart() {}
                   };
+                  return plugin;
                 }
                 export { vuePlugin as default };
                 """;
@@ -1595,8 +1620,9 @@ final class QinJsPackageRunner {
         writeRuntimePackageStamp(shimDir);
     }
 
-    private void materializeQinSubhutiShim(Path runtimeNodeModules) throws IOException {
+    private void materializeQinSubhutiShim(Path runtimeNodeModules, Path generatedParserPackageDir) throws IOException {
         Path shimDir = runtimeNodeModules.resolve("subhuti").normalize();
+        String generatedParserDependency = fileDependencySpecifier(shimDir, generatedParserPackageDir);
         deleteRecursively(shimDir);
         Files.createDirectories(shimDir);
         Files.writeString(shimDir.resolve("package.json"), """
@@ -1610,10 +1636,10 @@ final class QinJsPackageRunner {
                   "main": "./index.ts",
                   "module": "./index.ts",
                   "dependencies": {
-                    "@qin/generated-qin-parser-ts": "file:../../../../../../qin/packages/qin-language/generated/qin-parser-ts"
+                    "@qin/generated-qin-parser-ts": "%s"
                   }
                 }
-                """, StandardCharsets.UTF_8);
+                """.formatted(generatedParserDependency), StandardCharsets.UTF_8);
         Files.writeString(shimDir.resolve("index.ts"), """
                 import { com_subhuti_struct_SubhutiCreateToken as GeneratedSubhutiCreateToken } from "@qin/generated-qin-parser-ts/com/subhuti/struct/SubhutiCreateToken.ts";
                 import { com_subhuti_parser_SubhutiParser as GeneratedSubhutiParser } from "@qin/generated-qin-parser-ts/com/subhuti/parser/SubhutiParser.ts";
@@ -1896,9 +1922,13 @@ final class QinJsPackageRunner {
                 }
 
                 function normalizeNodeType(raw) {
-                  const text = String(raw == null ? "" : raw)
+                  const enumName = raw && typeof raw === "object" && typeof raw.__qinEnumName === "string"
+                    ? raw.__qinEnumName
+                    : raw;
+                  const text = String(enumName == null ? "" : enumName)
                     .replace(/^SlimeAstTypeName\\./, "")
                     .replace(/^AstNodeType\\./, "");
+                  if (text === "" || text === "[object Object]") return "";
                   if (!/^[A-Z][A-Z0-9_]*$/.test(text)) return text;
                   const lower = text.toLowerCase();
                   let result = "";
@@ -1917,8 +1947,19 @@ final class QinJsPackageRunner {
                   return result;
                 }
 
+                function constructorTypeName(node) {
+                  if (node == null) return null;
+                  const ctor = node.constructor;
+                  if (ctor == null || typeof ctor.name !== "string" || ctor.name.length === 0) return null;
+                  const name = ctor.name;
+                  const underscoreIndex = name.lastIndexOf("_");
+                  const dollarIndex = name.lastIndexOf("$");
+                  const cutIndex = Math.max(underscoreIndex, dollarIndex);
+                  return cutIndex >= 0 ? name.slice(cutIndex + 1) : name;
+                }
+
                 function nodeType(node) {
-                  return normalizeNodeType(field(node, "type"));
+                  return normalizeNodeType(field(node, "type")) || normalizeNodeType(constructorTypeName(node));
                 }
 
                 function list(value) {
@@ -1999,12 +2040,13 @@ final class QinJsPackageRunner {
                   let defaultImport = "";
                   let namespaceImport = "";
                   for (const specifier of specifiers) {
-                    const type = nodeType(specifier);
-                    if (type === "ImportDefaultSpecifier") defaultImport = generateNode(field(specifier, "local"));
-                    else if (type === "ImportNamespaceSpecifier") namespaceImport = "* as " + generateNode(field(specifier, "local"));
+                    const actualSpecifier = field(specifier, "specifier") !== undefined ? field(specifier, "specifier") : specifier;
+                    const type = nodeType(actualSpecifier);
+                    if (type === "ImportDefaultSpecifier") defaultImport = generateNode(field(actualSpecifier, "local"));
+                    else if (type === "ImportNamespaceSpecifier") namespaceImport = "* as " + generateNode(field(actualSpecifier, "local"));
                     else {
-                      const imported = generateNode(field(specifier, "imported"));
-                      const local = generateNode(field(specifier, "local"));
+                      const imported = generateNode(field(actualSpecifier, "imported"));
+                      const local = generateNode(field(actualSpecifier, "local"));
                       named.push(imported && local && imported !== local ? imported + " as " + local : (imported || local));
                     }
                   }
@@ -2158,6 +2200,35 @@ final class QinJsPackageRunner {
                   return SlimeGenerator.generator({
                     type: "Program",
                     body: [{ type: "ExpressionStatement", expression: { type: "Literal", value: "ok" } }]
+                  }, []).code;
+                }
+
+                export function __qin_smoke_generate_import_const() {
+                  return SlimeGenerator.generator({
+                    type: "Program",
+                    body: [{
+                      type: "ImportDeclaration",
+                      specifiers: [{
+                        specifier: {
+                          type: "ImportSpecifier",
+                          imported: { type: "Identifier", name: "ref" },
+                          local: { type: "Identifier", name: "ref" }
+                        }
+                      }],
+                      source: { type: "Literal", value: "vue" }
+                    }, {
+                      type: "VariableDeclaration",
+                      kind: "const",
+                      declarations: [{
+                        type: "VariableDeclarator",
+                        id: { type: "Identifier", name: "count" },
+                        init: {
+                          type: "CallExpression",
+                          callee: { type: "Identifier", name: "ref" },
+                          arguments: [{ type: "Literal", value: 0 }]
+                        }
+                      }]
+                    }]
                   }, []).code;
                 }
 

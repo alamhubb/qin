@@ -30,7 +30,9 @@ public final class QinJavaSdkStringPrimitiveHotPathSmokeTestMain {
                         && __QinJavaLangString.equals("EOF", "EOF")
                         && !__QinJavaLangString.equals("EOF", "IdentifierName")
                         && __QinJavaLangString.isEmpty("")
-                        && __QinJavaLangString.length("token") === 5;
+                        && __QinJavaLangString.length("token") === 5
+                        && __QinJavaLangString.regionMatches("prefixToken", 6, "Token", 0, 5)
+                        && __QinJavaLangString.regionMatches("prefixTOKEN", true, 6, "token", 0, 5);
                     }
                     ok;
                     """,

@@ -1,5 +1,5 @@
 import { com_slime_parser_SlimeParser, com_slime_parser_SlimeParser as SlimeParser } from "../../slime/parser/SlimeParser.ts";
-import { com_slime_parser_SlimeParserRuntimeBase, com_slime_parser_SlimeParserRuntimeBase as SlimeParserRuntimeBase, com_slime_parser_SlimeParserRuntimeBase$EmptyStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$EmptyStaticRuntime as EmptyStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootOptionalStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootOptionalStaticRuntime as TSRootOptionalStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootPrimaryStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootPrimaryStaticRuntime as TSRootPrimaryStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootFormalParametersStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootFormalParametersStaticRuntime as TSRootFormalParametersStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootMethodDefinitionStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootMethodDefinitionStaticRuntime as TSRootMethodDefinitionStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$ClassBindingStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$ClassBindingStaticRuntime as ClassBindingStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$RootClassTailStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$RootClassTailStaticRuntime as RootClassTailStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSModifierStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSModifierStaticRuntime as TSModifierStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSAsExpressionTailStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSAsExpressionTailStaticRuntime as TSAsExpressionTailStaticRuntime } from "../../slime/parser/SlimeParserRuntimeBase.ts";
+import { com_slime_parser_SlimeParserRuntimeBase, com_slime_parser_SlimeParserRuntimeBase as SlimeParserRuntimeBase, com_slime_parser_SlimeParserRuntimeBase$EmptyStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$EmptyStaticRuntime as EmptyStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootOptionalStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootOptionalStaticRuntime as TSRootOptionalStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootPrimaryStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootPrimaryStaticRuntime as TSRootPrimaryStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootFormalParametersStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootFormalParametersStaticRuntime as TSRootFormalParametersStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootDeclarationStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootDeclarationStaticRuntime as TSRootDeclarationStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootImportSpecifierStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootImportSpecifierStaticRuntime as TSRootImportSpecifierStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootMethodDefinitionStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSRootMethodDefinitionStaticRuntime as TSRootMethodDefinitionStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$ClassBindingStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$ClassBindingStaticRuntime as ClassBindingStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$RootClassTailStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$RootClassTailStaticRuntime as RootClassTailStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSModifierStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSModifierStaticRuntime as TSModifierStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSAsExpressionTailStaticRuntime, com_slime_parser_SlimeParserRuntimeBase$TSAsExpressionTailStaticRuntime as TSAsExpressionTailStaticRuntime } from "../../slime/parser/SlimeParserRuntimeBase.ts";
 import { com_slime_parser_typescript_SlimeTSDeclarationParser, com_slime_parser_typescript_SlimeTSDeclarationParser as SlimeTSDeclarationParser, com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceDeclarationStaticRuntime as TSInterfaceDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceExtendsStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceExtendsStaticRuntime as TSInterfaceExtendsStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceBodyStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSInterfaceBodyStaticRuntime as TSInterfaceBodyStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSTypeAliasDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSTypeAliasDeclarationStaticRuntime as TSTypeAliasDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSExpressionWithTypeArgumentsStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSExpressionWithTypeArgumentsStaticRuntime as TSExpressionWithTypeArgumentsStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSClassImplementsStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSClassImplementsStaticRuntime as TSClassImplementsStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumDeclarationStaticRuntime as TSEnumDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumBodyStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumBodyStaticRuntime as TSEnumBodyStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberListStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberListStaticRuntime as TSEnumMemberListStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSEnumMemberStaticRuntime as TSEnumMemberStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleDeclarationStaticRuntime as TSModuleDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleNameStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleNameStaticRuntime as TSModuleNameStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleBlockStaticRuntime, com_slime_parser_typescript_SlimeTSDeclarationParser$TSModuleBlockStaticRuntime as TSModuleBlockStaticRuntime } from "../../slime/parser/typescript/SlimeTSDeclarationParser.ts";
 import { com_slime_parser_typescript_SlimeTSTypeParser, com_slime_parser_typescript_SlimeTSTypeParser as SlimeTSTypeParser, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeStaticRuntime as TSTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSPrimaryTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSPrimaryTypeStaticRuntime as TSPrimaryTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeLiteralStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeLiteralStaticRuntime as TSTypeLiteralStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeReferenceStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeReferenceStaticRuntime as TSTypeReferenceStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeNameStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeNameStaticRuntime as TSTypeNameStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeNameSuffixStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeNameSuffixStaticRuntime as TSTypeNameSuffixStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeParameterInstantiationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeParameterInstantiationStaticRuntime as TSTypeParameterInstantiationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSPrefixTypeOrPrimaryStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSPrefixTypeOrPrimaryStaticRuntime as TSPrefixTypeOrPrimaryStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeOperandStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeOperandStaticRuntime as TSTypeOperandStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeParameterDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeParameterDeclarationStaticRuntime as TSTypeParameterDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSKeywordTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSKeywordTypeStaticRuntime as TSKeywordTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSUnionOrIntersectionTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSUnionOrIntersectionTypeStaticRuntime as TSUnionOrIntersectionTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSIntersectionTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSIntersectionTypeStaticRuntime as TSIntersectionTypeStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSPropertyOrMethodSignatureStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSPropertyOrMethodSignatureStaticRuntime as TSPropertyOrMethodSignatureStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSParameterListStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSParameterListStaticRuntime as TSParameterListStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSParameterStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSParameterStaticRuntime as TSParameterStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeAnnotationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeAnnotationStaticRuntime as TSTypeAnnotationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$OptionalTSTypeAnnotationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$OptionalTSTypeAnnotationStaticRuntime as OptionalTSTypeAnnotationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$OptionalTSTypeParameterDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$OptionalTSTypeParameterDeclarationStaticRuntime as OptionalTSTypeParameterDeclarationStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeParameterStaticRuntime, com_slime_parser_typescript_SlimeTSTypeParser$TSTypeParameterStaticRuntime as TSTypeParameterStaticRuntime } from "../../slime/parser/typescript/SlimeTSTypeParser.ts";
 import { com_slime_parser_SlimeJavascriptParser, com_slime_parser_SlimeJavascriptParser as SlimeJavascriptParser, com_slime_parser_SlimeJavascriptParser$SourceType, com_slime_parser_SlimeJavascriptParser$SourceType as SourceType, com_slime_parser_SlimeJavascriptParser$JavascriptStaticRuntime, com_slime_parser_SlimeJavascriptParser$JavascriptStaticRuntime as JavascriptStaticRuntime } from "../../slime/parser/SlimeJavascriptParser.ts";
@@ -53,131 +53,185 @@ class com_qin_parser_QinParser extends com_slime_parser_SlimeParser {
   __qin_constructor_com_qin_parser_QinParser_1_0(sourceCode: string): void {
     null;
   }
-  QinModule(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): any {
-    this.Program(sourceType);
+  QinModule(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): void {
+    {
+      const __qin_typed_receiver_2045: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2045.Program(sourceType);
+    }
     return null;
   }
-  QinObjectDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
+  QinObjectDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_QinObjectDeclaration(params);
+      return /* @qin-static-admission member=call owner=com.qin.parser.QinParser method=__qin_subhuti_raw_QinObjectDeclaration receiver=this arity=1 */ com_qin_parser_QinParser.prototype.__qin_subhuti_raw_QinObjectDeclaration.call(this, params);
     }), "QinObjectDeclaration", "QinParser", __qin_subhuti_rule_cache_key([params]));
   }
-  __qin_subhuti_raw_QinObjectDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
+  __qin_subhuti_raw_QinObjectDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
       SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.TSDecorators();
     }));
-      this.QinObjectDeclarationBody(params);
+      {
+        const __qin_typed_receiver_2046: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2046.QinObjectDeclarationBody(params);
+      }
       return null;
     }
-    this.OptionalTSDecorators();
-    this.QinObjectDeclarationBody(params);
+    {
+      const __qin_typed_receiver_2047: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2047.OptionalTSDecorators();
+    }
+    {
+      const __qin_typed_receiver_2048: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2048.QinObjectDeclarationBody(params);
+    }
     return null;
   }
-  QinObjectDeclarationBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
+  QinObjectDeclarationBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_QinObjectDeclarationBody(params);
+      return /* @qin-static-admission member=call owner=com.qin.parser.QinParser method=__qin_subhuti_raw_QinObjectDeclarationBody receiver=this arity=1 */ com_qin_parser_QinParser.prototype.__qin_subhuti_raw_QinObjectDeclarationBody.call(this, params);
     }), "QinObjectDeclarationBody", "QinParser", __qin_subhuti_rule_cache_key([params]));
   }
-  __qin_subhuti_raw_QinObjectDeclarationBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
-    this.consumeIdentifierValue("object");
-    this.QinObjectName();
-    this.ClassTail(params);
+  __qin_subhuti_raw_QinObjectDeclarationBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
+    {
+      const __qin_typed_receiver_2049: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2049.consumeIdentifierValue("object");
+    }
+    {
+      const __qin_typed_receiver_2050: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2050.QinObjectName();
+    }
+    {
+      const __qin_typed_receiver_2051: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2051.ClassTail(params);
+    }
     return null;
   }
-  QinObjectName(): any {
+  QinObjectName(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_QinObjectName();
+      return /* @qin-static-admission member=call owner=com.qin.parser.QinParser method=__qin_subhuti_raw_QinObjectName receiver=this arity=0 */ com_qin_parser_QinParser.prototype.__qin_subhuti_raw_QinObjectName.call(this);
     }), "QinObjectName", "QinParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_QinObjectName(): any {
+  __qin_subhuti_raw_QinObjectName(): void {
     if (false) {
-      this.IdentifierName();
+      {
+        const __qin_typed_receiver_2052: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2052.IdentifierName();
+      }
       return null;
     }
-    this.IdentifierName();
+    {
+      const __qin_typed_receiver_2053: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2053.IdentifierName();
+    }
     return null;
   }
-  Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
+  Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_Declaration(params);
+      return /* @qin-static-admission member=call owner=com.qin.parser.QinParser method=__qin_subhuti_raw_Declaration receiver=this arity=1 */ com_qin_parser_QinParser.prototype.__qin_subhuti_raw_Declaration.call(this, params);
     }), "Declaration", "QinParser", __qin_subhuti_rule_cache_key([params]));
   }
-  __qin_subhuti_raw_Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
+  __qin_subhuti_raw_Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartQinObjectDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartQinObjectDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartQinObjectDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.QinObjectDeclaration(params);
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSInterfaceDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSInterfaceDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSInterfaceDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSInterfaceDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSTypeAliasDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSTypeAliasDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSTypeAliasDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSTypeAliasDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSEnumDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSEnumDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSEnumDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSEnumDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSModuleDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSModuleDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSModuleDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSModuleDeclaration();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartTSDeclareStatement.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartTSDeclareStatement receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartTSDeclareStatement.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.TSDeclareStatement();
-    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.declarationStandardStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=declarationStandardStart receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.declarationStandardStart.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.StandardDeclaration(params);
     })));
       return null;
     }
     if (this.canStartQinObjectDeclaration()) {
-      this.QinObjectDeclaration(params);
+      {
+        const __qin_typed_receiver_2054: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2054.QinObjectDeclaration(params);
+      }
       return null;
     }
     if (this.canStartTSInterfaceDeclaration()) {
-      this.TSInterfaceDeclaration();
+      {
+        const __qin_typed_receiver_2055: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2055.TSInterfaceDeclaration();
+      }
       return null;
     }
     if (this.canStartTSTypeAliasDeclaration()) {
-      this.TSTypeAliasDeclaration();
+      {
+        const __qin_typed_receiver_2056: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2056.TSTypeAliasDeclaration();
+      }
       return null;
     }
     if (this.canStartTSEnumDeclaration()) {
-      this.TSEnumDeclaration();
+      {
+        const __qin_typed_receiver_2057: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2057.TSEnumDeclaration();
+      }
       return null;
     }
     if (this.canStartTSModuleDeclaration()) {
-      this.TSModuleDeclaration();
+      {
+        const __qin_typed_receiver_2058: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2058.TSModuleDeclaration();
+      }
       return null;
     }
     if (this.canStartTSDeclareStatement()) {
-      this.TSDeclareStatement();
+      {
+        const __qin_typed_receiver_2059: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2059.TSDeclareStatement();
+      }
       return null;
     }
     if (this.declarationStandardStart()) {
-      this.StandardDeclaration(params);
+      {
+        const __qin_typed_receiver_2060: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2060.StandardDeclaration(params);
+      }
       return null;
     }
-    this.setParseFail();
+    {
+      const __qin_typed_receiver_2061: com_qin_parser_QinParser = this;
+      __qin_typed_receiver_2061.setParseFail();
+    }
     return null;
   }
-  StatementListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
+  StatementListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_StatementListItem(params);
+      return /* @qin-static-admission member=call owner=com.qin.parser.QinParser method=__qin_subhuti_raw_StatementListItem receiver=this arity=1 */ com_qin_parser_QinParser.prototype.__qin_subhuti_raw_StatementListItem.call(this, params);
     }), "StatementListItem", "QinParser", __qin_subhuti_rule_cache_key([params]));
   }
-  __qin_subhuti_raw_StatementListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
+  __qin_subhuti_raw_StatementListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): void {
     if (false) {
-      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.canStartQinObjectDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
-      return this.Declaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.__qin_yield(), params.__qin_await(), false));
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=canStartQinObjectDeclaration receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.canStartQinObjectDeclaration.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      return this.Declaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.yield(), params.await(), false));
     })), __qin_java_functional(() => {
       return super.__qin_subhuti_raw_StatementListItem(params);
     }));
       return null;
     }
     if (this.canStartQinObjectDeclaration()) {
-      this.Declaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.__qin_yield(), params.__qin_await(), false));
+      {
+        const __qin_typed_receiver_2062: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2062.Declaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.yield(), params.await(), false));
+      }
       return null;
     }
     super.__qin_subhuti_raw_StatementListItem(params);
     return null;
   }
-  canStartQinObjectDeclaration(): any {
+  canStartQinObjectDeclaration(): boolean {
     return this.canStartQinObjectDeclarationAt(1.0);
   }
-  canStartQinObjectDeclarationAt(lookaheadOffset: number): any {
+  canStartQinObjectDeclarationAt(lookaheadOffset: number): boolean {
     if (this.matchIdentifierValue("object", lookaheadOffset)) {
       return true;
     }
@@ -186,13 +240,13 @@ class com_qin_parser_QinParser extends com_slime_parser_SlimeParser {
     }
     return this.decoratedQinObjectDeclarationStart(lookaheadOffset);
   }
-  canStartStatementListItemAt(lookaheadOffset: number, params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
+  canStartStatementListItemAt(lookaheadOffset: number, params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): boolean {
     return (this.canStartQinObjectDeclarationAt(lookaheadOffset) || super.canStartStatementListItemAt(lookaheadOffset, params));
   }
-  decoratedQinObjectDeclarationStart(lookaheadOffset: number): any {
-    let depth: any = 0.0;
-    for (let offset: any = __qin_binary__("+", lookaheadOffset, 1.0); __qin_binary__("<=", offset, __qin_binary__("+", lookaheadOffset, 24.0)); offset++) {
-      let tokenName: any = this.tokenNameAt(offset);
+  decoratedQinObjectDeclarationStart(lookaheadOffset: number): boolean {
+    let depth: number = 0.0;
+    for (let offset: number = __qin_binary__("+", lookaheadOffset, 1.0); __qin_binary__("<=", offset, __qin_binary__("+", lookaheadOffset, 24.0)); offset++) {
+      let tokenName: string = this.tokenNameAt(offset);
       if (__qin_binary__("==", tokenName, null)) {
         return false;
       }
@@ -216,32 +270,68 @@ class com_qin_parser_QinParser extends com_slime_parser_SlimeParser {
     }
     return false;
   }
-  ExportDeclaration(): any {
+  ExportDeclaration(): void {
     return this.executeRuleWrapper(__qin_java_functional(() => {
-      return this.__qin_subhuti_raw_ExportDeclaration();
+      return /* @qin-static-admission member=call owner=com.qin.parser.QinParser method=__qin_subhuti_raw_ExportDeclaration receiver=this arity=0 */ com_qin_parser_QinParser.prototype.__qin_subhuti_raw_ExportDeclaration.call(this);
     }), "ExportDeclaration", "QinParser", __qin_subhuti_rule_cache_key([]));
   }
-  __qin_subhuti_raw_ExportDeclaration(): any {
+  __qin_subhuti_raw_ExportDeclaration(): void {
     if (false) {
       SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
-      this.TSDecorators();
-      this.__qin_field_tokenConsumer.Export();
-      this.__qin_field_tokenConsumer.Default();
-      this.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+      {
+        const __qin_typed_receiver_2063: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2063.TSDecorators();
+      }
+      {
+        const __qin_typed_receiver_2064: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2064.Export();
+      }
+      {
+        const __qin_typed_receiver_2065: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2065.Default();
+      }
+      {
+        const __qin_typed_receiver_2066: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2066.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+      }
       return null;
     }), __qin_java_functional(() => {
-      this.TSDecorators();
-      this.__qin_field_tokenConsumer.Export();
-      this.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+      {
+        const __qin_typed_receiver_2067: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2067.TSDecorators();
+      }
+      {
+        const __qin_typed_receiver_2068: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2068.Export();
+      }
+      {
+        const __qin_typed_receiver_2069: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2069.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+      }
       return null;
     }), __qin_java_functional(() => {
-      this.__qin_field_tokenConsumer.Export();
-      this.__qin_field_tokenConsumer.Default();
-      this.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+      {
+        const __qin_typed_receiver_2070: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2070.Export();
+      }
+      {
+        const __qin_typed_receiver_2071: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2071.Default();
+      }
+      {
+        const __qin_typed_receiver_2072: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2072.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+      }
       return null;
     }), __qin_java_functional(() => {
-      this.__qin_field_tokenConsumer.Export();
-      this.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+      {
+        const __qin_typed_receiver_2073: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2073.Export();
+      }
+      {
+        const __qin_typed_receiver_2074: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2074.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+      }
       return null;
     }), __qin_java_functional(() => {
       return super.__qin_subhuti_raw_ExportDeclaration();
@@ -249,25 +339,55 @@ class com_qin_parser_QinParser extends com_slime_parser_SlimeParser {
       return null;
     }
     if ((__QinJavaLangString.equals("At", this.tokenNameAt(1.0)) && this.decoratedQinObjectDeclarationStart(1.0))) {
-      this.TSDecorators();
-      this.__qin_field_tokenConsumer.Export();
+      {
+        const __qin_typed_receiver_2075: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2075.TSDecorators();
+      }
+      {
+        const __qin_typed_receiver_2076: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2076.Export();
+      }
       if (__QinJavaLangString.equals("Default", this.tokenNameAt(1.0))) {
-        this.__qin_field_tokenConsumer.Default();
-        this.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+        {
+          const __qin_typed_receiver_2077: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+          __qin_typed_receiver_2077.Default();
+        }
+        {
+          const __qin_typed_receiver_2078: com_qin_parser_QinParser = this;
+          __qin_typed_receiver_2078.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+        }
       } else {
-        this.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+        {
+          const __qin_typed_receiver_2079: com_qin_parser_QinParser = this;
+          __qin_typed_receiver_2079.QinObjectDeclarationBody(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+        }
       }
       return null;
     }
     if ((__QinJavaLangString.equals("Export", this.tokenNameAt(1.0)) && __QinJavaLangString.equals("Default", this.tokenNameAt(2.0)) && (__QinJavaLangString.equals("At", this.tokenNameAt(3.0)) || this.matchIdentifierValue("object", 3.0)))) {
-      this.__qin_field_tokenConsumer.Export();
-      this.__qin_field_tokenConsumer.Default();
-      this.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+      {
+        const __qin_typed_receiver_2080: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2080.Export();
+      }
+      {
+        const __qin_typed_receiver_2081: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2081.Default();
+      }
+      {
+        const __qin_typed_receiver_2082: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2082.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, true));
+      }
       return null;
     }
     if ((__QinJavaLangString.equals("Export", this.tokenNameAt(1.0)) && (__QinJavaLangString.equals("At", this.tokenNameAt(2.0)) || this.matchIdentifierValue("object", 2.0)))) {
-      this.__qin_field_tokenConsumer.Export();
-      this.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+      {
+        const __qin_typed_receiver_2083: com_slime_parser_consumer_SlimeTokenConsumer = this.__qin_field_tokenConsumer;
+        __qin_typed_receiver_2083.Export();
+      }
+      {
+        const __qin_typed_receiver_2084: com_qin_parser_QinParser = this;
+        __qin_typed_receiver_2084.QinObjectDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(false, true, false));
+      }
       return null;
     }
     super.__qin_subhuti_raw_ExportDeclaration();

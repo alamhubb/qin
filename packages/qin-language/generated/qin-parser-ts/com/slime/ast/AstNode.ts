@@ -14,13 +14,8 @@ class com_slime_ast_AstNode {
       throw new Error("Unsupported Java constructor arity: AstNode/" + __qin_args.length);
     }
   }
-  type(): any {
-    throw new Error("Abstract Java method is not implemented: type");
-  }
-  location(): any {
-    throw new Error("Abstract Java method is not implemented: location");
-  }
 }
+com_slime_ast_AstNode.__qin_java_interface = true;
 const AstNode = com_slime_ast_AstNode;
 
 function run() {

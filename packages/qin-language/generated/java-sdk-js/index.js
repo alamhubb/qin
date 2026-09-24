@@ -7,14 +7,41 @@ export { qinJavaSdkCompatibility } from "./support-matrix.js";
 export {
   __qin_builtin_constructor__,
   __qin_java_pattern_regexp__,
+  __qin_java_regex_pattern_compile__,
+  __qin_java_regex_pattern_exec__,
+  __qin_java_new_array__,
+  __qin_java_regex_matcher__,
+  __qin_java_regex_matcher_region__,
+  __qin_java_regex_matcher_reset__,
+  __qin_java_regex_matcher_looking_at__,
+  __qin_java_regex_matcher_matches__,
+  __qin_java_regex_matcher_find__,
+  __qin_java_regex_matcher_group__,
+  __qin_java_regex_matcher_group_count__,
+  __qin_java_regex_matcher_start__,
+  __qin_java_regex_matcher_end__,
+  __qin_java_regex_matcher_replace_all__,
+  __qin_java_regex_matcher_append_replacement__,
+  __qin_java_regex_matcher_append_tail__,
   __QinJavaLangString,
   __QinJavaMathBigInteger,
   __qin_java_functional,
+  __QinJavaLangReflectMethod,
   __qin_java_class_info__,
   __qin_java_implements,
   __qin_instanceof__,
   __qin_binary__,
-  __qin_logical__
+  __qin_logical__,
+  __qin_collection_size__,
+  __qin_collection_is_empty__,
+  __qin_collection_get__,
+  __qin_collection_add__,
+  __qin_collection_contains__,
+  __qin_collection_to_array__,
+  __qin_java_utf8_decode__,
+  __qin_java_time_now__,
+  __qin_java_time_from__,
+  __qin_java_time_format__
 } from "./core/runtime.js";
 
 export {
@@ -23,7 +50,9 @@ export {
   __QinSlf4jLogger,
   __QinSlf4jLoggerFactory,
   __QinJavaLangInteger,
-  __QinJavaLangDouble
+  __QinJavaLangNumber,
+  __QinJavaLangDouble,
+  __QinJavaLangLong
 } from "./lang/primitives.js";
 
 export { __QinJavaLangEnum } from "./lang/enum.js";
@@ -34,6 +63,7 @@ export {
   __QinJavaLangRuntimeException,
   __QinJavaLangReflectiveOperationException,
   __QinJavaLangClassNotFoundException,
+  __QinJavaLangClassCastException,
   __QinJavaLangNoSuchMethodException,
   __QinJavaLangReflectInvocationTargetException,
   __QinJavaLangError,
@@ -46,11 +76,27 @@ export {
 } from "./lang/throwable.js";
 export { __QinJavaLangSystem } from "./lang/system.js";
 export { __QinJavaLangStringBuilder } from "./lang/string-builder.js";
+export {
+  __QinJavaIoByteArrayOutputStream,
+  __QinJavaIoByteArrayInputStream,
+  __QinJavaIoDataOutputStream,
+  __QinJavaIoDataInputStream,
+  __QinJavaUtilZipGZIPOutputStream,
+  __QinJavaUtilZipGZIPInputStream,
+  __QinJavaUtilBase64
+} from "./io/streams.js";
+export {
+  __QinJavaSecurityMessageDigest,
+  __QinJavaUtilHexFormat
+} from "./security/digest.js";
 
 export {
   __QinJavaTimeFormatDateTimeFormatter,
   __QinJavaTimeLocalDateTime
 } from "./time/index.js";
+export {
+  __QinJavaNioCharsetStandardCharsets
+} from "./nio/charset.js";
 
 export {
   __qin_java_string_hash_code__,
@@ -62,9 +108,11 @@ export {
 } from "./util/hash.js";
 export {
   __QinJavaUtilArrayList,
+  __QinJavaUtilArrayDeque,
   __QinJavaUtilUnmodifiableList,
   __QinJavaUtilList,
   __QinJavaUtilHashSet,
+  __QinJavaUtilTreeSet,
   __QinJavaUtilUnmodifiableSet,
   __QinJavaUtilSet,
   __QinJavaUtilArrays,
@@ -80,6 +128,7 @@ export {
   __QinJavaUtilOptional
 } from "./util/optional.js";
 export {
+  __QinJavaUtilComparator,
   __QinJavaUtilStream,
   __QinJavaUtilStreamCollectors
 } from "./util/stream.js";

@@ -79,7 +79,6 @@ public final class QinParserLineSliceProbeMain {
             System.out.println("index=" + parser.getCurrentIndex());
             System.out.println("next=" + (token == null ? "null" : token.tokenName() + ":" + token.value()));
             System.out.println("orPredictionStats=" + parser.getOrPredictionStats());
-            System.out.println("orPredictionGrammar=" + parser.getLastOrPredictionGrammar());
             System.out.println("cst=" + (cst == null ? "null" : cst.getName()));
         } catch (Exception e) {
             SubhutiMatchToken token = parser.curToken();
@@ -92,7 +91,6 @@ public final class QinParserLineSliceProbeMain {
             System.out.println("index=" + parser.getCurrentIndex());
             System.out.println("next=" + (token == null ? "null" : token.tokenName() + ":" + token.value()));
             System.out.println("orPredictionStats=" + parser.getOrPredictionStats());
-            System.out.println("orPredictionGrammar=" + parser.getLastOrPredictionGrammar());
             System.out.println("error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace(System.out);
         }

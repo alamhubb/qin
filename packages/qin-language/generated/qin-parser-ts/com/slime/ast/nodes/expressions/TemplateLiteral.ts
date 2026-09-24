@@ -10,11 +10,11 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_ast_nodes_expressions_TemplateLiteral {
-  __qin_field_quasis: any = null as any;
-  __qin_field_expressions: any = null as any;
+  __qin_field_quasis: __QinJavaUtilList<com_slime_ast_nodes_misc_TemplateElement> | null = null as any;
+  __qin_field_expressions: __QinJavaUtilList<com_slime_ast_Expression> | null = null as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation) || __qin_args[2].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 3 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_instanceof__(__qin_args[1], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[1], __QinJavaUtilUnmodifiableList)) && (__qin_args[2] === null || __qin_instanceof__(__qin_args[2], com_slime_ast_SourceLocation))) {
       const quasis: any = __qin_args[0];
       const expressions: any = __qin_args[1];
       const location: any = __qin_args[2];
@@ -23,7 +23,7 @@ class com_slime_ast_nodes_expressions_TemplateLiteral {
     }
     throw new Error("Unsupported Java constructor overload: TemplateLiteral/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_ast_nodes_expressions_TemplateLiteral_3_0(quasis: any, expressions: any, location: com_slime_ast_SourceLocation): void {
+  __qin_constructor_com_slime_ast_nodes_expressions_TemplateLiteral_3_0(quasis: __QinJavaUtilList<com_slime_ast_nodes_misc_TemplateElement>, expressions: __QinJavaUtilList<com_slime_ast_Expression>, location: com_slime_ast_SourceLocation): void {
     this.__qin_field_quasis = null;
     this.__qin_field_expressions = null;
     this.__qin_field_location = null;
@@ -34,33 +34,34 @@ class com_slime_ast_nodes_expressions_TemplateLiteral {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_TEMPLATE_LITERAL;
   }
-  quasis(): any {
+  quasis(): __QinJavaUtilList<com_slime_ast_nodes_misc_TemplateElement> {
     return this.__qin_field_quasis;
   }
-  expressions(): any {
+  expressions(): __QinJavaUtilList<com_slime_ast_Expression> {
     return this.__qin_field_expressions;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_expressions_TemplateLiteral)) return false;
-    return __qin_java_values_equal__(this.__qin_field_quasis, other.__qin_field_quasis)
-      && __qin_java_values_equal__(this.__qin_field_expressions, other.__qin_field_expressions)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_expressions_TemplateLiteral = other;
+    return __qin_java_values_equal__(this.__qin_field_quasis, __qin_record_other.__qin_field_quasis)
+      && __qin_java_values_equal__(this.__qin_field_expressions, __qin_record_other.__qin_field_expressions)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_quasis);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_expressions);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TemplateLiteral[", "quasis=", this.__qin_field_quasis, ", ", "expressions=", this.__qin_field_expressions, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }

@@ -6,13 +6,13 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_subhuti_parser_SubhutiBackData {
-  __qin_field_tokenCursor: number | null = null as any;
-  __qin_field_codeIndex: number | null = null as any;
-  __qin_field_codeLine: number | null = null as any;
-  __qin_field_codeColumn: number | null = null as any;
+  __qin_field_tokenCursor: number | null = 0 as any;
+  __qin_field_codeIndex: number | null = 0 as any;
+  __qin_field_codeLine: number | null = 0 as any;
+  __qin_field_codeColumn: number | null = 0 as any;
   __qin_field_lastTokenName: string | null = null as any;
-  __qin_field_curCstChildrenLength: number | null = null as any;
-  __qin_field_parsedTokensLength: number | null = null as any;
+  __qin_field_curCstChildrenLength: number | null = 0 as any;
+  __qin_field_parsedTokensLength: number | null = 0 as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 7 && typeof __qin_args[0] === "number" && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || typeof __qin_args[4] === "string") && typeof __qin_args[5] === "number" && typeof __qin_args[6] === "number") {
       const tokenCursor: any = __qin_args[0];
@@ -28,13 +28,13 @@ class com_subhuti_parser_SubhutiBackData {
     throw new Error("Unsupported Java constructor overload: SubhutiBackData/" + __qin_args.length);
   }
   __qin_constructor_com_subhuti_parser_SubhutiBackData_7_0(tokenCursor: number, codeIndex: number, codeLine: number, codeColumn: number, lastTokenName: string, curCstChildrenLength: number, parsedTokensLength: number): void {
-    this.__qin_field_tokenCursor = null;
-    this.__qin_field_codeIndex = null;
-    this.__qin_field_codeLine = null;
-    this.__qin_field_codeColumn = null;
+    this.__qin_field_tokenCursor = 0;
+    this.__qin_field_codeIndex = 0;
+    this.__qin_field_codeLine = 0;
+    this.__qin_field_codeColumn = 0;
     this.__qin_field_lastTokenName = null;
-    this.__qin_field_curCstChildrenLength = null;
-    this.__qin_field_parsedTokensLength = null;
+    this.__qin_field_curCstChildrenLength = 0;
+    this.__qin_field_parsedTokensLength = 0;
     (() => {
       this.__qin_field_tokenCursor = tokenCursor;
       this.__qin_field_codeIndex = codeIndex;
@@ -46,42 +46,43 @@ class com_subhuti_parser_SubhutiBackData {
       return null;
     })();
   }
-  static of(tokenCursor: number, codeIndex: number, codeLine: number, codeColumn: number, lastTokenName: string, curCstChildrenLength: number, parsedTokensLength: number): any {
+  static of(tokenCursor: number, codeIndex: number, codeLine: number, codeColumn: number, lastTokenName: string, curCstChildrenLength: number, parsedTokensLength: number): com_subhuti_parser_SubhutiBackData {
     return new com_subhuti_parser_SubhutiBackData(tokenCursor, codeIndex, codeLine, codeColumn, lastTokenName, curCstChildrenLength, parsedTokensLength);
   }
-  tokenCursor(): any {
+  tokenCursor(): number {
     return this.__qin_field_tokenCursor;
   }
-  codeIndex(): any {
+  codeIndex(): number {
     return this.__qin_field_codeIndex;
   }
-  codeLine(): any {
+  codeLine(): number {
     return this.__qin_field_codeLine;
   }
-  codeColumn(): any {
+  codeColumn(): number {
     return this.__qin_field_codeColumn;
   }
-  lastTokenName(): any {
+  lastTokenName(): string {
     return this.__qin_field_lastTokenName;
   }
-  curCstChildrenLength(): any {
+  curCstChildrenLength(): number {
     return this.__qin_field_curCstChildrenLength;
   }
-  parsedTokensLength(): any {
+  parsedTokensLength(): number {
     return this.__qin_field_parsedTokensLength;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_subhuti_parser_SubhutiBackData)) return false;
-    return __qin_java_values_equal__(this.__qin_field_tokenCursor, other.__qin_field_tokenCursor)
-      && __qin_java_values_equal__(this.__qin_field_codeIndex, other.__qin_field_codeIndex)
-      && __qin_java_values_equal__(this.__qin_field_codeLine, other.__qin_field_codeLine)
-      && __qin_java_values_equal__(this.__qin_field_codeColumn, other.__qin_field_codeColumn)
-      && __qin_java_values_equal__(this.__qin_field_lastTokenName, other.__qin_field_lastTokenName)
-      && __qin_java_values_equal__(this.__qin_field_curCstChildrenLength, other.__qin_field_curCstChildrenLength)
-      && __qin_java_values_equal__(this.__qin_field_parsedTokensLength, other.__qin_field_parsedTokensLength);
+    const __qin_record_other: com_subhuti_parser_SubhutiBackData = other;
+    return __qin_java_values_equal__(this.__qin_field_tokenCursor, __qin_record_other.__qin_field_tokenCursor)
+      && __qin_java_values_equal__(this.__qin_field_codeIndex, __qin_record_other.__qin_field_codeIndex)
+      && __qin_java_values_equal__(this.__qin_field_codeLine, __qin_record_other.__qin_field_codeLine)
+      && __qin_java_values_equal__(this.__qin_field_codeColumn, __qin_record_other.__qin_field_codeColumn)
+      && __qin_java_values_equal__(this.__qin_field_lastTokenName, __qin_record_other.__qin_field_lastTokenName)
+      && __qin_java_values_equal__(this.__qin_field_curCstChildrenLength, __qin_record_other.__qin_field_curCstChildrenLength)
+      && __qin_java_values_equal__(this.__qin_field_parsedTokensLength, __qin_record_other.__qin_field_parsedTokensLength);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_tokenCursor);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_codeIndex);
@@ -92,7 +93,7 @@ class com_subhuti_parser_SubhutiBackData {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_parsedTokensLength);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["SubhutiBackData[", "tokenCursor=", this.__qin_field_tokenCursor, ", ", "codeIndex=", this.__qin_field_codeIndex, ", ", "codeLine=", this.__qin_field_codeLine, ", ", "codeColumn=", this.__qin_field_codeColumn, ", ", "lastTokenName=", this.__qin_field_lastTokenName, ", ", "curCstChildrenLength=", this.__qin_field_curCstChildrenLength, ", ", "parsedTokensLength=", this.__qin_field_parsedTokensLength, "]"].join("");
   }
 }

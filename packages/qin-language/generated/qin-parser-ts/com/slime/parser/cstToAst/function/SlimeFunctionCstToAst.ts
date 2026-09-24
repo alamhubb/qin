@@ -29,18 +29,18 @@ class com_slime_parser_cstToAst_function_SlimeFunctionCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createFunctionDeclarationAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let generator: any = (__QinJavaLangString.equals("GeneratorDeclaration", cst.getName()) || __QinJavaLangString.equals("AsyncGeneratorDeclaration", cst.getName()));
-    let async: any = (__QinJavaLangString.equals("AsyncFunctionDeclaration", cst.getName()) || __QinJavaLangString.equals("AsyncGeneratorDeclaration", cst.getName()));
-    let id: any = null;
-    let params: any = [];
-    let parameterMetadata: any = __QinJavaUtilList.of();
-    let body: any = null;
-    let returnType: any = null;
-    let typeParameters: any = null;
+  createFunctionDeclarationAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_declarations_FunctionDeclaration {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let generator: boolean = (__QinJavaLangString.equals("GeneratorDeclaration", cst.getName()) || __QinJavaLangString.equals("AsyncGeneratorDeclaration", cst.getName()));
+    let async: boolean = (__QinJavaLangString.equals("AsyncFunctionDeclaration", cst.getName()) || __QinJavaLangString.equals("AsyncGeneratorDeclaration", cst.getName()));
+    let id: com_slime_ast_nodes_expressions_Identifier = null;
+    let params: com_slime_ast_Pattern[] = Array.from({ length: 0.0 }, () => null);
+    let parameterMetadata: __QinJavaUtilList<com_slime_ast_nodes_misc_FunctionParameter> = __QinJavaUtilList.of();
+    let body: com_slime_ast_nodes_statements_BlockStatement = null;
+    let returnType: com_slime_ast_AstNode = null;
+    let typeParameters: com_slime_ast_AstNode = null;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("BindingIdentifier", name) || __QinJavaLangString.equals("Identifier", name))) {
         id = this.__qin_field_transformer.createIdentifierAst(child);
       } else {

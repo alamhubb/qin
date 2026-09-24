@@ -18,8 +18,8 @@ class com_slime_parser_typescript_SlimeTSIntersectionTypeStaticGrammar {
   __qin_constructor_com_slime_parser_typescript_SlimeTSIntersectionTypeStaticGrammar_0_0(): void {
     null;
   }
-  static grammar(): any {
-    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeOperand").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSIntersectionType", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseAnd")), com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeOperand"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseAnd"), com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeOperand")))))).build();
+  static grammar(): com_subhuti_parser_SubhutiStaticGrammar {
+    return com_subhuti_parser_SubhutiStaticGrammar.builder().declareExternalRule("TSTypeOperand").rule(com_subhuti_parser_SubhutiStaticGrammar.rule("TSIntersectionType", com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.option(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseAnd")), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeOperand"), com_subhuti_parser_SubhutiStaticGrammar.many(com_subhuti_parser_SubhutiStaticGrammar.seq(com_subhuti_parser_SubhutiStaticGrammar.consume("BitwiseAnd"), /* @qin-static-admission member=call owner=com.subhuti.parser.SubhutiStaticGrammar method=call receiver=com_subhuti_parser_SubhutiStaticGrammar arity=1 */ com_subhuti_parser_SubhutiStaticGrammar.call("TSTypeOperand")))))).build();
   }
 }
 const SlimeTSIntersectionTypeStaticGrammar = com_slime_parser_typescript_SlimeTSIntersectionTypeStaticGrammar;

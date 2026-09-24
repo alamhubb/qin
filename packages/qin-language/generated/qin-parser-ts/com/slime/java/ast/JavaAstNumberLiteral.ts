@@ -6,8 +6,8 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_java_ast_JavaAstNumberLiteral {
-  __qin_field_value: number | null = null as any;
-  __qin_field_integral: boolean | null = null as any;
+  __qin_field_value: number | null = 0 as any;
+  __qin_field_integral: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 1 && typeof __qin_args[0] === "number") {
       const value: any = __qin_args[0];
@@ -26,33 +26,34 @@ class com_slime_java_ast_JavaAstNumberLiteral {
     ((...__qin_delegate_args) => { if (__qin_delegate_args.length === 2 && typeof __qin_delegate_args[0] === "number" && typeof __qin_delegate_args[1] === "boolean") { return this.__qin_constructor_com_slime_java_ast_JavaAstNumberLiteral_2_1(...__qin_delegate_args); } throw new Error("Unsupported Java constructor delegation: JavaAstNumberLiteral/" + __qin_delegate_args.length); })(value, false);
   }
   __qin_constructor_com_slime_java_ast_JavaAstNumberLiteral_2_1(value: number, integral: boolean): void {
-    this.__qin_field_value = null;
-    this.__qin_field_integral = null;
+    this.__qin_field_value = 0;
+    this.__qin_field_integral = false;
     (() => {
       this.__qin_field_value = value;
       this.__qin_field_integral = integral;
       return null;
     })();
   }
-  value(): any {
+  value(): number {
     return this.__qin_field_value;
   }
-  integral(): any {
+  integral(): boolean {
     return this.__qin_field_integral;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstNumberLiteral)) return false;
-    return __qin_java_values_equal__(this.__qin_field_value, other.__qin_field_value)
-      && __qin_java_values_equal__(this.__qin_field_integral, other.__qin_field_integral);
+    const __qin_record_other: com_slime_java_ast_JavaAstNumberLiteral = other;
+    return __qin_java_values_equal__(this.__qin_field_value, __qin_record_other.__qin_field_value)
+      && __qin_java_values_equal__(this.__qin_field_integral, __qin_record_other.__qin_field_integral);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_value);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_integral);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstNumberLiteral[", "value=", this.__qin_field_value, ", ", "integral=", this.__qin_field_integral, "]"].join("");
   }
 }

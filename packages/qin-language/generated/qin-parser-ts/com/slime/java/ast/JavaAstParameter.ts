@@ -8,7 +8,7 @@ function __qin_structural_object__(value) {
 class com_slime_java_ast_JavaAstParameter {
   __qin_field_typeName: string | null = null as any;
   __qin_field_name: string | null = null as any;
-  __qin_field_varargs: boolean | null = null as any;
+  __qin_field_varargs: boolean | null = false as any;
   constructor(...__qin_args: any[]) {
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) {
       const typeName: any = __qin_args[0];
@@ -31,7 +31,7 @@ class com_slime_java_ast_JavaAstParameter {
   __qin_constructor_com_slime_java_ast_JavaAstParameter_3_1(typeName: string, name: string, varargs: boolean): void {
     this.__qin_field_typeName = null;
     this.__qin_field_name = null;
-    this.__qin_field_varargs = null;
+    this.__qin_field_varargs = false;
     (() => {
       this.__qin_field_typeName = typeName;
       this.__qin_field_name = name;
@@ -39,30 +39,31 @@ class com_slime_java_ast_JavaAstParameter {
       return null;
     })();
   }
-  typeName(): any {
+  typeName(): string {
     return this.__qin_field_typeName;
   }
-  name(): any {
+  name(): string {
     return this.__qin_field_name;
   }
-  varargs(): any {
+  varargs(): boolean {
     return this.__qin_field_varargs;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstParameter)) return false;
-    return __qin_java_values_equal__(this.__qin_field_typeName, other.__qin_field_typeName)
-      && __qin_java_values_equal__(this.__qin_field_name, other.__qin_field_name)
-      && __qin_java_values_equal__(this.__qin_field_varargs, other.__qin_field_varargs);
+    const __qin_record_other: com_slime_java_ast_JavaAstParameter = other;
+    return __qin_java_values_equal__(this.__qin_field_typeName, __qin_record_other.__qin_field_typeName)
+      && __qin_java_values_equal__(this.__qin_field_name, __qin_record_other.__qin_field_name)
+      && __qin_java_values_equal__(this.__qin_field_varargs, __qin_record_other.__qin_field_varargs);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeName);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_name);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_varargs);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstParameter[", "typeName=", this.__qin_field_typeName, ", ", "name=", this.__qin_field_name, ", ", "varargs=", this.__qin_field_varargs, "]"].join("");
   }
 }

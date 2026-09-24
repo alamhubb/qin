@@ -31,12 +31,12 @@ class com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst {
     this.__qin_field_transformer = null;
     this.__qin_field_transformer = transformer;
   }
-  createWithStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let object: any = null;
-    let body: any = null;
+  createWithStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_WithStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let object: com_slime_ast_Expression = null;
+    let body: com_slime_ast_Statement = null;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if ((__QinJavaLangString.equals("Expression", name) && __qin_binary__("==", object, null))) {
         object = this.createExpressionAst(child);
       } else {
@@ -47,15 +47,15 @@ class com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createWithStatement(object, body, cst.getLocation());
   }
-  createDebuggerStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createDebuggerStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_DebuggerStatement {
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createDebuggerStatement(cst.getLocation());
   }
-  createLabeledStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let children: any = cst.getChildren();
-    let label: any = null;
-    let body: any = null;
+  createLabeledStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_LabeledStatement {
+    let children: __QinJavaUtilList<com_subhuti_struct_SubhutiCst> = cst.getChildren();
+    let label: com_slime_ast_nodes_expressions_Identifier = null;
+    let body: com_slime_ast_Statement = null;
     for (const child of children) {
-      let name: any = child.getName();
+      let name: string = child.getName();
       if (__QinJavaLangString.equals("LabelIdentifier", name)) {
         label = com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst.createLabelAst(child);
       } else {
@@ -66,21 +66,23 @@ class com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createLabeledStatement(label, body, cst.getLocation());
   }
-  createEmptyStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createEmptyStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_statements_EmptyStatement {
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createEmptyStatement(cst.getLocation());
   }
-  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createExpressionAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Expression {
     return this.__qin_field_transformer.createExpressionAst(cst);
   }
-  createStatementAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let statement: any = null;
+  createStatementAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_Statement {
+    let statement: com_slime_ast_Statement = null as any;
     let declaration: any = this.__qin_field_transformer.createDeclarationAst(cst);
-    if ((() => { const __qin_pattern_value = declaration; return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Statement") && (statement = __qin_pattern_value, true); })()) {
+    if ((__qin_java_implements(declaration, "com.slime.ast.Statement") && (statement = declaration, true))) {
+      const __qin_pattern_statement = statement;
+      let statement: com_slime_ast_Statement = __qin_pattern_statement as any;
       return statement;
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createEmptyStatement(cst.getLocation());
   }
-  static createLabelAst(cst: com_subhuti_struct_SubhutiCst): any {
+  static createLabelAst(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_nodes_expressions_Identifier {
     return com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst.createIdentifierAst(cst);
   }
 }

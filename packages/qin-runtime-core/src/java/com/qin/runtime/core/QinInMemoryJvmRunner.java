@@ -4,11 +4,16 @@ import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
 import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
 import com.qin.lang.pipeline.cfa.QinCfaModuleClassCompileResult;
 import com.qin.lang.pipeline.cfa.QinCfaModuleClassFile;
+import com.qin.lang.pipeline.cfa.QinCfaJvmClassFileBackend;
 import com.qin.lang.pipeline.cfa.QinCfaPipeline;
 import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
+import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.backend.jvm.QinJvmDeclarationClassEmitter;
+import com.qin.lang.frontend.adapter.QinFrontendLowerer;
+import com.qin.lang.frontend.adapter.QinIrLowerer;
 import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrBooleanLiteral;
+import com.qin.lang.ir.QinBuiltinRegistry;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFunctionLiteral;
@@ -18,10 +23,14 @@ import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinJavaSdkAliasSupport;
+import com.qin.lang.runtime.JavaEsmArray;
 import com.qin.lang.runtime.JavaEsmGlobal;
+import com.qin.lang.runtime.JavaEsmNumber;
 import com.qin.lang.runtime.QinFunctionModelRegistry;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -36,6 +45,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -44,7 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
     private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 30_000L;
-    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 8;
+    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 13;
+    private static final String MODULE_CLASS_TOOLCHAIN_FINGERPRINT = moduleClassToolchainFingerprint();
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
@@ -166,6 +177,7 @@ public final class QinInMemoryJvmRunner {
         CachedModuleClassCompileResult diskCached = readModuleClassDiskCache(normalizedCacheRoot, cacheKey);
         if (diskCached != null) {
             moduleClassCompileCache.putIfAbsent(cacheKey, diskCached);
+            dumpModuleClassCompileResultIfRequested(diskCached);
             logPhase("module-class disk cache hit", startNanos, className);
             return runCachedModuleClasses(cacheKey, diskCached, startNanos);
         }
@@ -177,9 +189,46 @@ public final class QinInMemoryJvmRunner {
         compiled = null;
         CachedModuleClassCompileResult existing = moduleClassCompileCache.putIfAbsent(cacheKey, compact);
         compileResult = existing == null ? compact : existing;
+        dumpModuleClassCompileResultIfRequested(compileResult);
         logPhase("module-class compile done", startNanos, className);
         writeModuleClassDiskCache(normalizedCacheRoot, cacheKey, compileResult);
         return runCachedModuleClasses(cacheKey, compileResult, startNanos);
+    }
+
+    private void dumpModuleClassCompileResultIfRequested(CachedModuleClassCompileResult compileResult) {
+        String dumpDir = System.getProperty("qin.moduleClass.dumpDir");
+        if (dumpDir == null || dumpDir.isBlank()) {
+            return;
+        }
+        Path root = Path.of(dumpDir).toAbsolutePath().normalize();
+        try {
+            if (compileResult.initializerClass != null) {
+                dumpModuleClassFile(root, compileResult.initializerClass);
+            }
+            for (CachedModuleClassFile moduleClass : compileResult.moduleClasses) {
+                dumpModuleClassFile(root, moduleClass);
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to dump module classes to " + root, ex);
+        }
+    }
+
+    private void dumpModuleClassFile(Path root, CachedModuleClassFile moduleClass) throws IOException {
+        if (moduleClass.classBytes == null || moduleClass.classBytes.length == 0) {
+            return;
+        }
+        Path classFile = root.resolve(moduleClass.className.replace('.', '/') + ".class");
+        Files.createDirectories(classFile.getParent());
+        Files.write(classFile, moduleClass.classBytes);
+        for (Map.Entry<String, byte[]> entry : moduleClass.declarationClassBytes.entrySet()) {
+            byte[] declarationBytes = entry.getValue();
+            if (declarationBytes == null || declarationBytes.length == 0) {
+                continue;
+            }
+            Path declarationFile = root.resolve(entry.getKey().replace('.', '/') + ".class");
+            Files.createDirectories(declarationFile.getParent());
+            Files.write(declarationFile, declarationBytes);
+        }
     }
 
     private Object runCachedModuleClasses(
@@ -327,8 +376,74 @@ public final class QinInMemoryJvmRunner {
             if (binaryName == null || binaryName.isBlank()) {
                 continue;
             }
-            index.put(binaryName, declaration);
+            putModuleDeclarationIndex(index, binaryName, declaration);
+            String simpleName = declaration.simpleName();
+            if (simpleName != null && !simpleName.isBlank()) {
+                putModuleDeclarationIndex(index, simpleName, declaration);
+            }
         }
+    }
+
+    private static void putModuleDeclarationIndex(
+            Map<String, QinIrClassDeclaration> index,
+            String key,
+            QinIrClassDeclaration declaration) {
+        if (index == null || key == null || key.isBlank() || declaration == null) {
+            return;
+        }
+        QinIrClassDeclaration selected = chooseModuleDeclarationIndexValue(index.get(key), declaration);
+        if (selected != null) {
+            index.put(key, selected);
+        }
+    }
+
+    static QinIrClassDeclaration chooseModuleDeclarationIndexValue(
+            QinIrClassDeclaration existing,
+            QinIrClassDeclaration candidate) {
+        if (candidate == null) {
+            return existing;
+        }
+        if (existing == null) {
+            return candidate;
+        }
+        if (Objects.equals(existing.binaryName(), candidate.binaryName())) {
+            int existingConstructorCount = declarationConstructorCount(existing);
+            int candidateConstructorCount = declarationConstructorCount(candidate);
+            if (candidateConstructorCount > 0 && existingConstructorCount == 0) {
+                return candidate;
+            }
+            if (existingConstructorCount > 0 && candidateConstructorCount == 0) {
+                return existing;
+            }
+            if (declarationCompletenessScore(candidate) > declarationCompletenessScore(existing)) {
+                return candidate;
+            }
+        }
+        return existing;
+    }
+
+    private static int declarationCompletenessScore(QinIrClassDeclaration declaration) {
+        if (declaration == null) {
+            return 0;
+        }
+        int constructorCount = declarationConstructorCount(declaration);
+        return declaration.fields().size()
+                + declaration.methods().size() * 4
+                + constructorCount * 8
+                + declaration.staticInitializers().size();
+    }
+
+    private static int declarationConstructorCount(QinIrClassDeclaration declaration) {
+        if (declaration == null) {
+            return 0;
+        }
+        int constructorCount = 0;
+        for (var method : declaration.methods()) {
+            if ("constructor".equals(method.name())) {
+                constructorCount++;
+            }
+        }
+        return constructorCount;
     }
 
     private Object invokeRunWithRuntimeStack(Class<?> generatedClass, String className) throws Exception {
@@ -530,7 +645,15 @@ public final class QinInMemoryJvmRunner {
                 + "\n"
                 + (cacheSalt == null ? "" : cacheSalt)
                 + "\n"
+                + MODULE_CLASS_TOOLCHAIN_FINGERPRINT
+                + "\n"
+                + moduleClassDynamicSemanticPolicyFingerprint()
+                + "\n"
                 + sha256(source);
+    }
+
+    private static String moduleClassDynamicSemanticPolicyFingerprint() {
+        return QinDynamicSemanticPolicyFingerprint.current();
     }
 
     private CachedModuleClassCompileResult readModuleClassDiskCache(Path projectRoot, String cacheKey) {
@@ -586,6 +709,67 @@ public final class QinInMemoryJvmRunner {
             return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException("SHA-256 is not available", error);
+        }
+    }
+
+    private static String moduleClassToolchainFingerprint() {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            for (String binaryName : moduleClassToolchainFingerprintClassNames()) {
+                updateClassResourceDigest(digest, binaryName);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 is not available", error);
+        }
+    }
+
+    static String moduleClassToolchainFingerprintValue() {
+        return MODULE_CLASS_TOOLCHAIN_FINGERPRINT;
+    }
+
+    static List<String> moduleClassToolchainFingerprintClassNames() {
+        return List.of(
+                QinInMemoryJvmRunner.class.getName(),
+                QinSlimeCfaCompiler.class.getName(),
+                "com.qin.lang.pipeline.cfa.QinCfaIrStage",
+                QinCfaJvmClassFileBackend.class.getName(),
+                QinFrontendLowerer.class.getName(),
+                QinIrLowerer.class.getName(),
+                "com.qin.lang.frontend.adapter.QinTopLevelIrAssembler",
+                "com.qin.lang.frontend.adapter.QinDeclarationIrLowerer",
+                "com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter",
+                QinIrClassDeclaration.class.getName(),
+                "com.qin.lang.ir.QinIrMethodDeclaration",
+                "com.qin.lang.ir.QinIrParameter",
+                "com.qin.parser.QinParserFacade",
+                "com.qin.parser.QinProgramCstToAst",
+                "com.slime.parser.cstToAst.class_.SlimeClassCstToAst",
+                QinBuiltinRegistry.class.getName(),
+                QinJavaSdkAliasSupport.class.getName(),
+                QinJsBackend.class.getName(),
+                QinJvmDeclarationClassEmitter.class.getName(),
+                JavaEsmGlobal.class.getName(),
+                JavaEsmArray.class.getName(),
+                JavaEsmNumber.class.getName(),
+                "com.qin.lang.runtime.JavaEsmString");
+    }
+
+    private static void updateClassResourceDigest(MessageDigest digest, Class<?> type) {
+        updateClassResourceDigest(digest, type.getName());
+    }
+
+    private static void updateClassResourceDigest(MessageDigest digest, String binaryName) {
+        digest.update(binaryName.getBytes(StandardCharsets.UTF_8));
+        String resourceName = "/" + binaryName.replace('.', '/') + ".class";
+        try (InputStream input = QinInMemoryJvmRunner.class.getResourceAsStream(resourceName)) {
+            if (input == null) {
+                digest.update((byte) 0);
+                return;
+            }
+            digest.update(input.readAllBytes());
+        } catch (IOException error) {
+            throw new IllegalStateException("Failed to fingerprint class resource: " + binaryName, error);
         }
     }
 

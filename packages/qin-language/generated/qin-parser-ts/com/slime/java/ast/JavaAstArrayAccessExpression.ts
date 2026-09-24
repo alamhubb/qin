@@ -12,52 +12,42 @@ class com_slime_java_ast_JavaAstArrayAccessExpression {
   __qin_field_receiver: com_slime_java_ast_JavaAstExpression | null = null as any;
   __qin_field_index: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstArrayAccessExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_java_implements(__qin_args[0], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression"))) {
       const receiver: any = __qin_args[0];
       const index: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstArrayAccessExpression_2_1(receiver, index);
+      this.__qin_constructor_com_slime_java_ast_JavaAstArrayAccessExpression_2_0(receiver, index);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstArrayAccessExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstArrayAccessExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstArrayAccessExpression_2_0(receiver: com_slime_java_ast_JavaAstExpression, index: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_receiver = null;
     this.__qin_field_index = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_receiver, "receiver cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_index, "index cannot be null");
+    __QinJavaUtilObjects.requireNonNull(receiver, "receiver cannot be null");
+    __QinJavaUtilObjects.requireNonNull(index, "index cannot be null");
+    this.__qin_field_receiver = receiver;
+    this.__qin_field_index = index;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstArrayAccessExpression_2_1(receiver: com_slime_java_ast_JavaAstExpression, index: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_receiver = null;
-    this.__qin_field_index = null;
-    (() => {
-      this.__qin_field_receiver = receiver;
-      this.__qin_field_index = index;
-      return null;
-    })();
-  }
-  receiver(): any {
+  receiver(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_receiver;
   }
-  index(): any {
+  index(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_index;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstArrayAccessExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_receiver, other.__qin_field_receiver)
-      && __qin_java_values_equal__(this.__qin_field_index, other.__qin_field_index);
+    const __qin_record_other: com_slime_java_ast_JavaAstArrayAccessExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_receiver, __qin_record_other.__qin_field_receiver)
+      && __qin_java_values_equal__(this.__qin_field_index, __qin_record_other.__qin_field_index);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_receiver);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_index);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstArrayAccessExpression[", "receiver=", this.__qin_field_receiver, ", ", "index=", this.__qin_field_index, "]"].join("");
   }
 }

@@ -25,7 +25,7 @@ public final class QinParserFileProbeMain {
                 cst = parser.getCst();
             }
             printState(file, parser, cst);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             printFailure(file, parser, e);
         }
     }
@@ -39,7 +39,7 @@ public final class QinParserFileProbeMain {
         System.out.println("cst=" + (cst == null ? "null" : cst.getName()));
     }
 
-    private static void printFailure(Path file, QinParser parser, Exception e) {
+    private static void printFailure(Path file, QinParser parser, Throwable e) {
         SubhutiMatchToken token = parser.curToken();
         System.out.println("file=" + file);
         System.out.println("success=false");

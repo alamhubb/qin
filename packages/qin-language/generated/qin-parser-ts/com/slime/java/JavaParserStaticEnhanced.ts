@@ -37,4066 +37,6293 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
   __qin_constructor_com_slime_java_JavaParserStaticEnhanced_1_0(sourceCode: string): void {
     null;
   }
-  static create(sourceCode: string): any {
+  static create(sourceCode: string): com_slime_java_JavaParserStaticEnhanced {
     return new com_slime_java_JavaParserStaticEnhanced(sourceCode);
   }
-  additiveExpression(): any {
+  additiveExpression(): void {
     if ((!this.beginStaticRuleLinked(19.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(19.0);
+      {
+        const __qin_typed_receiver_2348: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2348.executeStaticRuleBodyLinked(19.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2349: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2349.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2350: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2350.completeStaticRule();
+    }
     return null;
   }
-  andExpression(): any {
+  andExpression(): void {
     if ((!this.beginStaticRuleLinked(20.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(20.0);
+      {
+        const __qin_typed_receiver_2351: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2351.executeStaticRuleBodyLinked(20.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2352: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2352.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2353: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2353.completeStaticRule();
+    }
     return null;
   }
-  annotation(): any {
+  annotation(): void {
     if ((!this.beginStaticRuleLinked(114.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(114.0);
+      {
+        const __qin_typed_receiver_2354: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2354.executeStaticRuleBodyLinked(114.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2355: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2355.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2356: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2356.completeStaticRule();
+    }
     return null;
   }
-  annotationConstantRest(): any {
+  annotationConstantRest(): void {
     if ((!this.beginStaticRuleLinked(115.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(115.0);
+      {
+        const __qin_typed_receiver_2357: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2357.executeStaticRuleBodyLinked(115.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2358: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2358.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2359: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2359.completeStaticRule();
+    }
     return null;
   }
-  annotationMethodOrConstantRest(): any {
+  annotationMethodOrConstantRest(): void {
     if ((!this.beginStaticRuleLinked(116.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(116.0);
+      {
+        const __qin_typed_receiver_2360: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2360.executeStaticRuleBodyLinked(116.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2361: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2361.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2362: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2362.completeStaticRule();
+    }
     return null;
   }
-  annotationMethodRest(): any {
+  annotationMethodRest(): void {
     if ((!this.beginStaticRuleLinked(117.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(117.0);
+      {
+        const __qin_typed_receiver_2363: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2363.executeStaticRuleBodyLinked(117.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2364: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2364.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2365: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2365.completeStaticRule();
+    }
     return null;
   }
-  annotationTypeBody(): any {
+  annotationTypeBody(): void {
     if ((!this.beginStaticRuleLinked(118.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(118.0);
+      {
+        const __qin_typed_receiver_2366: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2366.executeStaticRuleBodyLinked(118.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2367: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2367.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2368: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2368.completeStaticRule();
+    }
     return null;
   }
-  annotationTypeDeclaration(): any {
+  annotationTypeDeclaration(): void {
     if ((!this.beginStaticRuleLinked(85.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(85.0);
+      {
+        const __qin_typed_receiver_2369: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2369.executeStaticRuleBodyLinked(85.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2370: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2370.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2371: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2371.completeStaticRule();
+    }
     return null;
   }
-  annotationTypeElementDeclaration(): any {
+  annotationTypeElementDeclaration(): void {
     if ((!this.beginStaticRuleLinked(119.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(119.0);
+      {
+        const __qin_typed_receiver_2372: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2372.executeStaticRuleBodyLinked(119.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2373: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2373.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2374: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2374.completeStaticRule();
+    }
     return null;
   }
-  annotationTypeElementRest(): any {
+  annotationTypeElementRest(): void {
     if ((!this.beginStaticRuleLinked(120.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(120.0);
+      {
+        const __qin_typed_receiver_2375: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2375.executeStaticRuleBodyLinked(120.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2376: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2376.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2377: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2377.completeStaticRule();
+    }
     return null;
   }
-  __qin_arguments(): any {
+  arguments(): void {
     if ((!this.beginStaticRuleLinked(121.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(121.0);
+      {
+        const __qin_typed_receiver_2378: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2378.executeStaticRuleBodyLinked(121.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2379: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2379.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2380: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2380.completeStaticRule();
+    }
     return null;
   }
-  arrayCreatorDimensions(): any {
+  arrayCreatorDimensions(): void {
     if ((!this.beginStaticRuleLinked(21.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(21.0);
+      {
+        const __qin_typed_receiver_2381: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2381.executeStaticRuleBodyLinked(21.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2382: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2382.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2383: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2383.completeStaticRule();
+    }
     return null;
   }
-  arrayInitializer(): any {
+  arrayInitializer(): void {
     if ((!this.beginStaticRuleLinked(4.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(4.0);
+      {
+        const __qin_typed_receiver_2384: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2384.executeStaticRuleBodyLinked(4.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2385: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2385.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2386: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2386.completeStaticRule();
+    }
     return null;
   }
-  assignment(): any {
+  assignment(): void {
     if ((!this.beginStaticRuleLinked(22.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(22.0);
+      {
+        const __qin_typed_receiver_2387: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2387.executeStaticRuleBodyLinked(22.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2388: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2388.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2389: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2389.completeStaticRule();
+    }
     return null;
   }
-  assignmentExpression(): any {
+  assignmentExpression(): void {
     if ((!this.beginStaticRuleLinked(23.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(23.0);
+      {
+        const __qin_typed_receiver_2390: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2390.executeStaticRuleBodyLinked(23.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2391: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2391.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2392: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2392.completeStaticRule();
+    }
     return null;
   }
-  assignmentOperator(): any {
+  assignmentOperator(): void {
     if ((!this.beginStaticRuleLinked(24.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(24.0);
+      {
+        const __qin_typed_receiver_2393: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2393.executeStaticRuleBodyLinked(24.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2394: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2394.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2395: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2395.completeStaticRule();
+    }
     return null;
   }
-  block(): any {
+  block(): void {
     if ((!this.beginStaticRuleLinked(47.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(47.0);
+      {
+        const __qin_typed_receiver_2396: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2396.executeStaticRuleBodyLinked(47.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2397: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2397.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2398: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2398.completeStaticRule();
+    }
     return null;
   }
-  blockStatement(): any {
+  blockStatement(): void {
     if ((!this.beginStaticRuleLinked(48.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(48.0);
+      {
+        const __qin_typed_receiver_2399: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2399.executeStaticRuleBodyLinked(48.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2400: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2400.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2401: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2401.completeStaticRule();
+    }
     return null;
   }
-  breakStatement(): any {
+  breakStatement(): void {
     if ((!this.beginStaticRuleLinked(49.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(49.0);
+      {
+        const __qin_typed_receiver_2402: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2402.executeStaticRuleBodyLinked(49.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2403: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2403.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2404: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2404.completeStaticRule();
+    }
     return null;
   }
-  catchClause(): any {
+  catchClause(): void {
     if ((!this.beginStaticRuleLinked(50.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(50.0);
+      {
+        const __qin_typed_receiver_2405: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2405.executeStaticRuleBodyLinked(50.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2406: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2406.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2407: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2407.completeStaticRule();
+    }
     return null;
   }
-  catchType(): any {
+  catchType(): void {
     if ((!this.beginStaticRuleLinked(51.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(51.0);
+      {
+        const __qin_typed_receiver_2408: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2408.executeStaticRuleBodyLinked(51.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2409: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2409.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2410: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2410.completeStaticRule();
+    }
     return null;
   }
-  classBody(): any {
+  classBody(): void {
     if ((!this.beginStaticRuleLinked(86.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(86.0);
+      {
+        const __qin_typed_receiver_2411: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2411.executeStaticRuleBodyLinked(86.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2412: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2412.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2413: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2413.completeStaticRule();
+    }
     return null;
   }
-  classBodyDeclaration(): any {
+  classBodyDeclaration(): void {
     if ((!this.beginStaticRuleLinked(87.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(87.0);
+      {
+        const __qin_typed_receiver_2414: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2414.executeStaticRuleBodyLinked(87.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2415: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2415.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2416: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2416.completeStaticRule();
+    }
     return null;
   }
-  classCreatorRest(): any {
+  classCreatorRest(): void {
     if ((!this.beginStaticRuleLinked(122.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(122.0);
+      {
+        const __qin_typed_receiver_2417: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2417.executeStaticRuleBodyLinked(122.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2418: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2418.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2419: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2419.completeStaticRule();
+    }
     return null;
   }
-  classDeclaration(): any {
+  classDeclaration(): void {
     if ((!this.beginStaticRuleLinked(88.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(88.0);
+      {
+        const __qin_typed_receiver_2420: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2420.executeStaticRuleBodyLinked(88.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2421: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2421.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2422: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2422.completeStaticRule();
+    }
     return null;
   }
-  classOrInterfaceModifier(): any {
+  classOrInterfaceModifier(): void {
     if ((!this.beginStaticRuleLinked(89.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(89.0);
+      {
+        const __qin_typed_receiver_2423: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2423.executeStaticRuleBodyLinked(89.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2424: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2424.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2425: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2425.completeStaticRule();
+    }
     return null;
   }
-  classOrInterfaceType(): any {
+  classOrInterfaceType(): void {
     if ((!this.beginStaticRuleLinked(9.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(9.0);
+      {
+        const __qin_typed_receiver_2426: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2426.executeStaticRuleBodyLinked(9.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2427: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2427.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2428: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2428.completeStaticRule();
+    }
     return null;
   }
-  compactConstructorDeclaration(): any {
+  compactConstructorDeclaration(): void {
     if ((!this.beginStaticRuleLinked(123.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(123.0);
+      {
+        const __qin_typed_receiver_2429: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2429.executeStaticRuleBodyLinked(123.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2430: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2430.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2431: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2431.completeStaticRule();
+    }
     return null;
   }
-  compilationUnit(): any {
+  compilationUnit(): void {
     if ((!this.beginStaticRuleLinked(124.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(124.0);
+      {
+        const __qin_typed_receiver_2432: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2432.executeStaticRuleBodyLinked(124.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2433: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2433.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2434: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2434.completeStaticRule();
+    }
     return null;
   }
-  conditionalAndExpression(): any {
+  conditionalAndExpression(): void {
     if ((!this.beginStaticRuleLinked(25.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(25.0);
+      {
+        const __qin_typed_receiver_2435: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2435.executeStaticRuleBodyLinked(25.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2436: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2436.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2437: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2437.completeStaticRule();
+    }
     return null;
   }
-  conditionalExpression(): any {
+  conditionalExpression(): void {
     if ((!this.beginStaticRuleLinked(26.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(26.0);
+      {
+        const __qin_typed_receiver_2438: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2438.executeStaticRuleBodyLinked(26.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2439: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2439.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2440: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2440.completeStaticRule();
+    }
     return null;
   }
-  conditionalOrExpression(): any {
+  conditionalOrExpression(): void {
     if ((!this.beginStaticRuleLinked(27.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(27.0);
+      {
+        const __qin_typed_receiver_2441: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2441.executeStaticRuleBodyLinked(27.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2442: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2442.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2443: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2443.completeStaticRule();
+    }
     return null;
   }
-  constDeclaration(): any {
+  constDeclaration(): void {
     if ((!this.beginStaticRuleLinked(90.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(90.0);
+      {
+        const __qin_typed_receiver_2444: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2444.executeStaticRuleBodyLinked(90.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2445: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2445.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2446: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2446.completeStaticRule();
+    }
     return null;
   }
-  constantDeclarator(): any {
+  constantDeclarator(): void {
     if ((!this.beginStaticRuleLinked(91.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(91.0);
+      {
+        const __qin_typed_receiver_2447: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2447.executeStaticRuleBodyLinked(91.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2448: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2448.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2449: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2449.completeStaticRule();
+    }
     return null;
   }
-  constructorDeclaration(): any {
+  constructorDeclaration(): void {
     if ((!this.beginStaticRuleLinked(92.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(92.0);
+      {
+        const __qin_typed_receiver_2450: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2450.executeStaticRuleBodyLinked(92.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2451: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2451.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2452: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2452.completeStaticRule();
+    }
     return null;
   }
-  continueStatement(): any {
+  continueStatement(): void {
     if ((!this.beginStaticRuleLinked(52.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(52.0);
+      {
+        const __qin_typed_receiver_2453: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2453.executeStaticRuleBodyLinked(52.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2454: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2454.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2455: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2455.completeStaticRule();
+    }
     return null;
   }
-  defaultValue(): any {
+  defaultValue(): void {
     if ((!this.beginStaticRuleLinked(125.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(125.0);
+      {
+        const __qin_typed_receiver_2456: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2456.executeStaticRuleBodyLinked(125.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2457: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2457.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2458: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2458.completeStaticRule();
+    }
     return null;
   }
-  doWhileStatement(): any {
+  doWhileStatement(): void {
     if ((!this.beginStaticRuleLinked(53.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(53.0);
+      {
+        const __qin_typed_receiver_2459: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2459.executeStaticRuleBodyLinked(53.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2460: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2460.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2461: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2461.completeStaticRule();
+    }
     return null;
   }
-  elementValue(): any {
+  elementValue(): void {
     if ((!this.beginStaticRuleLinked(126.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(126.0);
+      {
+        const __qin_typed_receiver_2462: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2462.executeStaticRuleBodyLinked(126.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2463: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2463.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2464: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2464.completeStaticRule();
+    }
     return null;
   }
-  elementValueArrayInitializer(): any {
+  elementValueArrayInitializer(): void {
     if ((!this.beginStaticRuleLinked(127.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(127.0);
+      {
+        const __qin_typed_receiver_2465: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2465.executeStaticRuleBodyLinked(127.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2466: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2466.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2467: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2467.completeStaticRule();
+    }
     return null;
   }
-  elementValuePair(): any {
+  elementValuePair(): void {
     if ((!this.beginStaticRuleLinked(128.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(128.0);
+      {
+        const __qin_typed_receiver_2468: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2468.executeStaticRuleBodyLinked(128.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2469: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2469.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2470: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2470.completeStaticRule();
+    }
     return null;
   }
-  elementValuePairs(): any {
+  elementValuePairs(): void {
     if ((!this.beginStaticRuleLinked(129.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(129.0);
+      {
+        const __qin_typed_receiver_2471: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2471.executeStaticRuleBodyLinked(129.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2472: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2472.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2473: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2473.completeStaticRule();
+    }
     return null;
   }
-  enhancedForControl(): any {
+  enhancedForControl(): void {
     if ((!this.beginStaticRuleLinked(54.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(54.0);
+      {
+        const __qin_typed_receiver_2474: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2474.executeStaticRuleBodyLinked(54.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2475: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2475.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2476: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2476.completeStaticRule();
+    }
     return null;
   }
-  enumBodyDeclarations(): any {
+  enumBodyDeclarations(): void {
     if ((!this.beginStaticRuleLinked(130.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(130.0);
+      {
+        const __qin_typed_receiver_2477: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2477.executeStaticRuleBodyLinked(130.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2478: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2478.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2479: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2479.completeStaticRule();
+    }
     return null;
   }
-  enumConstant(): any {
+  enumConstant(): void {
     if ((!this.beginStaticRuleLinked(131.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(131.0);
+      {
+        const __qin_typed_receiver_2480: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2480.executeStaticRuleBodyLinked(131.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2481: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2481.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2482: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2482.completeStaticRule();
+    }
     return null;
   }
-  enumConstants(): any {
+  enumConstants(): void {
     if ((!this.beginStaticRuleLinked(132.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(132.0);
+      {
+        const __qin_typed_receiver_2483: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2483.executeStaticRuleBodyLinked(132.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2484: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2484.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2485: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2485.completeStaticRule();
+    }
     return null;
   }
-  enumDeclaration(): any {
+  enumDeclaration(): void {
     if ((!this.beginStaticRuleLinked(93.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(93.0);
+      {
+        const __qin_typed_receiver_2486: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2486.executeStaticRuleBodyLinked(93.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2487: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2487.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2488: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2488.completeStaticRule();
+    }
     return null;
   }
-  equalityExpression(): any {
+  equalityExpression(): void {
     if ((!this.beginStaticRuleLinked(28.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(28.0);
+      {
+        const __qin_typed_receiver_2489: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2489.executeStaticRuleBodyLinked(28.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2490: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2490.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2491: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2491.completeStaticRule();
+    }
     return null;
   }
-  exclusiveOrExpression(): any {
+  exclusiveOrExpression(): void {
     if ((!this.beginStaticRuleLinked(29.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(29.0);
+      {
+        const __qin_typed_receiver_2492: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2492.executeStaticRuleBodyLinked(29.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2493: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2493.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2494: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2494.completeStaticRule();
+    }
     return null;
   }
-  explicitConstructorInvocationStatement(): any {
+  explicitConstructorInvocationStatement(): void {
     if ((!this.beginStaticRuleLinked(55.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(55.0);
+      {
+        const __qin_typed_receiver_2495: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2495.executeStaticRuleBodyLinked(55.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2496: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2496.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2497: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2497.completeStaticRule();
+    }
     return null;
   }
-  explicitGenericInvocation(): any {
+  explicitGenericInvocation(): void {
     if ((!this.beginStaticRuleLinked(133.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(133.0);
+      {
+        const __qin_typed_receiver_2498: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2498.executeStaticRuleBodyLinked(133.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2499: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2499.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2500: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2500.completeStaticRule();
+    }
     return null;
   }
-  explicitGenericInvocationSuffix(): any {
+  explicitGenericInvocationSuffix(): void {
     if ((!this.beginStaticRuleLinked(134.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(134.0);
+      {
+        const __qin_typed_receiver_2501: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2501.executeStaticRuleBodyLinked(134.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2502: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2502.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2503: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2503.completeStaticRule();
+    }
     return null;
   }
-  expression(): any {
+  expression(): void {
     if ((!this.beginStaticRuleLinked(30.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(30.0);
+      {
+        const __qin_typed_receiver_2504: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2504.executeStaticRuleBodyLinked(30.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2505: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2505.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2506: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2506.completeStaticRule();
+    }
     return null;
   }
-  expressionList(): any {
+  expressionList(): void {
     if ((!this.beginStaticRuleLinked(56.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(56.0);
+      {
+        const __qin_typed_receiver_2507: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2507.executeStaticRuleBodyLinked(56.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2508: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2508.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2509: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2509.completeStaticRule();
+    }
     return null;
   }
-  expressionStatement(): any {
+  expressionStatement(): void {
     if ((!this.beginStaticRuleLinked(57.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(57.0);
+      {
+        const __qin_typed_receiver_2510: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2510.executeStaticRuleBodyLinked(57.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2511: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2511.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2512: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2512.completeStaticRule();
+    }
     return null;
   }
-  fieldDeclaration(): any {
+  fieldDeclaration(): void {
     if ((!this.beginStaticRuleLinked(94.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(94.0);
+      {
+        const __qin_typed_receiver_2513: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2513.executeStaticRuleBodyLinked(94.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2514: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2514.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2515: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2515.completeStaticRule();
+    }
     return null;
   }
-  finallyBlock(): any {
+  finallyBlock(): void {
     if ((!this.beginStaticRuleLinked(58.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(58.0);
+      {
+        const __qin_typed_receiver_2516: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2516.executeStaticRuleBodyLinked(58.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2517: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2517.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2518: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2518.completeStaticRule();
+    }
     return null;
   }
-  floatingPointLiteral(): any {
+  floatingPointLiteral(): void {
     if ((!this.beginStaticRuleLinked(5.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(5.0);
+      {
+        const __qin_typed_receiver_2519: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2519.executeStaticRuleBodyLinked(5.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2520: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2520.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2521: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2521.completeStaticRule();
+    }
     return null;
   }
-  forControl(): any {
+  forControl(): void {
     if ((!this.beginStaticRuleLinked(59.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(59.0);
+      {
+        const __qin_typed_receiver_2522: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2522.executeStaticRuleBodyLinked(59.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2523: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2523.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2524: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2524.completeStaticRule();
+    }
     return null;
   }
-  forInit(): any {
+  forInit(): void {
     if ((!this.beginStaticRuleLinked(60.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(60.0);
+      {
+        const __qin_typed_receiver_2525: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2525.executeStaticRuleBodyLinked(60.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2526: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2526.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2527: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2527.completeStaticRule();
+    }
     return null;
   }
-  forStatement(): any {
+  forStatement(): void {
     if ((!this.beginStaticRuleLinked(61.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(61.0);
+      {
+        const __qin_typed_receiver_2528: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2528.executeStaticRuleBodyLinked(61.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2529: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2529.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2530: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2530.completeStaticRule();
+    }
     return null;
   }
-  forUpdate(): any {
+  forUpdate(): void {
     if ((!this.beginStaticRuleLinked(62.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(62.0);
+      {
+        const __qin_typed_receiver_2531: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2531.executeStaticRuleBodyLinked(62.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2532: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2532.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2533: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2533.completeStaticRule();
+    }
     return null;
   }
-  formalParameter(): any {
+  formalParameter(): void {
     if ((!this.beginStaticRuleLinked(135.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(135.0);
+      {
+        const __qin_typed_receiver_2534: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2534.executeStaticRuleBodyLinked(135.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2535: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2535.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2536: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2536.completeStaticRule();
+    }
     return null;
   }
-  formalParameterList(): any {
+  formalParameterList(): void {
     if ((!this.beginStaticRuleLinked(136.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(136.0);
+      {
+        const __qin_typed_receiver_2537: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2537.executeStaticRuleBodyLinked(136.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2538: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2538.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2539: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2539.completeStaticRule();
+    }
     return null;
   }
-  formalParameters(): any {
+  formalParameters(): void {
     if ((!this.beginStaticRuleLinked(137.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(137.0);
+      {
+        const __qin_typed_receiver_2540: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2540.executeStaticRuleBodyLinked(137.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2541: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2541.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2542: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2542.completeStaticRule();
+    }
     return null;
   }
-  genericConstructorDeclaration(): any {
+  genericConstructorDeclaration(): void {
     if ((!this.beginStaticRuleLinked(95.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(95.0);
+      {
+        const __qin_typed_receiver_2543: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2543.executeStaticRuleBodyLinked(95.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2544: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2544.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2545: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2545.completeStaticRule();
+    }
     return null;
   }
-  genericInterfaceMethodDeclaration(): any {
+  genericInterfaceMethodDeclaration(): void {
     if ((!this.beginStaticRuleLinked(96.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(96.0);
+      {
+        const __qin_typed_receiver_2546: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2546.executeStaticRuleBodyLinked(96.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2547: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2547.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2548: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2548.completeStaticRule();
+    }
     return null;
   }
-  genericMethodDeclaration(): any {
+  genericMethodDeclaration(): void {
     if ((!this.beginStaticRuleLinked(97.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(97.0);
+      {
+        const __qin_typed_receiver_2549: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2549.executeStaticRuleBodyLinked(97.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2550: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2550.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2551: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2551.completeStaticRule();
+    }
     return null;
   }
-  identifier(): any {
+  identifier(): void {
     if ((!this.beginStaticRuleLinked(0.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(0.0);
+      {
+        const __qin_typed_receiver_2552: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2552.executeStaticRuleBodyLinked(0.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2553: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2553.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2554: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2554.completeStaticRule();
+    }
     return null;
   }
-  ifStatement(): any {
+  ifStatement(): void {
     if ((!this.beginStaticRuleLinked(63.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(63.0);
+      {
+        const __qin_typed_receiver_2555: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2555.executeStaticRuleBodyLinked(63.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2556: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2556.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2557: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2557.completeStaticRule();
+    }
     return null;
   }
-  importDeclaration(): any {
+  importDeclaration(): void {
     if ((!this.beginStaticRuleLinked(138.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(138.0);
+      {
+        const __qin_typed_receiver_2558: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2558.executeStaticRuleBodyLinked(138.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2559: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2559.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2560: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2560.completeStaticRule();
+    }
     return null;
   }
-  importQualifiedName(): any {
+  importQualifiedName(): void {
     if ((!this.beginStaticRuleLinked(139.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(139.0);
+      {
+        const __qin_typed_receiver_2561: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2561.executeStaticRuleBodyLinked(139.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2562: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2562.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2563: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2563.completeStaticRule();
+    }
     return null;
   }
-  importQualifiedNameSegment(): any {
+  importQualifiedNameSegment(): void {
     if ((!this.beginStaticRuleLinked(140.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(140.0);
+      {
+        const __qin_typed_receiver_2564: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2564.executeStaticRuleBodyLinked(140.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2565: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2565.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2566: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2566.completeStaticRule();
+    }
     return null;
   }
-  inclusiveOrExpression(): any {
+  inclusiveOrExpression(): void {
     if ((!this.beginStaticRuleLinked(31.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(31.0);
+      {
+        const __qin_typed_receiver_2567: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2567.executeStaticRuleBodyLinked(31.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2568: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2568.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2569: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2569.completeStaticRule();
+    }
     return null;
   }
-  innerCreator(): any {
+  innerCreator(): void {
     if ((!this.beginStaticRuleLinked(141.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(141.0);
+      {
+        const __qin_typed_receiver_2570: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2570.executeStaticRuleBodyLinked(141.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2571: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2571.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2572: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2572.completeStaticRule();
+    }
     return null;
   }
-  integerLiteral(): any {
+  integerLiteral(): void {
     if ((!this.beginStaticRuleLinked(6.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(6.0);
+      {
+        const __qin_typed_receiver_2573: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2573.executeStaticRuleBodyLinked(6.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2574: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2574.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2575: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2575.completeStaticRule();
+    }
     return null;
   }
-  interfaceBody(): any {
+  interfaceBody(): void {
     if ((!this.beginStaticRuleLinked(98.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(98.0);
+      {
+        const __qin_typed_receiver_2576: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2576.executeStaticRuleBodyLinked(98.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2577: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2577.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2578: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2578.completeStaticRule();
+    }
     return null;
   }
-  interfaceBodyDeclaration(): any {
+  interfaceBodyDeclaration(): void {
     if ((!this.beginStaticRuleLinked(99.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(99.0);
+      {
+        const __qin_typed_receiver_2579: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2579.executeStaticRuleBodyLinked(99.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2580: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2580.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2581: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2581.completeStaticRule();
+    }
     return null;
   }
-  interfaceCommonBodyDeclaration(): any {
+  interfaceCommonBodyDeclaration(): void {
     if ((!this.beginStaticRuleLinked(100.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(100.0);
+      {
+        const __qin_typed_receiver_2582: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2582.executeStaticRuleBodyLinked(100.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2583: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2583.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2584: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2584.completeStaticRule();
+    }
     return null;
   }
-  interfaceDeclaration(): any {
+  interfaceDeclaration(): void {
     if ((!this.beginStaticRuleLinked(101.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(101.0);
+      {
+        const __qin_typed_receiver_2585: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2585.executeStaticRuleBodyLinked(101.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2586: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2586.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2587: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2587.completeStaticRule();
+    }
     return null;
   }
-  interfaceMemberDeclaration(): any {
+  interfaceMemberDeclaration(): void {
     if ((!this.beginStaticRuleLinked(102.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(102.0);
+      {
+        const __qin_typed_receiver_2588: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2588.executeStaticRuleBodyLinked(102.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2589: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2589.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2590: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2590.completeStaticRule();
+    }
     return null;
   }
-  interfaceMethodDeclaration(): any {
+  interfaceMethodDeclaration(): void {
     if ((!this.beginStaticRuleLinked(103.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(103.0);
+      {
+        const __qin_typed_receiver_2591: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2591.executeStaticRuleBodyLinked(103.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2592: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2592.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2593: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2593.completeStaticRule();
+    }
     return null;
   }
-  interfaceModifier(): any {
+  interfaceModifier(): void {
     if ((!this.beginStaticRuleLinked(104.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(104.0);
+      {
+        const __qin_typed_receiver_2594: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2594.executeStaticRuleBodyLinked(104.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2595: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2595.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2596: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2596.completeStaticRule();
+    }
     return null;
   }
-  labeledStatement(): any {
+  labeledStatement(): void {
     if ((!this.beginStaticRuleLinked(64.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(64.0);
+      {
+        const __qin_typed_receiver_2597: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2597.executeStaticRuleBodyLinked(64.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2598: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2598.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2599: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2599.completeStaticRule();
+    }
     return null;
   }
-  lambdaBody(): any {
+  lambdaBody(): void {
     if ((!this.beginStaticRuleLinked(32.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(32.0);
+      {
+        const __qin_typed_receiver_2600: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2600.executeStaticRuleBodyLinked(32.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2601: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2601.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2602: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2602.completeStaticRule();
+    }
     return null;
   }
-  lambdaExpression(): any {
+  lambdaExpression(): void {
     if ((!this.beginStaticRuleLinked(33.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(33.0);
+      {
+        const __qin_typed_receiver_2603: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2603.executeStaticRuleBodyLinked(33.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2604: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2604.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2605: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2605.completeStaticRule();
+    }
     return null;
   }
-  lambdaParameters(): any {
+  lambdaParameters(): void {
     if ((!this.beginStaticRuleLinked(34.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(34.0);
+      {
+        const __qin_typed_receiver_2606: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2606.executeStaticRuleBodyLinked(34.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2607: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2607.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2608: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2608.completeStaticRule();
+    }
     return null;
   }
-  lastFormalParameter(): any {
+  lastFormalParameter(): void {
     if ((!this.beginStaticRuleLinked(142.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(142.0);
+      {
+        const __qin_typed_receiver_2609: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2609.executeStaticRuleBodyLinked(142.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2610: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2610.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2611: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2611.completeStaticRule();
+    }
     return null;
   }
-  leftHandSide(): any {
+  leftHandSide(): void {
     if ((!this.beginStaticRuleLinked(35.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(35.0);
+      {
+        const __qin_typed_receiver_2612: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2612.executeStaticRuleBodyLinked(35.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2613: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2613.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2614: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2614.completeStaticRule();
+    }
     return null;
   }
-  literal(): any {
+  literal(): void {
     if ((!this.beginStaticRuleLinked(7.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(7.0);
+      {
+        const __qin_typed_receiver_2615: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2615.executeStaticRuleBodyLinked(7.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2616: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2616.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2617: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2617.completeStaticRule();
+    }
     return null;
   }
-  localTypeDeclaration(): any {
+  localTypeDeclaration(): void {
     if ((!this.beginStaticRuleLinked(65.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(65.0);
+      {
+        const __qin_typed_receiver_2618: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2618.executeStaticRuleBodyLinked(65.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2619: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2619.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2620: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2620.completeStaticRule();
+    }
     return null;
   }
-  localVariableDeclaration(): any {
+  localVariableDeclaration(): void {
     if ((!this.beginStaticRuleLinked(66.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(66.0);
+      {
+        const __qin_typed_receiver_2621: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2621.executeStaticRuleBodyLinked(66.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2622: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2622.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2623: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2623.completeStaticRule();
+    }
     return null;
   }
-  memberDeclaration(): any {
+  memberDeclaration(): void {
     if ((!this.beginStaticRuleLinked(105.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(105.0);
+      {
+        const __qin_typed_receiver_2624: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2624.executeStaticRuleBodyLinked(105.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2625: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2625.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2626: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2626.completeStaticRule();
+    }
     return null;
   }
-  methodBody(): any {
+  methodBody(): void {
     if ((!this.beginStaticRuleLinked(106.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(106.0);
+      {
+        const __qin_typed_receiver_2627: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2627.executeStaticRuleBodyLinked(106.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2628: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2628.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2629: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2629.completeStaticRule();
+    }
     return null;
   }
-  methodDeclaration(): any {
+  methodDeclaration(): void {
     if ((!this.beginStaticRuleLinked(107.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(107.0);
+      {
+        const __qin_typed_receiver_2630: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2630.executeStaticRuleBodyLinked(107.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2631: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2631.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2632: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2632.completeStaticRule();
+    }
     return null;
   }
-  modifier(): any {
+  modifier(): void {
     if ((!this.beginStaticRuleLinked(108.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(108.0);
+      {
+        const __qin_typed_receiver_2633: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2633.executeStaticRuleBodyLinked(108.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2634: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2634.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2635: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2635.completeStaticRule();
+    }
     return null;
   }
-  moduleDeclaration(): any {
+  moduleDeclaration(): void {
     if ((!this.beginStaticRuleLinked(143.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(143.0);
+      {
+        const __qin_typed_receiver_2636: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2636.executeStaticRuleBodyLinked(143.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2637: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2637.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2638: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2638.completeStaticRule();
+    }
     return null;
   }
-  moduleDirective(): any {
+  moduleDirective(): void {
     if ((!this.beginStaticRuleLinked(144.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(144.0);
+      {
+        const __qin_typed_receiver_2639: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2639.executeStaticRuleBodyLinked(144.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2640: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2640.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2641: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2641.completeStaticRule();
+    }
     return null;
   }
-  multiplicativeExpression(): any {
+  multiplicativeExpression(): void {
     if ((!this.beginStaticRuleLinked(36.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(36.0);
+      {
+        const __qin_typed_receiver_2642: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2642.executeStaticRuleBodyLinked(36.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2643: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2643.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2644: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2644.completeStaticRule();
+    }
     return null;
   }
-  nonWildcardTypeArguments(): any {
+  nonWildcardTypeArguments(): void {
     if ((!this.beginStaticRuleLinked(145.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(145.0);
+      {
+        const __qin_typed_receiver_2645: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2645.executeStaticRuleBodyLinked(145.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2646: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2646.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2647: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2647.completeStaticRule();
+    }
     return null;
   }
-  nonWildcardTypeArgumentsOrDiamond(): any {
+  nonWildcardTypeArgumentsOrDiamond(): void {
     if ((!this.beginStaticRuleLinked(146.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(146.0);
+      {
+        const __qin_typed_receiver_2648: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2648.executeStaticRuleBodyLinked(146.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2649: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2649.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2650: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2650.completeStaticRule();
+    }
     return null;
   }
-  packageDeclaration(): any {
+  packageDeclaration(): void {
     if ((!this.beginStaticRuleLinked(147.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(147.0);
+      {
+        const __qin_typed_receiver_2651: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2651.executeStaticRuleBodyLinked(147.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2652: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2652.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2653: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2653.completeStaticRule();
+    }
     return null;
   }
-  parExpression(): any {
+  parExpression(): void {
     if ((!this.beginStaticRuleLinked(67.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(67.0);
+      {
+        const __qin_typed_receiver_2654: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2654.executeStaticRuleBodyLinked(67.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2655: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2655.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2656: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2656.completeStaticRule();
+    }
     return null;
   }
-  pattern(): any {
+  pattern(): void {
     if ((!this.beginStaticRuleLinked(148.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(148.0);
+      {
+        const __qin_typed_receiver_2657: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2657.executeStaticRuleBodyLinked(148.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2658: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2658.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2659: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2659.completeStaticRule();
+    }
     return null;
   }
-  postfixExpression(): any {
+  postfixExpression(): void {
     if ((!this.beginStaticRuleLinked(37.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(37.0);
+      {
+        const __qin_typed_receiver_2660: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2660.executeStaticRuleBodyLinked(37.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2661: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2661.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2662: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2662.completeStaticRule();
+    }
     return null;
   }
-  postfixOp(): any {
+  postfixOp(): void {
     if ((!this.beginStaticRuleLinked(38.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(38.0);
+      {
+        const __qin_typed_receiver_2663: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2663.executeStaticRuleBodyLinked(38.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2664: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2664.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2665: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2665.completeStaticRule();
+    }
     return null;
   }
-  prefixOp(): any {
+  prefixOp(): void {
     if ((!this.beginStaticRuleLinked(39.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(39.0);
+      {
+        const __qin_typed_receiver_2666: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2666.executeStaticRuleBodyLinked(39.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2667: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2667.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2668: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2668.completeStaticRule();
+    }
     return null;
   }
-  primary(): any {
+  primary(): void {
     if ((!this.beginStaticRuleLinked(40.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(40.0);
+      {
+        const __qin_typed_receiver_2669: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2669.executeStaticRuleBodyLinked(40.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2670: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2670.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2671: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2671.completeStaticRule();
+    }
     return null;
   }
-  primitiveType(): any {
+  primitiveType(): void {
     if ((!this.beginStaticRuleLinked(10.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(10.0);
+      {
+        const __qin_typed_receiver_2672: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2672.executeStaticRuleBodyLinked(10.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2673: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2673.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2674: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2674.completeStaticRule();
+    }
     return null;
   }
-  qualifiedName(): any {
+  qualifiedName(): void {
     if ((!this.beginStaticRuleLinked(1.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(1.0);
+      {
+        const __qin_typed_receiver_2675: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2675.executeStaticRuleBodyLinked(1.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2676: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2676.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2677: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2677.completeStaticRule();
+    }
     return null;
   }
-  qualifiedNameList(): any {
+  qualifiedNameList(): void {
     if ((!this.beginStaticRuleLinked(2.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(2.0);
+      {
+        const __qin_typed_receiver_2678: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2678.executeStaticRuleBodyLinked(2.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2679: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2679.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2680: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2680.completeStaticRule();
+    }
     return null;
   }
-  receiverParameter(): any {
+  receiverParameter(): void {
     if ((!this.beginStaticRuleLinked(149.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(149.0);
+      {
+        const __qin_typed_receiver_2681: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2681.executeStaticRuleBodyLinked(149.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2682: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2682.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2683: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2683.completeStaticRule();
+    }
     return null;
   }
-  recordBody(): any {
+  recordBody(): void {
     if ((!this.beginStaticRuleLinked(150.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(150.0);
+      {
+        const __qin_typed_receiver_2684: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2684.executeStaticRuleBodyLinked(150.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2685: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2685.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2686: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2686.completeStaticRule();
+    }
     return null;
   }
-  recordComponent(): any {
+  recordComponent(): void {
     if ((!this.beginStaticRuleLinked(151.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(151.0);
+      {
+        const __qin_typed_receiver_2687: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2687.executeStaticRuleBodyLinked(151.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2688: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2688.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2689: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2689.completeStaticRule();
+    }
     return null;
   }
-  recordComponentList(): any {
+  recordComponentList(): void {
     if ((!this.beginStaticRuleLinked(152.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(152.0);
+      {
+        const __qin_typed_receiver_2690: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2690.executeStaticRuleBodyLinked(152.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2691: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2691.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2692: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2692.completeStaticRule();
+    }
     return null;
   }
-  recordDeclaration(): any {
+  recordDeclaration(): void {
     if ((!this.beginStaticRuleLinked(109.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(109.0);
+      {
+        const __qin_typed_receiver_2693: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2693.executeStaticRuleBodyLinked(109.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2694: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2694.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2695: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2695.completeStaticRule();
+    }
     return null;
   }
-  recordHeader(): any {
+  recordHeader(): void {
     if ((!this.beginStaticRuleLinked(153.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(153.0);
+      {
+        const __qin_typed_receiver_2696: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2696.executeStaticRuleBodyLinked(153.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2697: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2697.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2698: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2698.completeStaticRule();
+    }
     return null;
   }
-  relationalExpression(): any {
+  relationalExpression(): void {
     if ((!this.beginStaticRuleLinked(41.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(41.0);
+      {
+        const __qin_typed_receiver_2699: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2699.executeStaticRuleBodyLinked(41.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2700: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2700.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2701: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2701.completeStaticRule();
+    }
     return null;
   }
-  requiresModifier(): any {
+  requiresModifier(): void {
     if ((!this.beginStaticRuleLinked(154.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(154.0);
+      {
+        const __qin_typed_receiver_2702: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2702.executeStaticRuleBodyLinked(154.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2703: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2703.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2704: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2704.completeStaticRule();
+    }
     return null;
   }
-  resource(): any {
+  resource(): void {
     if ((!this.beginStaticRuleLinked(68.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(68.0);
+      {
+        const __qin_typed_receiver_2705: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2705.executeStaticRuleBodyLinked(68.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2706: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2706.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2707: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2707.completeStaticRule();
+    }
     return null;
   }
-  resourceSpecification(): any {
+  resourceSpecification(): void {
     if ((!this.beginStaticRuleLinked(69.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(69.0);
+      {
+        const __qin_typed_receiver_2708: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2708.executeStaticRuleBodyLinked(69.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2709: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2709.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2710: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2710.completeStaticRule();
+    }
     return null;
   }
-  resources(): any {
+  resources(): void {
     if ((!this.beginStaticRuleLinked(70.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(70.0);
+      {
+        const __qin_typed_receiver_2711: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2711.executeStaticRuleBodyLinked(70.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2712: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2712.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2713: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2713.completeStaticRule();
+    }
     return null;
   }
-  returnStatement(): any {
+  returnStatement(): void {
     if ((!this.beginStaticRuleLinked(71.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(71.0);
+      {
+        const __qin_typed_receiver_2714: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2714.executeStaticRuleBodyLinked(71.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2715: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2715.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2716: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2716.completeStaticRule();
+    }
     return null;
   }
-  selector(): any {
+  selector(): void {
     if ((!this.beginStaticRuleLinked(42.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(42.0);
+      {
+        const __qin_typed_receiver_2717: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2717.executeStaticRuleBodyLinked(42.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2718: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2718.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2719: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2719.completeStaticRule();
+    }
     return null;
   }
-  shiftExpression(): any {
+  shiftExpression(): void {
     if ((!this.beginStaticRuleLinked(43.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(43.0);
+      {
+        const __qin_typed_receiver_2720: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2720.executeStaticRuleBodyLinked(43.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2721: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2721.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2722: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2722.completeStaticRule();
+    }
     return null;
   }
-  shiftOperator(): any {
+  shiftOperator(): void {
     if ((!this.beginStaticRuleLinked(44.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(44.0);
+      {
+        const __qin_typed_receiver_2723: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2723.executeStaticRuleBodyLinked(44.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2724: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2724.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2725: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2725.completeStaticRule();
+    }
     return null;
   }
-  statement(): any {
+  statement(): void {
     if ((!this.beginStaticRuleLinked(72.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(72.0);
+      {
+        const __qin_typed_receiver_2726: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2726.executeStaticRuleBodyLinked(72.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2727: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2727.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2728: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2728.completeStaticRule();
+    }
     return null;
   }
-  statementExpression(): any {
+  statementExpression(): void {
     if ((!this.beginStaticRuleLinked(73.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(73.0);
+      {
+        const __qin_typed_receiver_2729: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2729.executeStaticRuleBodyLinked(73.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2730: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2730.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2731: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2731.completeStaticRule();
+    }
     return null;
   }
-  superSuffix(): any {
+  superSuffix(): void {
     if ((!this.beginStaticRuleLinked(155.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(155.0);
+      {
+        const __qin_typed_receiver_2732: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2732.executeStaticRuleBodyLinked(155.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2733: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2733.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2734: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2734.completeStaticRule();
+    }
     return null;
   }
-  switchBlockStatementGroup(): any {
+  switchBlockStatementGroup(): void {
     if ((!this.beginStaticRuleLinked(156.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(156.0);
+      {
+        const __qin_typed_receiver_2735: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2735.executeStaticRuleBodyLinked(156.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2736: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2736.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2737: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2737.completeStaticRule();
+    }
     return null;
   }
-  switchExpression(): any {
+  switchExpression(): void {
     if ((!this.beginStaticRuleLinked(45.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(45.0);
+      {
+        const __qin_typed_receiver_2738: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2738.executeStaticRuleBodyLinked(45.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2739: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2739.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2740: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2740.completeStaticRule();
+    }
     return null;
   }
-  switchLabel(): any {
+  switchLabel(): void {
     if ((!this.beginStaticRuleLinked(157.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(157.0);
+      {
+        const __qin_typed_receiver_2741: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2741.executeStaticRuleBodyLinked(157.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2742: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2742.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2743: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2743.completeStaticRule();
+    }
     return null;
   }
-  switchRule(): any {
+  switchRule(): void {
     if ((!this.beginStaticRuleLinked(74.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(74.0);
+      {
+        const __qin_typed_receiver_2744: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2744.executeStaticRuleBodyLinked(74.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2745: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2745.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2746: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2746.completeStaticRule();
+    }
     return null;
   }
-  switchRuleLabel(): any {
+  switchRuleLabel(): void {
     if ((!this.beginStaticRuleLinked(75.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(75.0);
+      {
+        const __qin_typed_receiver_2747: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2747.executeStaticRuleBodyLinked(75.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2748: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2748.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2749: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2749.completeStaticRule();
+    }
     return null;
   }
-  switchRuleLabelList(): any {
+  switchRuleLabelList(): void {
     if ((!this.beginStaticRuleLinked(76.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(76.0);
+      {
+        const __qin_typed_receiver_2750: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2750.executeStaticRuleBodyLinked(76.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2751: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2751.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2752: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2752.completeStaticRule();
+    }
     return null;
   }
-  switchRuleOutcome(): any {
+  switchRuleOutcome(): void {
     if ((!this.beginStaticRuleLinked(77.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(77.0);
+      {
+        const __qin_typed_receiver_2753: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2753.executeStaticRuleBodyLinked(77.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2754: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2754.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2755: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2755.completeStaticRule();
+    }
     return null;
   }
-  switchStatement(): any {
+  switchStatement(): void {
     if ((!this.beginStaticRuleLinked(78.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(78.0);
+      {
+        const __qin_typed_receiver_2756: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2756.executeStaticRuleBodyLinked(78.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2757: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2757.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2758: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2758.completeStaticRule();
+    }
     return null;
   }
-  synchronizedStatement(): any {
+  synchronizedStatement(): void {
     if ((!this.beginStaticRuleLinked(79.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(79.0);
+      {
+        const __qin_typed_receiver_2759: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2759.executeStaticRuleBodyLinked(79.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2760: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2760.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2761: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2761.completeStaticRule();
+    }
     return null;
   }
-  throwStatement(): any {
+  throwStatement(): void {
     if ((!this.beginStaticRuleLinked(80.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(80.0);
+      {
+        const __qin_typed_receiver_2762: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2762.executeStaticRuleBodyLinked(80.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2763: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2763.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2764: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2764.completeStaticRule();
+    }
     return null;
   }
-  tryHandlerSuffix(): any {
+  tryHandlerSuffix(): void {
     if ((!this.beginStaticRuleLinked(81.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(81.0);
+      {
+        const __qin_typed_receiver_2765: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2765.executeStaticRuleBodyLinked(81.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2766: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2766.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2767: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2767.completeStaticRule();
+    }
     return null;
   }
-  tryStatement(): any {
+  tryStatement(): void {
     if ((!this.beginStaticRuleLinked(82.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(82.0);
+      {
+        const __qin_typed_receiver_2768: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2768.executeStaticRuleBodyLinked(82.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2769: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2769.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2770: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2770.completeStaticRule();
+    }
     return null;
   }
-  typeArgument(): any {
+  typeArgument(): void {
     if ((!this.beginStaticRuleLinked(11.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(11.0);
+      {
+        const __qin_typed_receiver_2771: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2771.executeStaticRuleBodyLinked(11.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2772: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2772.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2773: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2773.completeStaticRule();
+    }
     return null;
   }
-  typeArguments(): any {
+  typeArguments(): void {
     if ((!this.beginStaticRuleLinked(12.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(12.0);
+      {
+        const __qin_typed_receiver_2774: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2774.executeStaticRuleBodyLinked(12.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2775: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2775.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2776: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2776.completeStaticRule();
+    }
     return null;
   }
-  typeBound(): any {
+  typeBound(): void {
     if ((!this.beginStaticRuleLinked(13.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(13.0);
+      {
+        const __qin_typed_receiver_2777: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2777.executeStaticRuleBodyLinked(13.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2778: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2778.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2779: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2779.completeStaticRule();
+    }
     return null;
   }
-  typeDeclaration(): any {
+  typeDeclaration(): void {
     if ((!this.beginStaticRuleLinked(158.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(158.0);
+      {
+        const __qin_typed_receiver_2780: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2780.executeStaticRuleBodyLinked(158.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2781: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2781.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2782: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2782.completeStaticRule();
+    }
     return null;
   }
-  typeIdentifier(): any {
+  typeIdentifier(): void {
     if ((!this.beginStaticRuleLinked(3.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(3.0);
+      {
+        const __qin_typed_receiver_2783: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2783.executeStaticRuleBodyLinked(3.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2784: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2784.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2785: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2785.completeStaticRule();
+    }
     return null;
   }
-  typeList(): any {
+  typeList(): void {
     if ((!this.beginStaticRuleLinked(14.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(14.0);
+      {
+        const __qin_typed_receiver_2786: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2786.executeStaticRuleBodyLinked(14.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2787: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2787.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2788: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2788.completeStaticRule();
+    }
     return null;
   }
-  typeParameter(): any {
+  typeParameter(): void {
     if ((!this.beginStaticRuleLinked(15.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(15.0);
+      {
+        const __qin_typed_receiver_2789: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2789.executeStaticRuleBodyLinked(15.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2790: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2790.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2791: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2791.completeStaticRule();
+    }
     return null;
   }
-  typeParameters(): any {
+  typeParameters(): void {
     if ((!this.beginStaticRuleLinked(16.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(16.0);
+      {
+        const __qin_typed_receiver_2792: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2792.executeStaticRuleBodyLinked(16.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2793: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2793.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2794: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2794.completeStaticRule();
+    }
     return null;
   }
-  typeType(): any {
+  typeType(): void {
     if ((!this.beginStaticRuleLinked(17.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(17.0);
+      {
+        const __qin_typed_receiver_2795: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2795.executeStaticRuleBodyLinked(17.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2796: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2796.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2797: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2797.completeStaticRule();
+    }
     return null;
   }
-  typeTypeOrVoid(): any {
+  typeTypeOrVoid(): void {
     if ((!this.beginStaticRuleLinked(18.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(18.0);
+      {
+        const __qin_typed_receiver_2798: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2798.executeStaticRuleBodyLinked(18.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2799: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2799.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2800: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2800.completeStaticRule();
+    }
     return null;
   }
-  unaryExpression(): any {
+  unaryExpression(): void {
     if ((!this.beginStaticRuleLinked(46.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(46.0);
+      {
+        const __qin_typed_receiver_2801: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2801.executeStaticRuleBodyLinked(46.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2802: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2802.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2803: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2803.completeStaticRule();
+    }
     return null;
   }
-  variableDeclarator(): any {
+  variableDeclarator(): void {
     if ((!this.beginStaticRuleLinked(110.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(110.0);
+      {
+        const __qin_typed_receiver_2804: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2804.executeStaticRuleBodyLinked(110.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2805: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2805.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2806: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2806.completeStaticRule();
+    }
     return null;
   }
-  variableDeclaratorId(): any {
+  variableDeclaratorId(): void {
     if ((!this.beginStaticRuleLinked(111.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(111.0);
+      {
+        const __qin_typed_receiver_2807: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2807.executeStaticRuleBodyLinked(111.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2808: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2808.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2809: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2809.completeStaticRule();
+    }
     return null;
   }
-  variableDeclarators(): any {
+  variableDeclarators(): void {
     if ((!this.beginStaticRuleLinked(112.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(112.0);
+      {
+        const __qin_typed_receiver_2810: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2810.executeStaticRuleBodyLinked(112.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2811: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2811.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2812: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2812.completeStaticRule();
+    }
     return null;
   }
-  variableInitializer(): any {
+  variableInitializer(): void {
     if ((!this.beginStaticRuleLinked(8.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(8.0);
+      {
+        const __qin_typed_receiver_2813: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2813.executeStaticRuleBodyLinked(8.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2814: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2814.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2815: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2815.completeStaticRule();
+    }
     return null;
   }
-  variableModifier(): any {
+  variableModifier(): void {
     if ((!this.beginStaticRuleLinked(113.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(113.0);
+      {
+        const __qin_typed_receiver_2816: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2816.executeStaticRuleBodyLinked(113.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2817: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2817.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2818: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2818.completeStaticRule();
+    }
     return null;
   }
-  whileStatement(): any {
+  whileStatement(): void {
     if ((!this.beginStaticRuleLinked(83.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(83.0);
+      {
+        const __qin_typed_receiver_2819: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2819.executeStaticRuleBodyLinked(83.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2820: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2820.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2821: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2821.completeStaticRule();
+    }
     return null;
   }
-  yieldStatement(): any {
+  yieldStatement(): void {
     if ((!this.beginStaticRuleLinked(84.0, ""))) {
       return null;
     }
     try {
-      this.executeStaticRuleBodyLinked(84.0);
+      {
+        const __qin_typed_receiver_2822: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2822.executeStaticRuleBodyLinked(84.0);
+      }
     } catch (exception) {
       if (!(exception instanceof __QinJavaLangRuntimeException)) {
         throw exception;
       }
-      this.abortStaticRule();
+      {
+        const __qin_typed_receiver_2823: com_slime_java_JavaParserStaticEnhanced = this;
+        __qin_typed_receiver_2823.abortStaticRule();
+      }
       throw exception;
     }
-    this.completeStaticRule();
+    {
+      const __qin_typed_receiver_2824: com_slime_java_JavaParserStaticEnhanced = this;
+      __qin_typed_receiver_2824.completeStaticRule();
+    }
     return null;
   }
-  executeStaticGate(ruleId: number, variantId: number, gateId: number): any {
+  executeStaticGate(ruleId: number, variantId: number, gateId: number): boolean {
     switch (ruleId) {
       case 9.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentTypeNameDotDoesNotStartClassLiteralSuffix();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 17.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentTypeTypeHasEmptyArraySuffix();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 21.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentArrayCreatorHasSizedDimension();
+              break;
             }
             case 0.0: {
               return this.currentArrayCreatorHasEmptyDimension();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 23.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentExpressionLooksLikeAssignment();
+              break;
             }
             case 0.0: {
               return this.currentExpressionLooksLikeConditionalExpression();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 30.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentExpressionLooksLikeLambda();
+              break;
             }
             case 0.0: {
               return this.currentExpressionLooksLikeAssignmentExpression();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 34.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentLambdaParametersLookLikeSingleIdentifier();
+              break;
             }
             case 1.0: {
               return this.currentLambdaParametersLookLikeFormalList();
+              break;
             }
             case 2.0: {
               return this.currentLambdaParametersLookLikeInferredList();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 37.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentPostfixExpressionLooksLikeMethodReference();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 40.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 5.0: {
               return this.currentPrimaryLooksLikeThisMethodReference();
+              break;
             }
             case 6.0: {
               return this.currentPrimaryLooksLikeSuperMethodReference();
+              break;
             }
             case 1.0: {
               return this.currentPrimaryLooksLikePlainThis();
+              break;
             }
             case 2.0: {
               return this.currentPrimaryLooksLikePlainSuper();
+              break;
             }
             case 4.0: {
               return this.currentPrimaryLooksLikeTypeMethodReference();
+              break;
             }
             case 0.0: {
               return this.currentPrimaryLooksLikeTypeClassLiteral();
+              break;
             }
             case 3.0: {
               return this.currentPrimaryLooksLikeIdentifierPrimary();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 41.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentRelationalExpressionHasComparisonOperator();
+              break;
             }
             case 3.0: {
               return this.currentRelationalExpressionHasInstanceof();
+              break;
             }
             case 1.0: {
               return this.currentInstanceofLooksLikePattern();
+              break;
             }
             case 2.0: {
               return this.currentInstanceofLooksLikeTypeOnly();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 42.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentLooksLikeArguments();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 43.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentShiftExpressionHasShiftOperator();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 44.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentShiftOperatorLooksLikeLeftShift();
+              break;
             }
             case 0.0: {
               return this.currentShiftOperatorLooksLikeRightShift();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 46.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentUnaryExpressionLooksLikePrefix();
+              break;
             }
             case 2.0: {
               return this.currentUnaryExpressionLooksLikeCast();
+              break;
             }
             case 0.0: {
               return this.currentUnaryExpressionLooksLikePostfix();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 48.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentBlockStatementLooksLikeLocalVariableDeclaration();
+              break;
             }
             case 2.0: {
               return this.currentBlockStatementLooksLikeLocalTypeDeclaration();
+              break;
             }
             case 1.0: {
               return this.currentBlockStatementLooksLikeStatement();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 59.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentForControlLooksLikeEnhancedFor();
+              break;
             }
             case 0.0: {
               return this.currentForControlLooksLikeBasicFor();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 60.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentForInitLooksLikeLocalVariableDeclaration();
+              break;
             }
             case 0.0: {
               return this.currentForInitLooksLikeExpressionList();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 68.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentResourceLooksLikeDeclaration();
+              break;
             }
             case 0.0: {
               return this.currentResourceLooksLikeIdentifier();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 72.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 2.0: {
               return this.currentStatementLooksLikeSwitchStatement();
+              break;
             }
             case 3.0: {
               return this.currentStatementLooksLikeLabeledStatement();
+              break;
             }
             case 0.0: {
               return this.currentStatementLooksLikeExplicitConstructorInvocation();
+              break;
             }
             case 1.0: {
               return this.currentStatementLooksLikeExpressionStatement();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 75.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentSwitchRuleLabelLooksLikePattern();
+              break;
             }
             case 0.0: {
               return this.currentSwitchRuleLabelLooksLikeExpression();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 78.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentSwitchEntryLooksLikeBlockStatementGroup();
+              break;
             }
             case 2.0: {
               return this.currentSwitchEntryLooksLikeRule();
+              break;
             }
             case 1.0: {
               return this.currentSwitchEntryLooksLikeTrailingLabel();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 82.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentTryStatementLooksLikeResourceTry();
+              break;
             }
             case 0.0: {
               return this.currentTryStatementLooksLikePlainTry();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 87.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentClassBodyDeclarationLooksLikeEmpty();
+              break;
             }
             case 1.0: {
               return this.currentClassBodyDeclarationLooksLikeInitializerBlock();
+              break;
             }
             case 2.0: {
               return this.currentClassBodyDeclarationLooksLikeMember();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 89.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentClassOrInterfaceModifierLooksLikeAnnotation();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 102.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 7.0: {
               return this.interfaceMemberDeclarationLooksLikeRecord();
+              break;
             }
             case 1.0: {
               return this.interfaceMemberDeclarationLooksLikeConst();
+              break;
             }
             case 3.0: {
               return this.interfaceMemberDeclarationLooksLikeGenericMethod();
+              break;
             }
             case 4.0: {
               return this.interfaceMemberDeclarationLooksLikeMethod();
+              break;
             }
             case 5.0: {
               return this.interfaceMemberDeclarationLooksLikeInterface();
+              break;
             }
             case 6.0: {
               return this.interfaceMemberDeclarationLooksLikeAnnotationType();
+              break;
             }
             case 0.0: {
               return this.interfaceMemberDeclarationLooksLikeClass();
+              break;
             }
             case 2.0: {
               return this.interfaceMemberDeclarationLooksLikeEnum();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 105.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 8.0: {
               return this.memberDeclarationLooksLikeRecord();
+              break;
             }
             case 0.0: {
               return this.memberDeclarationLooksLikeGenericConstructor();
+              break;
             }
             case 2.0: {
               return this.memberDeclarationLooksLikeConstructor();
+              break;
             }
             case 4.0: {
               return this.memberDeclarationLooksLikeGenericMethod();
+              break;
             }
             case 5.0: {
               return this.memberDeclarationLooksLikeMethod();
+              break;
             }
             case 6.0: {
               return this.memberDeclarationLooksLikeField();
+              break;
             }
             case 7.0: {
               return this.memberDeclarationLooksLikeInterface();
+              break;
             }
             case 9.0: {
               return this.memberDeclarationLooksLikeAnnotationType();
+              break;
             }
             case 1.0: {
               return this.memberDeclarationLooksLikeClass();
+              break;
             }
             case 3.0: {
               return this.memberDeclarationLooksLikeEnum();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 114.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentAnnotationValueLooksLikePairs();
+              break;
             }
             case 0.0: {
               return this.currentAnnotationValueLooksLikeSingleValue();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 116.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentAnnotationMethodOrConstantRestLooksLikeMethod();
+              break;
             }
             case 0.0: {
               return this.currentAnnotationMethodOrConstantRestLooksLikeConstant();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 126.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentElementValueLooksLikeAnnotation();
+              break;
             }
             case 2.0: {
               return this.currentElementValueLooksLikeArrayInitializer();
+              break;
             }
             case 1.0: {
               return this.currentElementValueLooksLikeExpression();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 136.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentParameterIsNotVarargs();
+              break;
             }
             case 2.0: {
               return this.commaFollowedByNonVarargsParameter();
+              break;
             }
             case 1.0: {
               return this.commaFollowedByVarargsParameter();
+              break;
             }
             case 3.0: {
               return this.currentParameterIsVarargs();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 137.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentFormalParametersStartFormalList();
+              break;
             }
             case 0.0: {
               return this.currentFormalParametersStartReceiver();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 139.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentImportQualifiedNameContinuesWithIdentifierSegment();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 140.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return (!this.match("DOT") || this.lookahead("MUL", 2.0));
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 150.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 1.0: {
               return this.currentRecordBodyLooksLikeCompactConstructor();
+              break;
             }
             case 0.0: {
               return this.currentRecordBodyLooksLikeClassBodyDeclaration();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       case 158.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
           switch (gateId) {
             case 0.0: {
               return this.currentTypeDeclarationLooksLikeClassOrInterfaceModifier();
+              break;
             }
             default: {
+              break;
             }
           }
         }
+        break;
       }
       default: {
+        break;
       }
     }
     return super.executeStaticGate(ruleId, variantId, gateId);
   }
-  executeStaticSubrule(ruleId: number, variantId: number, invocationArgument: any): any {
+  executeStaticSubrule(ruleId: number, variantId: number, invocationArgument: any): void {
     switch (ruleId) {
       case 0.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.identifier();
+          {
+            const __qin_typed_receiver_2825: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2825.identifier();
+          }
           return null;
         }
+        break;
       }
       case 1.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.qualifiedName();
+          {
+            const __qin_typed_receiver_2826: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2826.qualifiedName();
+          }
           return null;
         }
+        break;
       }
       case 2.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.qualifiedNameList();
+          {
+            const __qin_typed_receiver_2827: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2827.qualifiedNameList();
+          }
           return null;
         }
+        break;
       }
       case 3.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeIdentifier();
+          {
+            const __qin_typed_receiver_2828: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2828.typeIdentifier();
+          }
           return null;
         }
+        break;
       }
       case 4.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.arrayInitializer();
+          {
+            const __qin_typed_receiver_2829: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2829.arrayInitializer();
+          }
           return null;
         }
+        break;
       }
       case 5.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.floatingPointLiteral();
+          {
+            const __qin_typed_receiver_2830: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2830.floatingPointLiteral();
+          }
           return null;
         }
+        break;
       }
       case 6.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.integerLiteral();
+          {
+            const __qin_typed_receiver_2831: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2831.integerLiteral();
+          }
           return null;
         }
+        break;
       }
       case 7.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.literal();
+          {
+            const __qin_typed_receiver_2832: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2832.literal();
+          }
           return null;
         }
+        break;
       }
       case 8.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.variableInitializer();
+          {
+            const __qin_typed_receiver_2833: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2833.variableInitializer();
+          }
           return null;
         }
+        break;
       }
       case 9.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.classOrInterfaceType();
+          {
+            const __qin_typed_receiver_2834: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2834.classOrInterfaceType();
+          }
           return null;
         }
+        break;
       }
       case 10.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.primitiveType();
+          {
+            const __qin_typed_receiver_2835: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2835.primitiveType();
+          }
           return null;
         }
+        break;
       }
       case 11.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeArgument();
+          {
+            const __qin_typed_receiver_2836: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2836.typeArgument();
+          }
           return null;
         }
+        break;
       }
       case 12.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeArguments();
+          {
+            const __qin_typed_receiver_2837: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2837.typeArguments();
+          }
           return null;
         }
+        break;
       }
       case 13.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeBound();
+          {
+            const __qin_typed_receiver_2838: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2838.typeBound();
+          }
           return null;
         }
+        break;
       }
       case 14.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeList();
+          {
+            const __qin_typed_receiver_2839: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2839.typeList();
+          }
           return null;
         }
+        break;
       }
       case 15.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeParameter();
+          {
+            const __qin_typed_receiver_2840: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2840.typeParameter();
+          }
           return null;
         }
+        break;
       }
       case 16.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeParameters();
+          {
+            const __qin_typed_receiver_2841: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2841.typeParameters();
+          }
           return null;
         }
+        break;
       }
       case 17.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeType();
+          {
+            const __qin_typed_receiver_2842: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2842.typeType();
+          }
           return null;
         }
+        break;
       }
       case 18.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeTypeOrVoid();
+          {
+            const __qin_typed_receiver_2843: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2843.typeTypeOrVoid();
+          }
           return null;
         }
+        break;
       }
       case 19.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.additiveExpression();
+          {
+            const __qin_typed_receiver_2844: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2844.additiveExpression();
+          }
           return null;
         }
+        break;
       }
       case 20.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.andExpression();
+          {
+            const __qin_typed_receiver_2845: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2845.andExpression();
+          }
           return null;
         }
+        break;
       }
       case 21.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.arrayCreatorDimensions();
+          {
+            const __qin_typed_receiver_2846: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2846.arrayCreatorDimensions();
+          }
           return null;
         }
+        break;
       }
       case 22.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.assignment();
+          {
+            const __qin_typed_receiver_2847: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2847.assignment();
+          }
           return null;
         }
+        break;
       }
       case 23.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.assignmentExpression();
+          {
+            const __qin_typed_receiver_2848: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2848.assignmentExpression();
+          }
           return null;
         }
+        break;
       }
       case 24.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.assignmentOperator();
+          {
+            const __qin_typed_receiver_2849: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2849.assignmentOperator();
+          }
           return null;
         }
+        break;
       }
       case 25.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.conditionalAndExpression();
+          {
+            const __qin_typed_receiver_2850: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2850.conditionalAndExpression();
+          }
           return null;
         }
+        break;
       }
       case 26.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.conditionalExpression();
+          {
+            const __qin_typed_receiver_2851: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2851.conditionalExpression();
+          }
           return null;
         }
+        break;
       }
       case 27.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.conditionalOrExpression();
+          {
+            const __qin_typed_receiver_2852: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2852.conditionalOrExpression();
+          }
           return null;
         }
+        break;
       }
       case 28.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.equalityExpression();
+          {
+            const __qin_typed_receiver_2853: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2853.equalityExpression();
+          }
           return null;
         }
+        break;
       }
       case 29.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.exclusiveOrExpression();
+          {
+            const __qin_typed_receiver_2854: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2854.exclusiveOrExpression();
+          }
           return null;
         }
+        break;
       }
       case 30.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.expression();
+          {
+            const __qin_typed_receiver_2855: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2855.expression();
+          }
           return null;
         }
+        break;
       }
       case 31.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.inclusiveOrExpression();
+          {
+            const __qin_typed_receiver_2856: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2856.inclusiveOrExpression();
+          }
           return null;
         }
+        break;
       }
       case 32.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.lambdaBody();
+          {
+            const __qin_typed_receiver_2857: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2857.lambdaBody();
+          }
           return null;
         }
+        break;
       }
       case 33.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.lambdaExpression();
+          {
+            const __qin_typed_receiver_2858: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2858.lambdaExpression();
+          }
           return null;
         }
+        break;
       }
       case 34.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.lambdaParameters();
+          {
+            const __qin_typed_receiver_2859: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2859.lambdaParameters();
+          }
           return null;
         }
+        break;
       }
       case 35.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.leftHandSide();
+          {
+            const __qin_typed_receiver_2860: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2860.leftHandSide();
+          }
           return null;
         }
+        break;
       }
       case 36.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.multiplicativeExpression();
+          {
+            const __qin_typed_receiver_2861: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2861.multiplicativeExpression();
+          }
           return null;
         }
+        break;
       }
       case 37.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.postfixExpression();
+          {
+            const __qin_typed_receiver_2862: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2862.postfixExpression();
+          }
           return null;
         }
+        break;
       }
       case 38.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.postfixOp();
+          {
+            const __qin_typed_receiver_2863: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2863.postfixOp();
+          }
           return null;
         }
+        break;
       }
       case 39.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.prefixOp();
+          {
+            const __qin_typed_receiver_2864: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2864.prefixOp();
+          }
           return null;
         }
+        break;
       }
       case 40.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.primary();
+          {
+            const __qin_typed_receiver_2865: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2865.primary();
+          }
           return null;
         }
+        break;
       }
       case 41.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.relationalExpression();
+          {
+            const __qin_typed_receiver_2866: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2866.relationalExpression();
+          }
           return null;
         }
+        break;
       }
       case 42.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.selector();
+          {
+            const __qin_typed_receiver_2867: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2867.selector();
+          }
           return null;
         }
+        break;
       }
       case 43.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.shiftExpression();
+          {
+            const __qin_typed_receiver_2868: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2868.shiftExpression();
+          }
           return null;
         }
+        break;
       }
       case 44.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.shiftOperator();
+          {
+            const __qin_typed_receiver_2869: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2869.shiftOperator();
+          }
           return null;
         }
+        break;
       }
       case 45.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchExpression();
+          {
+            const __qin_typed_receiver_2870: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2870.switchExpression();
+          }
           return null;
         }
+        break;
       }
       case 46.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.unaryExpression();
+          {
+            const __qin_typed_receiver_2871: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2871.unaryExpression();
+          }
           return null;
         }
+        break;
       }
       case 47.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.block();
+          {
+            const __qin_typed_receiver_2872: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2872.block();
+          }
           return null;
         }
+        break;
       }
       case 48.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.blockStatement();
+          {
+            const __qin_typed_receiver_2873: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2873.blockStatement();
+          }
           return null;
         }
+        break;
       }
       case 49.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.breakStatement();
+          {
+            const __qin_typed_receiver_2874: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2874.breakStatement();
+          }
           return null;
         }
+        break;
       }
       case 50.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.catchClause();
+          {
+            const __qin_typed_receiver_2875: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2875.catchClause();
+          }
           return null;
         }
+        break;
       }
       case 51.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.catchType();
+          {
+            const __qin_typed_receiver_2876: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2876.catchType();
+          }
           return null;
         }
+        break;
       }
       case 52.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.continueStatement();
+          {
+            const __qin_typed_receiver_2877: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2877.continueStatement();
+          }
           return null;
         }
+        break;
       }
       case 53.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.doWhileStatement();
+          {
+            const __qin_typed_receiver_2878: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2878.doWhileStatement();
+          }
           return null;
         }
+        break;
       }
       case 54.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.enhancedForControl();
+          {
+            const __qin_typed_receiver_2879: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2879.enhancedForControl();
+          }
           return null;
         }
+        break;
       }
       case 55.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.explicitConstructorInvocationStatement();
+          {
+            const __qin_typed_receiver_2880: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2880.explicitConstructorInvocationStatement();
+          }
           return null;
         }
+        break;
       }
       case 56.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.expressionList();
+          {
+            const __qin_typed_receiver_2881: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2881.expressionList();
+          }
           return null;
         }
+        break;
       }
       case 57.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.expressionStatement();
+          {
+            const __qin_typed_receiver_2882: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2882.expressionStatement();
+          }
           return null;
         }
+        break;
       }
       case 58.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.finallyBlock();
+          {
+            const __qin_typed_receiver_2883: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2883.finallyBlock();
+          }
           return null;
         }
+        break;
       }
       case 59.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.forControl();
+          {
+            const __qin_typed_receiver_2884: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2884.forControl();
+          }
           return null;
         }
+        break;
       }
       case 60.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.forInit();
+          {
+            const __qin_typed_receiver_2885: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2885.forInit();
+          }
           return null;
         }
+        break;
       }
       case 61.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.forStatement();
+          {
+            const __qin_typed_receiver_2886: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2886.forStatement();
+          }
           return null;
         }
+        break;
       }
       case 62.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.forUpdate();
+          {
+            const __qin_typed_receiver_2887: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2887.forUpdate();
+          }
           return null;
         }
+        break;
       }
       case 63.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.ifStatement();
+          {
+            const __qin_typed_receiver_2888: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2888.ifStatement();
+          }
           return null;
         }
+        break;
       }
       case 64.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.labeledStatement();
+          {
+            const __qin_typed_receiver_2889: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2889.labeledStatement();
+          }
           return null;
         }
+        break;
       }
       case 65.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.localTypeDeclaration();
+          {
+            const __qin_typed_receiver_2890: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2890.localTypeDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 66.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.localVariableDeclaration();
+          {
+            const __qin_typed_receiver_2891: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2891.localVariableDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 67.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.parExpression();
+          {
+            const __qin_typed_receiver_2892: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2892.parExpression();
+          }
           return null;
         }
+        break;
       }
       case 68.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.resource();
+          {
+            const __qin_typed_receiver_2893: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2893.resource();
+          }
           return null;
         }
+        break;
       }
       case 69.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.resourceSpecification();
+          {
+            const __qin_typed_receiver_2894: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2894.resourceSpecification();
+          }
           return null;
         }
+        break;
       }
       case 70.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.resources();
+          {
+            const __qin_typed_receiver_2895: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2895.resources();
+          }
           return null;
         }
+        break;
       }
       case 71.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.returnStatement();
+          {
+            const __qin_typed_receiver_2896: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2896.returnStatement();
+          }
           return null;
         }
+        break;
       }
       case 72.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.statement();
+          {
+            const __qin_typed_receiver_2897: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2897.statement();
+          }
           return null;
         }
+        break;
       }
       case 73.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.statementExpression();
+          {
+            const __qin_typed_receiver_2898: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2898.statementExpression();
+          }
           return null;
         }
+        break;
       }
       case 74.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchRule();
+          {
+            const __qin_typed_receiver_2899: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2899.switchRule();
+          }
           return null;
         }
+        break;
       }
       case 75.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchRuleLabel();
+          {
+            const __qin_typed_receiver_2900: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2900.switchRuleLabel();
+          }
           return null;
         }
+        break;
       }
       case 76.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchRuleLabelList();
+          {
+            const __qin_typed_receiver_2901: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2901.switchRuleLabelList();
+          }
           return null;
         }
+        break;
       }
       case 77.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchRuleOutcome();
+          {
+            const __qin_typed_receiver_2902: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2902.switchRuleOutcome();
+          }
           return null;
         }
+        break;
       }
       case 78.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchStatement();
+          {
+            const __qin_typed_receiver_2903: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2903.switchStatement();
+          }
           return null;
         }
+        break;
       }
       case 79.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.synchronizedStatement();
+          {
+            const __qin_typed_receiver_2904: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2904.synchronizedStatement();
+          }
           return null;
         }
+        break;
       }
       case 80.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.throwStatement();
+          {
+            const __qin_typed_receiver_2905: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2905.throwStatement();
+          }
           return null;
         }
+        break;
       }
       case 81.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.tryHandlerSuffix();
+          {
+            const __qin_typed_receiver_2906: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2906.tryHandlerSuffix();
+          }
           return null;
         }
+        break;
       }
       case 82.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.tryStatement();
+          {
+            const __qin_typed_receiver_2907: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2907.tryStatement();
+          }
           return null;
         }
+        break;
       }
       case 83.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.whileStatement();
+          {
+            const __qin_typed_receiver_2908: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2908.whileStatement();
+          }
           return null;
         }
+        break;
       }
       case 84.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.yieldStatement();
+          {
+            const __qin_typed_receiver_2909: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2909.yieldStatement();
+          }
           return null;
         }
+        break;
       }
       case 85.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationTypeDeclaration();
+          {
+            const __qin_typed_receiver_2910: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2910.annotationTypeDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 86.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.classBody();
+          {
+            const __qin_typed_receiver_2911: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2911.classBody();
+          }
           return null;
         }
+        break;
       }
       case 87.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.classBodyDeclaration();
+          {
+            const __qin_typed_receiver_2912: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2912.classBodyDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 88.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.classDeclaration();
+          {
+            const __qin_typed_receiver_2913: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2913.classDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 89.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.classOrInterfaceModifier();
+          {
+            const __qin_typed_receiver_2914: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2914.classOrInterfaceModifier();
+          }
           return null;
         }
+        break;
       }
       case 90.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.constDeclaration();
+          {
+            const __qin_typed_receiver_2915: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2915.constDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 91.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.constantDeclarator();
+          {
+            const __qin_typed_receiver_2916: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2916.constantDeclarator();
+          }
           return null;
         }
+        break;
       }
       case 92.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.constructorDeclaration();
+          {
+            const __qin_typed_receiver_2917: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2917.constructorDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 93.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.enumDeclaration();
+          {
+            const __qin_typed_receiver_2918: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2918.enumDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 94.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.fieldDeclaration();
+          {
+            const __qin_typed_receiver_2919: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2919.fieldDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 95.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.genericConstructorDeclaration();
+          {
+            const __qin_typed_receiver_2920: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2920.genericConstructorDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 96.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.genericInterfaceMethodDeclaration();
+          {
+            const __qin_typed_receiver_2921: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2921.genericInterfaceMethodDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 97.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.genericMethodDeclaration();
+          {
+            const __qin_typed_receiver_2922: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2922.genericMethodDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 98.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceBody();
+          {
+            const __qin_typed_receiver_2923: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2923.interfaceBody();
+          }
           return null;
         }
+        break;
       }
       case 99.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceBodyDeclaration();
+          {
+            const __qin_typed_receiver_2924: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2924.interfaceBodyDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 100.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceCommonBodyDeclaration();
+          {
+            const __qin_typed_receiver_2925: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2925.interfaceCommonBodyDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 101.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceDeclaration();
+          {
+            const __qin_typed_receiver_2926: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2926.interfaceDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 102.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceMemberDeclaration();
+          {
+            const __qin_typed_receiver_2927: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2927.interfaceMemberDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 103.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceMethodDeclaration();
+          {
+            const __qin_typed_receiver_2928: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2928.interfaceMethodDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 104.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.interfaceModifier();
+          {
+            const __qin_typed_receiver_2929: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2929.interfaceModifier();
+          }
           return null;
         }
+        break;
       }
       case 105.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.memberDeclaration();
+          {
+            const __qin_typed_receiver_2930: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2930.memberDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 106.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.methodBody();
+          {
+            const __qin_typed_receiver_2931: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2931.methodBody();
+          }
           return null;
         }
+        break;
       }
       case 107.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.methodDeclaration();
+          {
+            const __qin_typed_receiver_2932: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2932.methodDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 108.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.modifier();
+          {
+            const __qin_typed_receiver_2933: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2933.modifier();
+          }
           return null;
         }
+        break;
       }
       case 109.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.recordDeclaration();
+          {
+            const __qin_typed_receiver_2934: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2934.recordDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 110.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.variableDeclarator();
+          {
+            const __qin_typed_receiver_2935: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2935.variableDeclarator();
+          }
           return null;
         }
+        break;
       }
       case 111.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.variableDeclaratorId();
+          {
+            const __qin_typed_receiver_2936: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2936.variableDeclaratorId();
+          }
           return null;
         }
+        break;
       }
       case 112.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.variableDeclarators();
+          {
+            const __qin_typed_receiver_2937: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2937.variableDeclarators();
+          }
           return null;
         }
+        break;
       }
       case 113.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.variableModifier();
+          {
+            const __qin_typed_receiver_2938: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2938.variableModifier();
+          }
           return null;
         }
+        break;
       }
       case 114.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotation();
+          {
+            const __qin_typed_receiver_2939: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2939.annotation();
+          }
           return null;
         }
+        break;
       }
       case 115.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationConstantRest();
+          {
+            const __qin_typed_receiver_2940: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2940.annotationConstantRest();
+          }
           return null;
         }
+        break;
       }
       case 116.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationMethodOrConstantRest();
+          {
+            const __qin_typed_receiver_2941: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2941.annotationMethodOrConstantRest();
+          }
           return null;
         }
+        break;
       }
       case 117.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationMethodRest();
+          {
+            const __qin_typed_receiver_2942: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2942.annotationMethodRest();
+          }
           return null;
         }
+        break;
       }
       case 118.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationTypeBody();
+          {
+            const __qin_typed_receiver_2943: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2943.annotationTypeBody();
+          }
           return null;
         }
+        break;
       }
       case 119.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationTypeElementDeclaration();
+          {
+            const __qin_typed_receiver_2944: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2944.annotationTypeElementDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 120.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.annotationTypeElementRest();
+          {
+            const __qin_typed_receiver_2945: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2945.annotationTypeElementRest();
+          }
           return null;
         }
+        break;
       }
       case 121.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.__qin_arguments();
+          {
+            const __qin_typed_receiver_2946: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2946.arguments();
+          }
           return null;
         }
+        break;
       }
       case 122.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.classCreatorRest();
+          {
+            const __qin_typed_receiver_2947: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2947.classCreatorRest();
+          }
           return null;
         }
+        break;
       }
       case 123.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.compactConstructorDeclaration();
+          {
+            const __qin_typed_receiver_2948: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2948.compactConstructorDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 124.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.compilationUnit();
+          {
+            const __qin_typed_receiver_2949: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2949.compilationUnit();
+          }
           return null;
         }
+        break;
       }
       case 125.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.defaultValue();
+          {
+            const __qin_typed_receiver_2950: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2950.defaultValue();
+          }
           return null;
         }
+        break;
       }
       case 126.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.elementValue();
+          {
+            const __qin_typed_receiver_2951: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2951.elementValue();
+          }
           return null;
         }
+        break;
       }
       case 127.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.elementValueArrayInitializer();
+          {
+            const __qin_typed_receiver_2952: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2952.elementValueArrayInitializer();
+          }
           return null;
         }
+        break;
       }
       case 128.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.elementValuePair();
+          {
+            const __qin_typed_receiver_2953: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2953.elementValuePair();
+          }
           return null;
         }
+        break;
       }
       case 129.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.elementValuePairs();
+          {
+            const __qin_typed_receiver_2954: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2954.elementValuePairs();
+          }
           return null;
         }
+        break;
       }
       case 130.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.enumBodyDeclarations();
+          {
+            const __qin_typed_receiver_2955: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2955.enumBodyDeclarations();
+          }
           return null;
         }
+        break;
       }
       case 131.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.enumConstant();
+          {
+            const __qin_typed_receiver_2956: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2956.enumConstant();
+          }
           return null;
         }
+        break;
       }
       case 132.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.enumConstants();
+          {
+            const __qin_typed_receiver_2957: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2957.enumConstants();
+          }
           return null;
         }
+        break;
       }
       case 133.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.explicitGenericInvocation();
+          {
+            const __qin_typed_receiver_2958: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2958.explicitGenericInvocation();
+          }
           return null;
         }
+        break;
       }
       case 134.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.explicitGenericInvocationSuffix();
+          {
+            const __qin_typed_receiver_2959: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2959.explicitGenericInvocationSuffix();
+          }
           return null;
         }
+        break;
       }
       case 135.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.formalParameter();
+          {
+            const __qin_typed_receiver_2960: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2960.formalParameter();
+          }
           return null;
         }
+        break;
       }
       case 136.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.formalParameterList();
+          {
+            const __qin_typed_receiver_2961: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2961.formalParameterList();
+          }
           return null;
         }
+        break;
       }
       case 137.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.formalParameters();
+          {
+            const __qin_typed_receiver_2962: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2962.formalParameters();
+          }
           return null;
         }
+        break;
       }
       case 138.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.importDeclaration();
+          {
+            const __qin_typed_receiver_2963: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2963.importDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 139.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.importQualifiedName();
+          {
+            const __qin_typed_receiver_2964: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2964.importQualifiedName();
+          }
           return null;
         }
+        break;
       }
       case 140.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.importQualifiedNameSegment();
+          {
+            const __qin_typed_receiver_2965: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2965.importQualifiedNameSegment();
+          }
           return null;
         }
+        break;
       }
       case 141.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.innerCreator();
+          {
+            const __qin_typed_receiver_2966: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2966.innerCreator();
+          }
           return null;
         }
+        break;
       }
       case 142.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.lastFormalParameter();
+          {
+            const __qin_typed_receiver_2967: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2967.lastFormalParameter();
+          }
           return null;
         }
+        break;
       }
       case 143.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.moduleDeclaration();
+          {
+            const __qin_typed_receiver_2968: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2968.moduleDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 144.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.moduleDirective();
+          {
+            const __qin_typed_receiver_2969: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2969.moduleDirective();
+          }
           return null;
         }
+        break;
       }
       case 145.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.nonWildcardTypeArguments();
+          {
+            const __qin_typed_receiver_2970: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2970.nonWildcardTypeArguments();
+          }
           return null;
         }
+        break;
       }
       case 146.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.nonWildcardTypeArgumentsOrDiamond();
+          {
+            const __qin_typed_receiver_2971: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2971.nonWildcardTypeArgumentsOrDiamond();
+          }
           return null;
         }
+        break;
       }
       case 147.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.packageDeclaration();
+          {
+            const __qin_typed_receiver_2972: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2972.packageDeclaration();
+          }
           return null;
         }
+        break;
       }
       case 148.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.pattern();
+          {
+            const __qin_typed_receiver_2973: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2973.pattern();
+          }
           return null;
         }
+        break;
       }
       case 149.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.receiverParameter();
+          {
+            const __qin_typed_receiver_2974: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2974.receiverParameter();
+          }
           return null;
         }
+        break;
       }
       case 150.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.recordBody();
+          {
+            const __qin_typed_receiver_2975: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2975.recordBody();
+          }
           return null;
         }
+        break;
       }
       case 151.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.recordComponent();
+          {
+            const __qin_typed_receiver_2976: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2976.recordComponent();
+          }
           return null;
         }
+        break;
       }
       case 152.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.recordComponentList();
+          {
+            const __qin_typed_receiver_2977: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2977.recordComponentList();
+          }
           return null;
         }
+        break;
       }
       case 153.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.recordHeader();
+          {
+            const __qin_typed_receiver_2978: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2978.recordHeader();
+          }
           return null;
         }
+        break;
       }
       case 154.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.requiresModifier();
+          {
+            const __qin_typed_receiver_2979: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2979.requiresModifier();
+          }
           return null;
         }
+        break;
       }
       case 155.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.superSuffix();
+          {
+            const __qin_typed_receiver_2980: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2980.superSuffix();
+          }
           return null;
         }
+        break;
       }
       case 156.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchBlockStatementGroup();
+          {
+            const __qin_typed_receiver_2981: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2981.switchBlockStatementGroup();
+          }
           return null;
         }
+        break;
       }
       case 157.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.switchLabel();
+          {
+            const __qin_typed_receiver_2982: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2982.switchLabel();
+          }
           return null;
         }
+        break;
       }
       case 158.0: {
         if (__qin_binary__("==", variantId, 0.0)) {
-          this.typeDeclaration();
+          {
+            const __qin_typed_receiver_2983: com_slime_java_JavaParserStaticEnhanced = this;
+            __qin_typed_receiver_2983.typeDeclaration();
+          }
           return null;
         }
+        break;
       }
       default: {
+        break;
       }
     }
     super.executeStaticSubrule(ruleId, variantId, invocationArgument);
     return null;
   }
-  static subhutiStaticRuleVariants(): any {
-    let variants: any = new __QinJavaUtilArrayList(159.0);
+  static subhutiStaticRuleVariants(): __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant> {
+    let variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant> = new __QinJavaUtilArrayList(159.0);
     com_slime_java_JavaParserStaticEnhanced.subhutiStaticRuleVariants_0(variants);
     com_slime_java_JavaParserStaticEnhanced.subhutiStaticRuleVariants_1(variants);
     com_slime_java_JavaParserStaticEnhanced.subhutiStaticRuleVariants_2(variants);
@@ -4106,7 +6333,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     com_slime_java_JavaParserStaticEnhanced.subhutiStaticRuleVariants_6(variants);
     return __QinJavaUtilList.copyOf(variants);
   }
-  static subhutiStaticRuleVariants_0(variants: any): any {
+  static subhutiStaticRuleVariants_0(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(0.0, 0.0, "identifier", "identifier@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 35.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 36.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "IDENTIFIER", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 36.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 38.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "MODULE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 38.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 39.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "OPEN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 39.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 40.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 7.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "REQUIRES", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 40.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 41.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 9.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "EXPORTS", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 41.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 42.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, 11.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "OPENS", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 42.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(13.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 43.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(14.0, 13.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "TO", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 43.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(15.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 44.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(16.0, 15.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "USES", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 44.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(17.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 45.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(18.0, 17.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "PROVIDES", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 45.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(19.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 46.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(20.0, 19.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "WITH", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 46.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(21.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 47.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(22.0, 21.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "TRANSITIVE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 47.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(23.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 49.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(24.0, 23.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEALED", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 49.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(25.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 50.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(26.0, 25.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "PERMITS", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 50.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(27.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 51.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(28.0, 27.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RECORD", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 51.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(29.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 52.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(30.0, 29.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "VAR", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 52.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(31.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 53.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(32.0, 31.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "YIELD", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 53.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(33.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 54.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(34.0, 33.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "WHEN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 54.0, 19.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(1.0, 0.0, "qualifiedName", "qualifiedName@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "identifier", null, 0.0, 0.0, false, false, 96.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 97.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 97.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "DOT", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 98.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "identifier", null, 0.0, 0.0, false, false, 99.0, 13.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(2.0, 0.0, "qualifiedNameList", "qualifiedNameList@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 110.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 111.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 111.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "COMMA", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 112.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 113.0, 13.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4133,7 +6360,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(23.0, 0.0, "assignmentExpression", "assignmentExpression@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 426.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 427.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.expression.JavaExpressionParser#currentExpressionLooksLikeAssignment", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 427.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "assignment", null, 22.0, 0.0, false, false, 427.0, 68.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 428.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.expression.JavaExpressionParser#currentExpressionLooksLikeConditionalExpression", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 428.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "conditionalExpression", null, 26.0, 0.0, false, false, 428.0, 79.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.ofEntries(__QinJavaUtilHashMap.entry(2.0, 1.0), __QinJavaUtilHashMap.entry(5.0, 0.0)), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(2.0, 5.0)));
     return null;
   }
-  static subhutiStaticRuleVariants_1(variants: any): any {
+  static subhutiStaticRuleVariants_1(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(24.0, 0.0, "assignmentOperator", "assignmentOperator@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 526.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 527.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 527.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 528.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "ADD_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 528.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 529.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SUB_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 529.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 530.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 7.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "MUL_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 530.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 531.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 9.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "DIV_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 531.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 532.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, 11.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "AND_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 532.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(13.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 533.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(14.0, 13.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "OR_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 533.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(15.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 534.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(16.0, 15.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "XOR_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 534.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(17.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 535.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(18.0, 17.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "MOD_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 535.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(19.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 536.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(20.0, 19.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LSHIFT_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 536.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(21.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 537.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(22.0, 21.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RSHIFT_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 537.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(23.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 538.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(24.0, 23.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "URSHIFT_ASSIGN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 538.0, 19.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(25.0, 0.0, "conditionalAndExpression", "conditionalAndExpression@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "inclusiveOrExpression", null, 31.0, 0.0, false, false, 579.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 580.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 580.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "AND", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 581.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "inclusiveOrExpression", null, 31.0, 0.0, false, false, 582.0, 13.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(26.0, 0.0, "conditionalExpression", "conditionalExpression@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "conditionalOrExpression", null, 27.0, 0.0, false, false, 549.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 550.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 550.0, 16.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "QUESTION", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 551.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "expression", null, 30.0, 0.0, false, false, 552.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "COLON", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 553.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "conditionalExpression", null, 26.0, 0.0, false, false, 554.0, 13.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4160,7 +6387,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(47.0, 0.0, "block", "block@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LBRACE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 38.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 39.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 39.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "blockStatement", null, 48.0, 0.0, false, false, 39.0, 20.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RBRACE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 40.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     return null;
   }
-  static subhutiStaticRuleVariants_2(variants: any): any {
+  static subhutiStaticRuleVariants_2(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(48.0, 0.0, "blockStatement", "blockStatement@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 52.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 53.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentBlockStatementLooksLikeLocalVariableDeclaration", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 53.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "localVariableDeclaration", null, 66.0, 0.0, false, false, 54.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 55.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 57.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentBlockStatementLooksLikeLocalTypeDeclaration", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 57.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 6.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "localTypeDeclaration", null, 65.0, 0.0, false, false, 57.0, 82.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 58.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 8.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentBlockStatementLooksLikeStatement", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 58.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 9.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "statement", null, 72.0, 0.0, false, false, 58.0, 71.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.ofEntries(__QinJavaUtilHashMap.entry(2.0, 0.0), __QinJavaUtilHashMap.entry(6.0, 2.0), __QinJavaUtilHashMap.entry(9.0, 1.0)), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(2.0, 6.0, 9.0)));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(49.0, 0.0, "breakStatement", "breakStatement@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "BREAK", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 747.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 748.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 748.0, 16.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "identifier", null, 0.0, 0.0, false, false, 748.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 749.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(50.0, 0.0, "catchClause", "catchClause@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "CATCH", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 949.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LPAREN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 950.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 951.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 951.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "variableModifier", null, 113.0, 0.0, false, false, 951.0, 20.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "catchType", null, 51.0, 0.0, false, false, 952.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "identifier", null, 0.0, 0.0, false, false, 953.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RPAREN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 954.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "block", null, 47.0, 0.0, false, false, 955.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4187,7 +6414,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(71.0, 0.0, "returnStatement", "returnStatement@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RETURN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 717.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 718.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 718.0, 16.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "expression", null, 30.0, 0.0, false, false, 718.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 719.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     return null;
   }
-  static subhutiStaticRuleVariants_3(variants: any): any {
+  static subhutiStaticRuleVariants_3(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(72.0, 0.0, "statement", "statement@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 345.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 346.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "block", null, 47.0, 0.0, false, false, 346.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 347.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "ifStatement", null, 63.0, 0.0, false, false, 347.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 348.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "forStatement", null, 61.0, 0.0, false, false, 348.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 349.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 7.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "whileStatement", null, 83.0, 0.0, false, false, 349.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 350.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 9.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "doWhileStatement", null, 53.0, 0.0, false, false, 350.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 351.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, 11.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "tryStatement", null, 82.0, 0.0, false, false, 351.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(13.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 352.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(14.0, 13.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentStatementLooksLikeSwitchStatement", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 352.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(15.0, 14.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "switchStatement", null, 78.0, 0.0, false, false, 352.0, 72.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(16.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 353.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(17.0, 16.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "synchronizedStatement", null, 79.0, 0.0, false, false, 353.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(18.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 354.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(19.0, 18.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "returnStatement", null, 71.0, 0.0, false, false, 354.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(20.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 355.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(21.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "throwStatement", null, 80.0, 0.0, false, false, 355.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(22.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 356.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(23.0, 22.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "yieldStatement", null, 84.0, 0.0, false, false, 356.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(24.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 357.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(25.0, 24.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "breakStatement", null, 49.0, 0.0, false, false, 357.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(26.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 358.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(27.0, 26.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "continueStatement", null, 52.0, 0.0, false, false, 358.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(28.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 359.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(29.0, 28.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 359.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(30.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 360.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(31.0, 30.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentStatementLooksLikeLabeledStatement", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 360.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(32.0, 31.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "labeledStatement", null, 64.0, 0.0, false, false, 360.0, 73.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(33.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 361.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(34.0, 33.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentStatementLooksLikeExplicitConstructorInvocation", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 361.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(35.0, 34.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "explicitConstructorInvocationStatement", null, 55.0, 0.0, false, false, 361.0, 86.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(36.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 362.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(37.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.statement.JavaStatementParser#currentStatementLooksLikeExpressionStatement", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 362.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(38.0, 37.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "expressionStatement", null, 57.0, 0.0, false, false, 362.0, 76.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.ofEntries(__QinJavaUtilHashMap.entry(14.0, 2.0), __QinJavaUtilHashMap.entry(31.0, 3.0), __QinJavaUtilHashMap.entry(34.0, 0.0), __QinJavaUtilHashMap.entry(37.0, 1.0)), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(14.0, 31.0, 34.0, 37.0)));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(73.0, 0.0, "statementExpression", "statementExpression@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "expression", null, 30.0, 0.0, false, false, 788.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(74.0, 0.0, "switchRule", "switchRule@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 645.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 646.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "CASE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 647.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "switchRuleLabelList", null, 76.0, 0.0, false, false, 648.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "ARROW", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 649.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "switchRuleOutcome", null, 77.0, 0.0, false, false, 650.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 652.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 6.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "DEFAULT", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 653.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 6.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "ARROW", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 654.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 6.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "switchRuleOutcome", null, 77.0, 0.0, false, false, 655.0, 17.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4214,7 +6441,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(95.0, 0.0, "genericConstructorDeclaration", "genericConstructorDeclaration@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "typeParameters", null, 16.0, 0.0, false, false, 278.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "constructorDeclaration", null, 92.0, 0.0, false, false, 279.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     return null;
   }
-  static subhutiStaticRuleVariants_4(variants: any): any {
+  static subhutiStaticRuleVariants_4(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(96.0, 0.0, "genericInterfaceMethodDeclaration", "genericInterfaceMethodDeclaration@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "typeParameters", null, 16.0, 0.0, false, false, 640.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "interfaceCommonBodyDeclaration", null, 100.0, 0.0, false, false, 641.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(97.0, 0.0, "genericMethodDeclaration", "genericMethodDeclaration@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "typeParameters", null, 16.0, 0.0, false, false, 251.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "methodDeclaration", null, 107.0, 0.0, false, false, 252.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(98.0, 0.0, "interfaceBody", "interfaceBody@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LBRACE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 463.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 464.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 464.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "interfaceBodyDeclaration", null, 99.0, 0.0, false, false, 464.0, 20.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RBRACE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 465.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4241,7 +6468,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(119.0, 0.0, "annotationTypeElementDeclaration", "annotationTypeElementDeclaration@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 526.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 527.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 528.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 528.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "modifier", null, 108.0, 0.0, false, false, 528.0, 28.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "annotationTypeElementRest", null, 120.0, 0.0, false, false, 529.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 531.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 6.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 531.0, 19.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     return null;
   }
-  static subhutiStaticRuleVariants_5(variants: any): any {
+  static subhutiStaticRuleVariants_5(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(120.0, 0.0, "annotationTypeElementRest", "annotationTypeElementRest@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 547.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 548.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "typeType", null, 17.0, 0.0, false, false, 549.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "annotationMethodOrConstantRest", null, 116.0, 0.0, false, false, 550.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 551.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 553.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "classDeclaration", null, 88.0, 0.0, false, false, 554.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 555.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 7.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 555.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 8.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 555.0, 30.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 557.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 10.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "interfaceDeclaration", null, 101.0, 0.0, false, false, 558.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, 10.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 559.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(13.0, 12.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 559.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(14.0, 13.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 559.0, 30.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(15.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 561.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(16.0, 15.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "enumDeclaration", null, 93.0, 0.0, false, false, 562.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(17.0, 15.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 563.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(18.0, 17.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 563.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(19.0, 18.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 563.0, 30.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(20.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 565.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(21.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "annotationTypeDeclaration", null, 85.0, 0.0, false, false, 566.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(22.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 567.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(23.0, 22.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 567.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(24.0, 23.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 567.0, 30.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(25.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 569.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(26.0, 25.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "recordDeclaration", null, 109.0, 0.0, false, false, 570.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(27.0, 25.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 571.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(28.0, 27.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 571.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(29.0, 28.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 571.0, 30.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(121.0, 0.0, "arguments", "arguments@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LPAREN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 845.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 846.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 846.0, 16.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "expressionList", null, 56.0, 0.0, false, false, 846.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RPAREN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 847.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(122.0, 0.0, "classCreatorRest", "classCreatorRest@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "arguments", null, 121.0, 0.0, false, false, 933.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 934.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 934.0, 16.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "classBody", null, 86.0, 0.0, false, false, 934.0, 22.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4268,7 +6495,7 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(143.0, 0.0, "moduleDeclaration", "moduleDeclaration@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 968.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 968.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "annotation", null, 114.0, 0.0, false, false, 968.0, 20.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 969.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 969.0, 16.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "OPEN", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 969.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "MODULE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 970.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 971.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LBRACE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 972.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 973.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 9.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 973.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 10.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "moduleDirective", null, 144.0, 0.0, false, false, 973.0, 20.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "RBRACE", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 974.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     return null;
   }
-  static subhutiStaticRuleVariants_6(variants: any): any {
+  static subhutiStaticRuleVariants_6(variants: __QinJavaUtilList<com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant>): void {
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(144.0, 0.0, "moduleDirective", "moduleDirective@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 988.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 989.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "REQUIRES", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 990.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 991.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 3.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 991.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "requiresModifier", null, 154.0, 0.0, false, false, 991.0, 28.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 992.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 993.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 995.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 8.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "EXPORTS", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 996.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 8.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 997.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 8.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 998.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, 11.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 998.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(13.0, 12.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "TO", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 999.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(14.0, 12.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1000.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(15.0, 12.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1001.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(16.0, 15.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1001.0, 26.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(17.0, 16.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "COMMA", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1002.0, 25.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(18.0, 16.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1003.0, 25.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(19.0, 8.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1006.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(20.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1008.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(21.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "OPENS", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1009.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(22.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1010.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(23.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OPTION, "Option", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1011.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(24.0, 23.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1011.0, 24.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(25.0, 24.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "TO", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1012.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(26.0, 24.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1013.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(27.0, 24.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1014.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(28.0, 27.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1014.0, 26.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(29.0, 28.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "COMMA", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1015.0, 25.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(30.0, 28.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1016.0, 25.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(31.0, 20.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1019.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(32.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1021.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(33.0, 32.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "USES", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1022.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(34.0, 32.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1023.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(35.0, 32.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1024.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(36.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1026.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(37.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "PROVIDES", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1027.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(38.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1028.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(39.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "WITH", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1029.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(40.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1030.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(41.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1031.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(42.0, 41.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1031.0, 22.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(43.0, 42.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "COMMA", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1032.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(44.0, 42.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "qualifiedName", null, 1.0, 0.0, false, false, 1033.0, 21.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(45.0, 36.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "SEMI", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 1035.0, 17.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(145.0, 0.0, "nonWildcardTypeArguments", "nonWildcardTypeArguments@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LT", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 858.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "typeList", null, 14.0, 0.0, false, false, 859.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "GT", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 860.0, 9.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(146.0, 0.0, "nonWildcardTypeArgumentsOrDiamond", "nonWildcardTypeArgumentsOrDiamond@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 917.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 918.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "LT", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 919.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_CONSUME, "GT", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 920.0, 17.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 922.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "nonWildcardTypeArguments", null, 145.0, 0.0, false, false, 922.0, 19.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of()));
@@ -4286,10 +6513,10 @@ class com_slime_java_JavaParserStaticEnhanced extends com_slime_java_JavaParser 
     variants.add(new com_subhuti_parser_SubhutiStaticGrammarPlan$RuleVariant(158.0, 0.0, "typeDeclaration", "typeDeclaration@0", __QinJavaUtilList.of(new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(0.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_MANY, "Many", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 131.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(1.0, 0.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 131.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(2.0, 1.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_GATE, "com.slime.java.JavaParser#currentTypeDeclarationLooksLikeClassOrInterfaceModifier", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 131.0, 14.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(3.0, 2.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "classOrInterfaceModifier", null, 89.0, 0.0, false, false, 131.0, 88.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(4.0, __qin_binary__("-", 0.0, 1.0), com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_OR, "Or", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 132.0, 9.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(5.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 133.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(6.0, 5.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "classDeclaration", null, 88.0, 0.0, false, false, 133.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(7.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 134.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(8.0, 7.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "enumDeclaration", null, 93.0, 0.0, false, false, 134.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(9.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 135.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(10.0, 9.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "interfaceDeclaration", null, 101.0, 0.0, false, false, 135.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(11.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 136.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(12.0, 11.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "annotationTypeDeclaration", null, 85.0, 0.0, false, false, 136.0, 19.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(13.0, 4.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_ALTERNATIVE, "alternative", null, __qin_binary__("-", 0.0, 1.0), __qin_binary__("-", 0.0, 1.0), false, false, 137.0, 13.0), new com_subhuti_parser_SubhutiStaticGrammarPlan$Occurrence(14.0, 13.0, com_subhuti_parser_SubhutiStaticGrammarPlan$Kind.__qin_field_SUBRULE, "recordDeclaration", null, 109.0, 0.0, false, false, 137.0, 19.0)), __QinJavaUtilHashMap.of(), __QinJavaUtilSet.of(), __QinJavaUtilHashMap.ofEntries(__QinJavaUtilHashMap.entry(2.0, 0.0)), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(), __QinJavaUtilSet.of(2.0)));
     return null;
   }
-  staticGrammarPlan(): any {
+  staticGrammarPlan(): com_subhuti_parser_SubhutiStaticGrammarPlan {
     return com_slime_java_JavaParserStaticEnhanced.__qin_field_SUBHUTI_STATIC_GRAMMAR_PLAN;
   }
-  staticRuleNamesById(): any {
+  staticRuleNamesById(): string[] {
     return com_slime_java_JavaParserStaticEnhanced.__qin_field_SUBHUTI_RULE_NAMES_BY_ID;
   }
 }

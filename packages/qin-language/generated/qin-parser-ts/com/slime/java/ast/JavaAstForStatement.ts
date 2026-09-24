@@ -8,68 +8,56 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_java_ast_JavaAstForStatement {
-  __qin_field_initializerStatements: any = null as any;
+  __qin_field_initializerStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   __qin_field_test: com_slime_java_ast_JavaAstExpression | null = null as any;
-  __qin_field_updateExpressions: any = null as any;
-  __qin_field_bodyStatements: any = null as any;
+  __qin_field_updateExpressions: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression> | null = null as any;
+  __qin_field_bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstForStatement_0_0();
-      return;
-    }
-    if (__qin_args.length === 4 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_args[0] instanceof __QinJavaUtilArrayList || __qin_args[0] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_args[3] instanceof __QinJavaUtilArrayList || __qin_args[3] instanceof __QinJavaUtilUnmodifiableList)) {
+    if (__qin_args.length === 4 && (__qin_args[0] === null || Array.isArray(__qin_args[0]) || __qin_instanceof__(__qin_args[0], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[0], __QinJavaUtilUnmodifiableList)) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression")) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_instanceof__(__qin_args[2], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[2], __QinJavaUtilUnmodifiableList)) && (__qin_args[3] === null || Array.isArray(__qin_args[3]) || __qin_instanceof__(__qin_args[3], __QinJavaUtilArrayList) || __qin_instanceof__(__qin_args[3], __QinJavaUtilUnmodifiableList))) {
       const initializerStatements: any = __qin_args[0];
       const test: any = __qin_args[1];
       const updateExpressions: any = __qin_args[2];
       const bodyStatements: any = __qin_args[3];
-      this.__qin_constructor_com_slime_java_ast_JavaAstForStatement_4_1(initializerStatements, test, updateExpressions, bodyStatements);
+      this.__qin_constructor_com_slime_java_ast_JavaAstForStatement_4_0(initializerStatements, test, updateExpressions, bodyStatements);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstForStatement/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstForStatement_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstForStatement_4_0(initializerStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>, test: com_slime_java_ast_JavaAstExpression, updateExpressions: __QinJavaUtilList<com_slime_java_ast_JavaAstExpression>, bodyStatements: __QinJavaUtilList<com_slime_java_ast_JavaAstStatement>): void {
     this.__qin_field_initializerStatements = null;
     this.__qin_field_test = null;
     this.__qin_field_updateExpressions = null;
     this.__qin_field_bodyStatements = null;
-    this.__qin_field_initializerStatements = (__qin_binary__("==", this.__qin_field_initializerStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_initializerStatements));
-    this.__qin_field_updateExpressions = (__qin_binary__("==", this.__qin_field_updateExpressions, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_updateExpressions));
-    this.__qin_field_bodyStatements = (__qin_binary__("==", this.__qin_field_bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(this.__qin_field_bodyStatements));
+    initializerStatements = (__qin_binary__("==", initializerStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(initializerStatements));
+    updateExpressions = (__qin_binary__("==", updateExpressions, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(updateExpressions));
+    bodyStatements = (__qin_binary__("==", bodyStatements, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.copyOf(bodyStatements));
+    this.__qin_field_initializerStatements = initializerStatements;
+    this.__qin_field_test = test;
+    this.__qin_field_updateExpressions = updateExpressions;
+    this.__qin_field_bodyStatements = bodyStatements;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstForStatement_4_1(initializerStatements: any, test: com_slime_java_ast_JavaAstExpression, updateExpressions: any, bodyStatements: any): void {
-    this.__qin_field_initializerStatements = null;
-    this.__qin_field_test = null;
-    this.__qin_field_updateExpressions = null;
-    this.__qin_field_bodyStatements = null;
-    (() => {
-      this.__qin_field_initializerStatements = initializerStatements;
-      this.__qin_field_test = test;
-      this.__qin_field_updateExpressions = updateExpressions;
-      this.__qin_field_bodyStatements = bodyStatements;
-      return null;
-    })();
-  }
-  initializerStatements(): any {
+  initializerStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_initializerStatements;
   }
-  test(): any {
+  test(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_test;
   }
-  updateExpressions(): any {
+  updateExpressions(): __QinJavaUtilList<com_slime_java_ast_JavaAstExpression> {
     return this.__qin_field_updateExpressions;
   }
-  bodyStatements(): any {
+  bodyStatements(): __QinJavaUtilList<com_slime_java_ast_JavaAstStatement> {
     return this.__qin_field_bodyStatements;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstForStatement)) return false;
-    return __qin_java_values_equal__(this.__qin_field_initializerStatements, other.__qin_field_initializerStatements)
-      && __qin_java_values_equal__(this.__qin_field_test, other.__qin_field_test)
-      && __qin_java_values_equal__(this.__qin_field_updateExpressions, other.__qin_field_updateExpressions)
-      && __qin_java_values_equal__(this.__qin_field_bodyStatements, other.__qin_field_bodyStatements);
+    const __qin_record_other: com_slime_java_ast_JavaAstForStatement = other;
+    return __qin_java_values_equal__(this.__qin_field_initializerStatements, __qin_record_other.__qin_field_initializerStatements)
+      && __qin_java_values_equal__(this.__qin_field_test, __qin_record_other.__qin_field_test)
+      && __qin_java_values_equal__(this.__qin_field_updateExpressions, __qin_record_other.__qin_field_updateExpressions)
+      && __qin_java_values_equal__(this.__qin_field_bodyStatements, __qin_record_other.__qin_field_bodyStatements);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_initializerStatements);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_test);
@@ -77,7 +65,7 @@ class com_slime_java_ast_JavaAstForStatement {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_bodyStatements);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstForStatement[", "initializerStatements=", this.__qin_field_initializerStatements, ", ", "test=", this.__qin_field_test, ", ", "updateExpressions=", this.__qin_field_updateExpressions, ", ", "bodyStatements=", this.__qin_field_bodyStatements, "]"].join("");
   }
 }

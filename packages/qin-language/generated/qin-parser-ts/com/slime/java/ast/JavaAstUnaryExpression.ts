@@ -12,52 +12,42 @@ class com_slime_java_ast_JavaAstUnaryExpression {
   __qin_field_operator: string | null = null as any;
   __qin_field_operand: com_slime_java_ast_JavaAstExpression | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 0 && true) {
-      this.__qin_constructor_com_slime_java_ast_JavaAstUnaryExpression_0_0();
-      return;
-    }
     if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.java.ast.JavaAstExpression"))) {
       const operator: any = __qin_args[0];
       const operand: any = __qin_args[1];
-      this.__qin_constructor_com_slime_java_ast_JavaAstUnaryExpression_2_1(operator, operand);
+      this.__qin_constructor_com_slime_java_ast_JavaAstUnaryExpression_2_0(operator, operand);
       return;
     }
     throw new Error("Unsupported Java constructor overload: JavaAstUnaryExpression/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaAstUnaryExpression_0_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaAstUnaryExpression_2_0(operator: string, operand: com_slime_java_ast_JavaAstExpression): void {
     this.__qin_field_operator = null;
     this.__qin_field_operand = null;
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_operator, "operator cannot be null");
-    __QinJavaUtilObjects.requireNonNull(this.__qin_field_operand, "operand cannot be null");
+    __QinJavaUtilObjects.requireNonNull(operator, "operator cannot be null");
+    __QinJavaUtilObjects.requireNonNull(operand, "operand cannot be null");
+    this.__qin_field_operator = operator;
+    this.__qin_field_operand = operand;
   }
-  __qin_constructor_com_slime_java_ast_JavaAstUnaryExpression_2_1(operator: string, operand: com_slime_java_ast_JavaAstExpression): void {
-    this.__qin_field_operator = null;
-    this.__qin_field_operand = null;
-    (() => {
-      this.__qin_field_operator = operator;
-      this.__qin_field_operand = operand;
-      return null;
-    })();
-  }
-  operator(): any {
+  operator(): string {
     return this.__qin_field_operator;
   }
-  operand(): any {
+  operand(): com_slime_java_ast_JavaAstExpression {
     return this.__qin_field_operand;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_java_ast_JavaAstUnaryExpression)) return false;
-    return __qin_java_values_equal__(this.__qin_field_operator, other.__qin_field_operator)
-      && __qin_java_values_equal__(this.__qin_field_operand, other.__qin_field_operand);
+    const __qin_record_other: com_slime_java_ast_JavaAstUnaryExpression = other;
+    return __qin_java_values_equal__(this.__qin_field_operator, __qin_record_other.__qin_field_operator)
+      && __qin_java_values_equal__(this.__qin_field_operand, __qin_record_other.__qin_field_operand);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_operator);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_operand);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["JavaAstUnaryExpression[", "operator=", this.__qin_field_operator, ", ", "operand=", this.__qin_field_operand, "]"].join("");
   }
 }

@@ -15,10 +15,10 @@ class com_slime_ast_nodes_typescript_TSTypeAliasDeclaration {
   __qin_field_id: com_slime_ast_nodes_expressions_Identifier | null = null as any;
   __qin_field_typeParameters: com_slime_ast_AstNode | null = null as any;
   __qin_field_typeAnnotation: com_slime_ast_AstNode | null = null as any;
-  __qin_field_declare: boolean | null = null as any;
+  __qin_field_declare: boolean | null = false as any;
   __qin_field_location: com_slime_ast_SourceLocation | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier) || __qin_args[0].__qinJavaRecordClass === com_slime_ast_nodes_expressions_Identifier.__qinJavaRecordClass) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.AstNode")) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation) || __qin_args[4].__qinJavaRecordClass === com_slime_ast_SourceLocation.__qinJavaRecordClass)) {
+    if (__qin_args.length === 5 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_slime_ast_nodes_expressions_Identifier)) && (__qin_args[1] === null || __qin_java_implements(__qin_args[1], "com.slime.ast.AstNode")) && (__qin_args[2] === null || __qin_java_implements(__qin_args[2], "com.slime.ast.AstNode")) && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_instanceof__(__qin_args[4], com_slime_ast_SourceLocation))) {
       const id: any = __qin_args[0];
       const typeParameters: any = __qin_args[1];
       const typeAnnotation: any = __qin_args[2];
@@ -33,7 +33,7 @@ class com_slime_ast_nodes_typescript_TSTypeAliasDeclaration {
     this.__qin_field_id = null;
     this.__qin_field_typeParameters = null;
     this.__qin_field_typeAnnotation = null;
-    this.__qin_field_declare = null;
+    this.__qin_field_declare = false;
     this.__qin_field_location = null;
     (() => {
       this.__qin_field_id = id;
@@ -44,34 +44,35 @@ class com_slime_ast_nodes_typescript_TSTypeAliasDeclaration {
       return null;
     })();
   }
-  type(): any {
+  type(): com_slime_ast_AstNodeType {
     return com_slime_ast_AstNodeType.__qin_field_TS_TYPE_ALIAS_DECLARATION;
   }
-  id(): any {
+  id(): com_slime_ast_nodes_expressions_Identifier {
     return this.__qin_field_id;
   }
-  typeParameters(): any {
+  typeParameters(): com_slime_ast_AstNode {
     return this.__qin_field_typeParameters;
   }
-  typeAnnotation(): any {
+  typeAnnotation(): com_slime_ast_AstNode {
     return this.__qin_field_typeAnnotation;
   }
-  declare(): any {
+  declare(): boolean {
     return this.__qin_field_declare;
   }
-  location(): any {
+  location(): com_slime_ast_SourceLocation {
     return this.__qin_field_location;
   }
-  equals(other) {
+  equals(other: any): boolean {
     if (this === other) return true;
     if (!__qin_instanceof__(other, com_slime_ast_nodes_typescript_TSTypeAliasDeclaration)) return false;
-    return __qin_java_values_equal__(this.__qin_field_id, other.__qin_field_id)
-      && __qin_java_values_equal__(this.__qin_field_typeParameters, other.__qin_field_typeParameters)
-      && __qin_java_values_equal__(this.__qin_field_typeAnnotation, other.__qin_field_typeAnnotation)
-      && __qin_java_values_equal__(this.__qin_field_declare, other.__qin_field_declare)
-      && __qin_java_values_equal__(this.__qin_field_location, other.__qin_field_location);
+    const __qin_record_other: com_slime_ast_nodes_typescript_TSTypeAliasDeclaration = other;
+    return __qin_java_values_equal__(this.__qin_field_id, __qin_record_other.__qin_field_id)
+      && __qin_java_values_equal__(this.__qin_field_typeParameters, __qin_record_other.__qin_field_typeParameters)
+      && __qin_java_values_equal__(this.__qin_field_typeAnnotation, __qin_record_other.__qin_field_typeAnnotation)
+      && __qin_java_values_equal__(this.__qin_field_declare, __qin_record_other.__qin_field_declare)
+      && __qin_java_values_equal__(this.__qin_field_location, __qin_record_other.__qin_field_location);
   }
-  hashCode() {
+  hashCode(): number {
     let result = 1;
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_id);
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_typeParameters);
@@ -80,7 +81,7 @@ class com_slime_ast_nodes_typescript_TSTypeAliasDeclaration {
     result = result * 31 + __qin_java_value_hash_code__(this.__qin_field_location);
     return result;
   }
-  toString() {
+  toString(): string {
     return ["TSTypeAliasDeclaration[", "id=", this.__qin_field_id, ", ", "typeParameters=", this.__qin_field_typeParameters, ", ", "typeAnnotation=", this.__qin_field_typeAnnotation, ", ", "declare=", this.__qin_field_declare, ", ", "location=", this.__qin_field_location, "]"].join("");
   }
 }
