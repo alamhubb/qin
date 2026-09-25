@@ -35,7 +35,8 @@ public final class QinJvmClassDeclarationCorpusSmokeTestMain {
         QinJvmSequenceConsoleReturnSmokeTestMain.main(args);
         QinJvmClassReferenceStaticFieldSmokeTestMain.main(args);
         QinJvmJavaLangStringCharNumericArgumentSmokeTestMain.main(args);
+        QinJvmStaticCharAtNumericArgumentSmokeTestMain.main(args);
 
-        System.out.println("Qin JVM class declaration corpus smoke passed: 26 cases");
+        System.out.println("Qin JVM class declaration corpus smoke passed: 27 cases");
     }
 }

@@ -6453,6 +6453,33 @@ public final class QinJvmDeclarationClassEmitter {
         };
     }
 
+    private QinIrTypeRef inferJavaLangStringStaticSdkHelperReturnType(
+            QinIrStaticMethodCallExpression methodCallExpression) {
+        if (!isJavaLangStringStaticSdkHelperCall(methodCallExpression)) {
+            return null;
+        }
+        int argumentCount = methodCallExpression.arguments().size();
+        return switch (methodCallExpression.methodName()) {
+            case "length", "hashCode" -> argumentCount == 1 ? QinIrTypeRef.doubleType() : null;
+            case "valueOf" -> argumentCount == 1 ? QinIrTypeRef.stringType() : null;
+            case "equals", "contains", "startsWith", "endsWith" ->
+                    argumentCount == 2 ? QinIrTypeRef.booleanType() : null;
+            case "isEmpty", "isBlank" -> argumentCount == 1 ? QinIrTypeRef.booleanType() : null;
+            case "charAt" -> argumentCount == 2 ? QinIrTypeRef.stringType() : null;
+            case "substring" -> argumentCount == 2 || argumentCount == 3 ? QinIrTypeRef.stringType() : null;
+            case "format" -> argumentCount >= 1 ? QinIrTypeRef.stringType() : null;
+            case "regionMatches" -> argumentCount == 5 ? QinIrTypeRef.booleanType() : null;
+            default -> null;
+        };
+    }
+
+    private boolean isJavaLangStringStaticSdkHelperCall(
+            QinIrStaticMethodCallExpression methodCallExpression) {
+        return methodCallExpression != null
+                && ("__QinJavaLangString".equals(methodCallExpression.classLocalName())
+                        || "__QinJavaLangString".equals(methodCallExpression.ownerBinaryName()));
+    }
+
     private QinIrTypeRef emitJavaLangStringSdkHelperCall(
             java.lang.classfile.CodeBuilder code,
             QinIrClassDeclaration ownerDeclaration,
@@ -6461,15 +6488,54 @@ public final class QinJvmDeclarationClassEmitter {
             LocalFrame localFrame,
             QinIrInstanceMethodCallExpression methodCallExpression,
             QinIrTypeRef returnType) {
-        if ("format".equals(methodCallExpression.methodName())) {
+        return emitJavaLangStringSdkHelperCall(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                methodCallExpression.methodName(),
+                methodCallExpression.arguments(),
+                returnType);
+    }
+
+    private QinIrTypeRef emitJavaLangStringStaticSdkHelperCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrStaticMethodCallExpression methodCallExpression,
+            QinIrTypeRef returnType) {
+        return emitJavaLangStringSdkHelperCall(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                methodCallExpression.methodName(),
+                methodCallExpression.arguments(),
+                returnType);
+    }
+
+    private QinIrTypeRef emitJavaLangStringSdkHelperCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            String methodName,
+            List<QinIrExpression> arguments,
+            QinIrTypeRef returnType) {
+        if ("format".equals(methodName)) {
             emitDeclarationExpressionAsObject(
                     code,
                     ownerDeclaration,
                     method,
                     declarationIndex,
                     localFrame,
-                    methodCallExpression.arguments().get(0));
-            int restCount = methodCallExpression.arguments().size() - 1;
+                    arguments.get(0));
+            int restCount = arguments.size() - 1;
             code.loadConstant(restCount);
             code.anewarray(OBJECT_DESC);
             for (int i = 0; i < restCount; i++) {
@@ -6481,7 +6547,7 @@ public final class QinJvmDeclarationClassEmitter {
                         method,
                         declarationIndex,
                         localFrame,
-                        methodCallExpression.arguments().get(i + 1));
+                        arguments.get(i + 1));
                 boxValueForObjectTarget(code, actualType);
                 code.aastore();
             }
@@ -6492,7 +6558,7 @@ public final class QinJvmDeclarationClassEmitter {
             return returnType;
         }
 
-        for (QinIrExpression argument : methodCallExpression.arguments()) {
+        for (QinIrExpression argument : arguments) {
             emitDeclarationExpressionAsObject(
                     code,
                     ownerDeclaration,
@@ -6501,7 +6567,7 @@ public final class QinJvmDeclarationClassEmitter {
                     localFrame,
                     argument);
         }
-        String descriptor = switch (methodCallExpression.methodName()) {
+        String descriptor = switch (methodName) {
             case "length" -> "(Ljava/lang/Object;)D";
             case "hashCode" -> "(Ljava/lang/Object;)D";
             case "valueOf" -> "(Ljava/lang/Object;)Ljava/lang/String;";
@@ -6513,17 +6579,17 @@ public final class QinJvmDeclarationClassEmitter {
             case "endsWith" -> "(Ljava/lang/Object;Ljava/lang/Object;)Z";
             case "charAt" -> "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/String;";
             case "substring" -> "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/String;";
-            case "regionMatches" -> "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z";
+            case "regionMatches" ->
+                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z";
             default -> throw new IllegalArgumentException(
-                    "Unsupported __QinJavaLangString helper: " + methodCallExpression.methodName());
+                    "Unsupported __QinJavaLangString helper: " + methodName);
         };
-        if ("substring".equals(methodCallExpression.methodName())
-                && methodCallExpression.arguments().size() == 2) {
+        if ("substring".equals(methodName) && arguments.size() == 2) {
             code.aconst_null();
         }
         code.invokestatic(
                 ESM_GLOBAL_DESC,
-                "__qin_java_lang_string_" + toSnakeCase(methodCallExpression.methodName()) + "__",
+                "__qin_java_lang_string_" + toSnakeCase(methodName) + "__",
                 MethodTypeDesc.ofDescriptor(descriptor));
         return returnType;
     }
@@ -8045,6 +8111,18 @@ public final class QinJvmDeclarationClassEmitter {
             Map<String, QinIrClassDeclaration> declarationIndex,
             LocalFrame localFrame,
             QinIrStaticMethodCallExpression methodCallExpression) {
+        QinIrTypeRef javaLangStringHelperType =
+                inferJavaLangStringStaticSdkHelperReturnType(methodCallExpression);
+        if (javaLangStringHelperType != null) {
+            return emitJavaLangStringStaticSdkHelperCall(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    methodCallExpression,
+                    javaLangStringHelperType);
+        }
         if (isJavaSecurityMessageDigestGetInstanceStaticFacadeCall(methodCallExpression)) {
             QinIrTypeRef algorithmType = emitDeclarationExpression(
                     code,
@@ -8343,7 +8421,8 @@ public final class QinJvmDeclarationClassEmitter {
         }
         resolvedMethod = effectiveGeneratedLocalStaticMethodCall(
                 methodCallExpression,
-                resolvedMethod);
+                resolvedMethod,
+                declarationIndex);
 
         emitStaticMethodArguments(
                 code,
@@ -8388,7 +8467,8 @@ public final class QinJvmDeclarationClassEmitter {
 
     private ResolvedStaticMethodCall effectiveGeneratedLocalStaticMethodCall(
             QinIrStaticMethodCallExpression methodCallExpression,
-            ResolvedStaticMethodCall resolvedMethod) {
+            ResolvedStaticMethodCall resolvedMethod,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
         if (methodCallExpression == null || resolvedMethod == null) {
             return resolvedMethod;
         }
@@ -8401,7 +8481,12 @@ public final class QinJvmDeclarationClassEmitter {
             return resolvedMethod;
         }
         String localOwnerBinaryName = flattenedBinaryAlias(ownerBinaryName);
-        if (!isGeneratedLocalBinaryName(localOwnerBinaryName)) {
+        QinIrClassDeclaration flattenedLocalOwner = declarationIndex == null
+                ? null
+                : declarationIndex.get(localOwnerBinaryName);
+        if (!isGeneratedLocalBinaryName(localOwnerBinaryName)
+                || flattenedLocalOwner == null
+                || !Objects.equals(flattenedLocalOwner.binaryName(), localOwnerBinaryName)) {
             return resolvedMethod;
         }
         List<QinIrTypeRef> parameterTypes = new ArrayList<>();
@@ -13653,6 +13738,11 @@ public final class QinJvmDeclarationClassEmitter {
             }
             if (isJavaUtilHexFormatOfStaticFacadeCall(staticMethodCallExpression)) {
                 return QinIrTypeRef.classType("java.util.HexFormat");
+            }
+            QinIrTypeRef javaLangStringHelperType =
+                    inferJavaLangStringStaticSdkHelperReturnType(staticMethodCallExpression);
+            if (javaLangStringHelperType != null) {
+                return javaLangStringHelperType;
             }
             QinIrTypeRef javaLangNumberHelperType =
                     inferJavaLangNumberStaticSdkHelperReturnType(staticMethodCallExpression);

@@ -1,10 +1,14 @@
 package com.qin.parser;
 
+import com.slime.ast.nodes.modules.ImportDeclaration;
+
 public final class QinParserFacadeUnifiedEntrySmokeTestMain {
     private QinParserFacadeUnifiedEntrySmokeTestMain() {
     }
 
     public static void main(String[] args) {
+        preservesJavaImportsBeforeDeclarations();
+
         String source = """
                 let _showRulePath = true;
                 function getShowRulePath() {
@@ -64,5 +68,21 @@ public final class QinParserFacadeUnifiedEntrySmokeTestMain {
         }
 
         System.out.println("QinParserFacadeUnifiedEntrySmokeTestMain passed.");
+    }
+
+    private static void preservesJavaImportsBeforeDeclarations() {
+        QinParsedSource parsed = new QinParserFacade().parseSource("""
+                import { ArrayList } from "java:java.util"
+                class MyList extends ArrayList {
+                  label(): string {
+                    return "ok"
+                  }
+                }
+                """);
+        if (parsed.requireProgram().body().size() != 2
+                || !(parsed.requireProgram().body().get(0) instanceof ImportDeclaration)
+                || !"ClassDeclaration".equals(parsed.requireProgram().body().get(1).getClass().getSimpleName())) {
+            throw new AssertionError("ModuleItemList must preserve imports before following declarations");
+        }
     }
 }

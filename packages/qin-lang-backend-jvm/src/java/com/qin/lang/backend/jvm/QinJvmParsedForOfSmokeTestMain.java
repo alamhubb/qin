@@ -128,8 +128,9 @@ public final class QinJvmParsedForOfSmokeTestMain {
     }
 
     private static void assertActualGeneratedSubhutiCstThisFieldForOfCompiles() throws Exception {
+        Path repoRoot = findQinRepositoryRoot();
         String text = Files.readString(
-                Path.of("packages/qin-language/generated/qin-parser-ts/com/subhuti/struct/SubhutiCst.ts"),
+                repoRoot.resolve("packages/qin-language/generated/qin-parser-ts/com/subhuti/struct/SubhutiCst.ts"),
                 StandardCharsets.UTF_8);
         QinIrProgram program = new QinFrontendLowerer().lowerSource(text);
         QinIrClassDeclaration declaration = requireClass(program, "com_subhuti_struct_SubhutiCst");
@@ -145,6 +146,19 @@ public final class QinJvmParsedForOfSmokeTestMain {
                     + forEachStatement.itemType());
         }
         new QinJvmDeclarationClassEmitter().compileAllClasses(program);
+    }
+
+    private static Path findQinRepositoryRoot() throws Exception {
+        Path candidate = Path.of("").toAbsolutePath().normalize();
+        while (candidate != null) {
+            if (Files.isRegularFile(candidate.resolve("qin.config.js"))
+                    && Files.isDirectory(candidate.resolve("packages/qin-parser"))
+                    && Files.isDirectory(candidate.resolve("packages/qin-runtime-core"))) {
+                return candidate;
+            }
+            candidate = candidate.getParent();
+        }
+        throw new IllegalStateException("Could not locate Qin repository root from " + Path.of("").toAbsolutePath());
     }
 
     private static void assertConditionalTypedListForOfCompilesStatically() throws Exception {

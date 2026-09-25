@@ -53,7 +53,7 @@ final class QinProgramCstToAst {
             body.addAll(createQinObjectNodes(cst, false, false));
             return;
         }
-        if ("ModuleBody".equals(name)) {
+        if ("ModuleBody".equals(name) || "ModuleItemList".equals(name)) {
             collectModuleBody(cst, body, visited);
             return;
         }

@@ -8,6 +8,7 @@ import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrTypeRef;
 
@@ -53,10 +54,30 @@ public final class QinJvmJavaLangStringCharNumericArgumentSmokeTestMain {
                                 QinIrTypeRef.booleanType(),
                                 List.of(new QinIrParameter("text", QinIrTypeRef.stringType(), List.of())),
                                 List.of(),
-                                new QinIrInstanceMethodCallExpression(
-                                        new QinIrIdentifierReference("CharNumericArgumentService"),
+                                new QinIrStaticMethodCallExpression(
+                                        "CharNumericArgumentService",
+                                        "CharNumericArgumentService",
                                         "isLowerB",
-                                        List.of(charAt)))));
+                                        List.of(charAt))),
+                        new QinIrMethodDeclaration(
+                                "prefix",
+                                QinIrTypeRef.stringType(),
+                                List.of(new QinIrParameter("text", QinIrTypeRef.stringType(), List.of())),
+                                List.of(),
+                                new QinIrBuiltinCallExpression(
+                                        "Global",
+                                        "__qin_binary__",
+                                        List.of(
+                                                new QinIrStringLiteral("+"),
+                                                new QinIrStaticMethodCallExpression(
+                                                        "__QinJavaLangString",
+                                                        "__QinJavaLangString",
+                                                        "substring",
+                                                        List.of(
+                                                                new QinIrIdentifierReference("text"),
+                                                                new QinIrNumberLiteral(0),
+                                                                new QinIrNumberLiteral(2))),
+                                                new QinIrStringLiteral("!"))))));
         QinIrProgram program = new QinIrProgram(
                 List.of(),
                 List.of(),
@@ -78,6 +99,10 @@ public final class QinJvmJavaLangStringCharNumericArgumentSmokeTestMain {
         Object miss = serviceClass.getDeclaredMethod("matches", String.class).invoke(instance, "axc");
         if (!Boolean.TRUE.equals(match) || !Boolean.FALSE.equals(miss)) {
             throw new IllegalStateException("Unexpected char numeric argument results: " + match + ", " + miss);
+        }
+        Object prefix = serviceClass.getDeclaredMethod("prefix", String.class).invoke(instance, "abcd");
+        if (!"ab!".equals(prefix)) {
+            throw new IllegalStateException("Unexpected static String.substring result: " + prefix);
         }
 
         System.out.println("QinJvmJavaLangStringCharNumericArgumentSmokeTestMain passed.");

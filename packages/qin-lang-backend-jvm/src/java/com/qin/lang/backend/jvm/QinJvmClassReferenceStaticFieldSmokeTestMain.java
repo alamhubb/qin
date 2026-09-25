@@ -6,7 +6,6 @@ import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrTypeRef;
-import com.qin.lang.runtime.JavaEsmGlobal;
 
 import java.util.List;
 import java.util.Map;
@@ -83,13 +82,23 @@ public final class QinJvmClassReferenceStaticFieldSmokeTestMain {
                 List.of(),
                 List.of(),
                 List.of(expandoHolder));
-        Map<String, byte[]> expandoCompiled = new QinJvmDeclarationClassEmitter().compileAllClasses(expandoProgram);
-        Class<?> expandoClass = loader.define("StaticExpandoHolder", expandoCompiled.get("StaticExpandoHolder"));
-        JavaEsmGlobal.__qin_member_set__(expandoClass, "CASE_INSENSITIVE", Integer.valueOf(2));
-        Object expandoInstance = expandoClass.getDeclaredConstructor().newInstance();
-        Object expandoResult = expandoClass.getDeclaredMethod("read").invoke(expandoInstance);
-        if (!Integer.valueOf(2).equals(expandoResult)) {
-            throw new IllegalStateException("Unexpected class-reference static expando result: " + expandoResult);
+        String previousMode = System.getProperty("qin.dynamicSemanticMode");
+        System.setProperty("qin.dynamicSemanticMode", "error");
+        try {
+            try {
+                new QinJvmDeclarationClassEmitter().compileAllClasses(expandoProgram);
+                throw new IllegalStateException("Strict emission must reject an undeclared dynamic class field");
+            } catch (IllegalStateException expected) {
+                if (!expected.getMessage().contains("QinDynamicSemanticError")) {
+                    throw expected;
+                }
+            }
+        } finally {
+            if (previousMode == null) {
+                System.clearProperty("qin.dynamicSemanticMode");
+            } else {
+                System.setProperty("qin.dynamicSemanticMode", previousMode);
+            }
         }
 
         System.out.println("QinJvmClassReferenceStaticFieldSmokeTestMain passed.");
