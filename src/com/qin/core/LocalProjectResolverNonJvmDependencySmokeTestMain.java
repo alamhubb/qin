@@ -19,6 +19,9 @@ public final class LocalProjectResolverNonJvmDependencySmokeTestMain {
         Path generated = root.resolve("generated").resolve("qin-parser-ts");
         Files.createDirectories(app);
         Files.createDirectories(token.resolve("src"));
+        Path staleClass = token.resolve("build").resolve("classes").resolve("com/example/OldBuild.class");
+        Files.createDirectories(staleClass.getParent());
+        Files.write(staleClass, new byte[]{0, 1, 2, 3});
         Files.createDirectories(generated);
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
@@ -35,6 +38,7 @@ public final class LocalProjectResolverNonJvmDependencySmokeTestMain {
                   version: "1.0.0",
                   type: "library",
                   entry: "src/index.ts",
+                  tooling: { runtime: "typescript" },
                   scripts: {
                     build: "tsdown"
                   }
@@ -74,7 +78,7 @@ public final class LocalProjectResolverNonJvmDependencySmokeTestMain {
         require(result.localCount == 2, "both local non-JVM dependencies are discovered");
         require(result.localClasspath.isBlank(), "non-JVM dependencies stay out of JVM classpath");
         require(result.autoCompiledCount == 0, "non-JVM dependencies are not Java-compiled");
-        require(!Files.exists(token.resolve("build").resolve("classes")), "TS library build/classes not created");
+        require(Files.exists(staleClass), "stale TS library class files do not trigger Java compilation");
         require(!Files.exists(generated.resolve("build").resolve("classes")), "generated TS build/classes not created");
         deleteTree(root);
 

@@ -307,14 +307,6 @@ public class LocalProjectResolverEnhanced {
     }
 
     public boolean providesJvmClasspath(ProjectInfo project) {
-        if (Files.exists(project.buildClassesPath)) {
-            try {
-                return hasAnyCompiledClass(project.buildClassesPath);
-            } catch (IOException ignored) {
-                return true;
-            }
-        }
-
         QinConfig config = project.config;
         if (hasJvmEntry(config.entry())
                 || hasJvmEntry(config.backend() != null ? config.backend().entry() : null)) {
@@ -326,11 +318,33 @@ public class LocalProjectResolverEnhanced {
                 return true;
             }
         }
+
+        if (isNonJvmEntry(config.entry())) {
+            return false;
+        }
+
+        if (Files.exists(project.buildClassesPath)) {
+            try {
+                return hasAnyCompiledClass(project.buildClassesPath);
+            } catch (IOException ignored) {
+                return true;
+            }
+        }
         return false;
     }
 
     private boolean hasJvmEntry(String entry) {
         return entry != null && entry.replace('\\', '/').endsWith(".java");
+    }
+
+    private boolean isNonJvmEntry(String entry) {
+        if (entry == null || entry.isBlank()) {
+            return false;
+        }
+        String normalized = entry.replace('\\', '/').toLowerCase(Locale.ROOT);
+        return normalized.endsWith(".js")
+                || normalized.endsWith(".mjs")
+                || normalized.endsWith(".ts");
     }
 
     private boolean containsJavaSource(Path sourceDir) {
