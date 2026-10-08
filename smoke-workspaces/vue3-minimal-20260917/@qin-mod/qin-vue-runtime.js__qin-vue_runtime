@@ -1,0 +1,14 @@
+import * as Vue from "/@qin-mod/qin-vue-runtime.js?qin-vue=browser-runtime";
+export * from "/@qin-mod/qin-vue-runtime.js?qin-vue=browser-runtime";
+
+export function createApp(rootComponent, rootProps) {
+  const app = Vue.createApp(rootComponent, rootProps);
+  const originalMount = app.mount.bind(app);
+  app.mount = (target, ...args) => {
+    if (rootComponent && typeof rootComponent.__qinMountVue === 'function') {
+      return rootComponent.__qinMountVue(target);
+    }
+    return originalMount(target, ...args);
+  };
+  return app;
+}
