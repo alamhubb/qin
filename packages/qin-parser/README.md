@@ -72,9 +72,10 @@ control flow with render. The Java CST contains 2,727 rule nodes for
 `BalanceRow.ovs`, compared with 1,329 in Node. In the matrix, Java produces
 1.8-2.7x as many rule nodes. The comparison Node grammar has 84 explicit
 `RULE` definitions and represents binary operators with one flat
-`BinaryExpression`; the generated Java OVS parser has 408 `parseRule` methods
-and retains separate operator-precedence rules. The two parsers therefore do
-different amounts of grammar and CST work on the same text.
+`BinaryExpression`; the baseline generated Java OVS parser had 408 `parseRule`
+methods and retained separate operator-precedence rules. The two baseline
+parsers therefore did different amounts of grammar and CST work on the same
+text.
 
 A 500-parse JFR sample attributes 22.8% of Java execution samples to generated
 alternative path matching, 4.7% to lookahead token access, 5.7% to immutable
@@ -123,6 +124,12 @@ about 1.88 ms on the same input. The largest improvement is in expressions that
 repeat conditional, object, call, and OVS render structure. The remaining gap
 comes from generated lookahead, Java CST/source-location allocation, the Java
 lexer, and public validation work.
+
+The post-experiment JFR sample shows generated alternative path matching at
+17.15% of execution samples and `SubhutiCst.projected` at 10.09% of allocation
+pressure. The baseline sample was 22.8% and 14.45%, respectively. The hot path
+is still present, but the flatter OVS expression structure reduces the amount of
+work reaching it.
 
 The opt-in `-Dslime.chevrotain.profile=true` runtime counters expose lookahead,
 predicate, consume, rule and CST work. The phase and syntax probes are
