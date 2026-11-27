@@ -162,6 +162,12 @@ public final class QinJvmDeclarationClassEmitter {
     public Map<String, byte[]> compileAllClasses(
             QinIrProgram program,
             Map<String, QinIrClassDeclaration> externalDeclarationIndex) {
+        return compileAllClassesWithResolvedIndex(program, completeDeclarationIndex(externalDeclarationIndex));
+    }
+
+    public Map<String, byte[]> compileAllClassesWithResolvedIndex(
+            QinIrProgram program,
+            Map<String, QinIrClassDeclaration> externalDeclarationIndex) {
         Objects.requireNonNull(program, "program cannot be null");
         if (program.classDeclarations().isEmpty()) {
             throw new IllegalArgumentException("Expected at least one class declaration");
@@ -173,15 +179,14 @@ public final class QinJvmDeclarationClassEmitter {
             List<QinIrClassDeclaration> classDeclarations = completeSyntheticAbstractThisMethods(
                     program.classDeclarations(),
                     externalDeclarationIndex);
-            Map<String, QinIrClassDeclaration> initialDeclarationIndex = buildDeclarationIndex(
-                    classDeclarations,
-                    externalDeclarationIndex);
+            Map<String, QinIrClassDeclaration> initialDeclarationIndex =
+                    buildDeclarationIndex(classDeclarations, externalDeclarationIndex);
             classDeclarations = completeInheritedOverrideParameterTypes(
                     classDeclarations,
                     initialDeclarationIndex);
             Map<String, QinIrClassDeclaration> declarationIndex = buildDeclarationIndex(
                     classDeclarations,
-                    externalDeclarationIndex);
+                    initialDeclarationIndex);
             Map<String, byte[]> compiled = new LinkedHashMap<>();
             for (QinIrClassDeclaration declaration : classDeclarations) {
                 String binaryName = declaration.binaryName();
@@ -194,6 +199,27 @@ public final class QinJvmDeclarationClassEmitter {
             return Map.copyOf(compiled);
         } finally {
             activeModuleConstantInitializers = previousModuleConstants;
+        }
+    }
+
+    public Map<String, QinIrClassDeclaration> completeDeclarationIndex(Map<String, QinIrClassDeclaration> index) {
+        Map<String, QinIrClassDeclaration> current = index == null ? Map.of() : index;
+        while (true) {
+            var completed = new java.util.IdentityHashMap<QinIrClassDeclaration, QinIrClassDeclaration>();
+            Map<String, QinIrClassDeclaration> next = new LinkedHashMap<>();
+            boolean changed = false;
+            for (var entry : current.entrySet()) {
+                var declaration = entry.getValue();
+                var result = completed.get(declaration);
+                if (result == null) {
+                    result = completeInheritedOverrideParameterTypes(declaration, current);
+                    completed.put(declaration, result);
+                }
+                next.put(entry.getKey(), result);
+                changed |= result != declaration;
+            }
+            if (!changed) return current;
+            current = next;
         }
     }
 
@@ -5166,12 +5192,14 @@ public final class QinJvmDeclarationClassEmitter {
             invokeMethod(code, typedCollectionToArrayMethod);
             return typedCollectionToArrayMethod.returnType();
         }
-        ResolvedInstanceMethodCall resolvedMethod = resolveInstanceMethodCall(
-                receiverType,
-                methodCallExpression.methodName(),
-                argumentTypes,
-                methodCallExpression.arguments(),
-                declarationIndex);
+        ResolvedInstanceMethodCall resolvedMethod = isCurrentDeclarationReceiver(ownerDeclaration, receiverType)
+                ? resolveCurrentDeclarationExactMethodCall(ownerDeclaration, methodCallExpression.methodName())
+                : null;
+        if (resolvedMethod == null
+                || resolvedMethod.parameterTypes().size() != methodCallExpression.arguments().size()) {
+            resolvedMethod = resolveInstanceMethodCall(receiverType, methodCallExpression.methodName(), argumentTypes,
+                    methodCallExpression.arguments(), declarationIndex);
+        }
         if (resolvedMethod == null) {
             if (isCurrentDeclarationReceiver(ownerDeclaration, receiverType)) {
                 resolvedMethod = resolveCurrentDeclarationExactMethodCall(
@@ -12776,15 +12804,17 @@ public final class QinJvmDeclarationClassEmitter {
         code.dup();
         code.invokespecial(ARRAY_LIST_DESC, "<init>", VOID_INIT);
         for (QinIrExpression element : arrayLiteral.elements()) {
-            if (element instanceof QinIrSpreadArgumentExpression) {
-                throw new IllegalStateException(
-                        "[QinDynamicSemanticError] QinJvmDeclarationClassEmitter cannot statically emit array spread "
-                                + "inside a JVM .class array literal yet. Use an explicit List/array construction path "
-                                + "or add an owned static spread lowering before admitting this source.");
-            }
             code.dup();
-            emitDeclarationExpressionAsObject(code, ownerDeclaration, method, declarationIndex, localFrame, element);
-            code.invokevirtual(ARRAY_LIST_DESC, "add", LIST_ADD_SIGNATURE);
+            if (element instanceof QinIrSpreadArgumentExpression spread) {
+                emitDeclarationExpressionAsObject(code, ownerDeclaration, method, declarationIndex, localFrame, spread.expression());
+                code.invokestatic(ClassDesc.of("com.qin.lang.runtime.JavaEsmArray"), "from",
+                        MethodTypeDesc.of(OBJECT_DESC, OBJECT_DESC));
+                code.checkcast(COLLECTION_DESC);
+                code.invokevirtual(ARRAY_LIST_DESC, "addAll", MethodTypeDesc.of(ClassDesc.ofDescriptor("Z"), COLLECTION_DESC));
+            } else {
+                emitDeclarationExpressionAsObject(code, ownerDeclaration, method, declarationIndex, localFrame, element);
+                code.invokevirtual(ARRAY_LIST_DESC, "add", LIST_ADD_SIGNATURE);
+            }
             code.pop();
         }
     }
@@ -12962,15 +12992,15 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrTypeRef storageComponentType,
             QinIrTypeRef semanticComponentType) {
         TypeKind primitiveArrayKind = primitiveArrayKind(storageComponentType);
+        if (arrayLiteral.elements().stream().anyMatch(QinIrSpreadArgumentExpression.class::isInstance)) {
+            emitExpandedTypedArray(code, ownerDeclaration, method, declarationIndex, localFrame,
+                    arrayLiteral, storageComponentType, semanticComponentType, primitiveArrayKind);
+            return;
+        }
         code.loadConstant(arrayLiteral.elements().size());
         emitNewArray(code, storageComponentType);
         for (int i = 0; i < arrayLiteral.elements().size(); i++) {
             QinIrExpression element = arrayLiteral.elements().get(i);
-            if (element instanceof QinIrSpreadArgumentExpression) {
-                throw new IllegalStateException(
-                        "[QinDynamicSemanticError] QinJvmDeclarationClassEmitter cannot statically emit array spread "
-                                + "inside a typed JVM array parameter literal yet: " + arrayLiteral);
-            }
             code.dup();
             code.loadConstant(i);
             QinIrTypeRef actualElementType = emitDeclarationExpression(
@@ -12988,6 +13018,51 @@ public final class QinJvmDeclarationClassEmitter {
                 code.arrayStore(primitiveArrayKind);
             }
         }
+    }
+
+    private void emitExpandedTypedArray(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrArrayLiteral arrayLiteral,
+            QinIrTypeRef storageComponentType,
+            QinIrTypeRef semanticComponentType,
+            TypeKind primitiveArrayKind) {
+        emitArrayLiteral(code, ownerDeclaration, method, declarationIndex, localFrame, arrayLiteral);
+        LocalBinding values = localFrame.declare(localFrame.syntheticLocalName("__qin_spread_values"),
+                QinIrTypeRef.classType("java.util.ArrayList"));
+        code.astore(values.localSlot());
+        LocalBinding count = localFrame.declare(localFrame.syntheticLocalName("__qin_spread_count"),
+                QinIrTypeRef.intType());
+        code.aload(values.localSlot());
+        code.invokevirtual(ARRAY_LIST_DESC, "size", MethodTypeDesc.of(ClassDesc.ofDescriptor("I")));
+        code.dup();
+        code.istore(count.localSlot());
+        emitNewArray(code, storageComponentType);
+
+        LocalBinding index = localFrame.declare(localFrame.syntheticLocalName("__qin_spread_index"),
+                QinIrTypeRef.intType());
+        code.iconst_0();
+        code.istore(index.localSlot());
+        var next = code.newLabel();
+        var done = code.newLabel();
+        code.labelBinding(next);
+        code.iload(index.localSlot());
+        code.iload(count.localSlot());
+        code.if_icmpge(done);
+        code.dup();
+        code.iload(index.localSlot());
+        code.aload(values.localSlot());
+        code.iload(index.localSlot());
+        code.invokevirtual(ARRAY_LIST_DESC, "get", MethodTypeDesc.of(OBJECT_DESC, ClassDesc.ofDescriptor("I")));
+        coerceObjectResultForType(code, primitiveArrayKind == null ? storageComponentType : semanticComponentType);
+        if (primitiveArrayKind == null) code.aastore();
+        else code.arrayStore(primitiveArrayKind);
+        code.iinc(index.localSlot(), 1);
+        code.goto_(next);
+        code.labelBinding(done);
     }
 
     private boolean canEmitStaticArrayFromFactoryAsTypedArray(
@@ -17951,6 +18026,20 @@ public final class QinJvmDeclarationClassEmitter {
         }
     }
 
+    private String generatedJavaClassCandidateBinaryName(String ownerBinaryName) {
+        if (ownerBinaryName == null || !ownerBinaryName.startsWith("com_")
+                || ownerBinaryName.contains(".")) {
+            return null;
+        }
+        int classSeparator = generatedJavaClassSeparator(ownerBinaryName);
+        if (classSeparator <= 0 || classSeparator + 1 >= ownerBinaryName.length()) {
+            return null;
+        }
+        return ownerBinaryName.substring(0, classSeparator).replace('_', '.')
+                + "."
+                + ownerBinaryName.substring(classSeparator + 1);
+    }
+
     private int generatedJavaClassSeparator(String ownerBinaryName) {
         int separator = -1;
         for (int i = 0; i + 1 < ownerBinaryName.length(); i++) {
@@ -18103,7 +18192,22 @@ public final class QinJvmDeclarationClassEmitter {
             if (parameterType == Object.class) {
                 return 1;
             }
-            Class<?> argumentClass = resolveClass(argumentType.binaryName());
+            Class<?> argumentClass;
+            try {
+                argumentClass = resolveClass(argumentType.binaryName());
+            } catch (IllegalArgumentException unresolvedGeneratedType) {
+                if (!isGeneratedSourceClassBinaryName(argumentType.binaryName())) {
+                    throw unresolvedGeneratedType;
+                }
+                String generatedCandidate = generatedJavaClassCandidateBinaryName(argumentType.binaryName());
+                if (generatedCandidate != null && parameterType.getName().equals(generatedCandidate)) {
+                    return 4;
+                }
+                if (parameterType.getName().equals(argumentType.binaryName())) {
+                    return 4;
+                }
+                return parameterType == Object.class ? 1 : -1;
+            }
             if (parameterType.equals(argumentClass)) {
                 return 4;
             }
