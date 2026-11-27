@@ -24,10 +24,13 @@ public final class QinOvsCompilerConfigPluginSmokeTestMain {
                 }
                 """, StandardCharsets.UTF_8);
 
-        QinOvsCompiler.QinOvsCompileResult result = new QinOvsCompiler().compile(root, "configured ovs plugin");
-        if (!result.code().contains("qinConfigOvsPlugin")
-                || !result.code().contains("configured ovs plugin")) {
-            throw new IllegalStateException("Qin OVS compiler did not use qin.config.js plugins:\n" + result.code());
+        String source = "div { \"Java OVS path\" }";
+        QinOvsCompiler.QinOvsCompileResult result = new QinOvsCompiler().compile(root, source);
+        if (!result.code().contains("$OvsHtmlTag.div")
+                || result.code().contains("qinConfigOvsPlugin")
+                || result.code().contains("JSON.stringify")) {
+            throw new IllegalStateException("Qin OVS compiler must keep the standard path Java-native when qin.config.js contains a JavaScript hook:\n"
+                    + result.code());
         }
 
         System.out.println("QinOvsCompilerConfigPluginSmokeTestMain passed.");
