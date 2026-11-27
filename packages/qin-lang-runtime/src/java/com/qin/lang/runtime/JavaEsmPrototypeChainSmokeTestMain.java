@@ -3,6 +3,7 @@ package com.qin.lang.runtime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class JavaEsmPrototypeChainSmokeTestMain {
     private JavaEsmPrototypeChainSmokeTestMain() {
@@ -31,7 +32,47 @@ public final class JavaEsmPrototypeChainSmokeTestMain {
                 && list.contains(JavaEsmGlobal.RUNTIME_HIDDEN_KEY_PREFIX + "prototype_parent__")) {
             throw new AssertionError("Runtime prototype link should not be enumerable");
         }
+        verifyFunctionsWithoutSuperClass();
         System.out.println("JavaEsmPrototypeChainSmokeTestMain OK");
+    }
+
+    private static void verifyFunctionsWithoutSuperClass() {
+        Map<String, Object> value = Map.of("type", "Literal", "value", "ok");
+        Map<String, Object> arrow = Map.of("type", "ArrowFunctionExpression", "params", List.of(), "body", value);
+        Map<String, Object> outer = Map.of(
+                "type", "FunctionExpression", "params", List.of(),
+                "body", Map.of("type", "BlockStatement", "body", List.of(
+                        Map.of("type", "ReturnStatement", "argument", arrow))));
+        Thread thread = Thread.currentThread();
+        ClassLoader previousLoader = thread.getContextClassLoader();
+        AtomicInteger nullClassLookups = new AtomicInteger();
+        thread.setContextClassLoader(new ClassLoader(previousLoader) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if ("null".equals(name)) {
+                    nullClassLookups.incrementAndGet();
+                }
+                return super.loadClass(name, resolve);
+            }
+        });
+        try {
+            Object factory = JavaEsmGlobal.__qin_make_function__(functionDefinition(outer, Map.of()));
+            Object closure = JavaEsmGlobal.__qin_call__(factory);
+            if (!"ok".equals(JavaEsmGlobal.__qin_call__(closure))) {
+                throw new AssertionError("Expected the nested arrow to return ok");
+            }
+            Object baseClass = JavaEsmGlobal.__qin_make_function__(
+                    functionDefinition(classAst("Base", null, "baseRule"), Map.of()));
+            Object basePrototype = JavaEsmGlobal.__qin_member_get__(baseClass, "prototype");
+            if (JavaEsmGlobal.__qin_member_get__(basePrototype, "baseRule") == null) {
+                throw new AssertionError("Expected a method on the base class prototype");
+            }
+        } finally {
+            thread.setContextClassLoader(previousLoader);
+        }
+        if (nullClassLookups.get() != 0) {
+            throw new AssertionError("Unexpected class lookups for absent superclass: " + nullClassLookups.get());
+        }
     }
 
     private static Map<String, Object> functionDefinition(
@@ -48,6 +89,7 @@ public final class JavaEsmPrototypeChainSmokeTestMain {
         ast.put("type", "ClassDeclaration");
         ast.put("id", identifier(name));
         ast.put("superClass", superName == null ? null : identifier(superName));
+        ast.put("decorators", List.of());
         ast.put("body", Map.of("type", "ClassBody", "body", List.of(method(methodName))));
         return ast;
     }

@@ -12969,11 +12969,12 @@ public final class JavaEsmGlobal {
             }
             bindClassSelfName(resolvedClosure);
             methodDefinition.put("closure", resolvedClosure);
-            methodDefinition.put("ownerSuperClass", ast.get("superClass"));
+            Object superClassNode = ast.get("superClass");
+            methodDefinition.put("ownerSuperClass", superClassNode);
             methodDefinition.put("ownerSuperClassFunction", resolveSuperClassFunction());
-            Object rawSuperName = extractPropertyName(ast.get("superClass"));
-            if (rawSuperName != null) {
-                methodDefinition.put("ownerSuperClassValue", resolveIdentifier(String.valueOf(rawSuperName), resolvedClosure));
+            if (superClassNode != null) {
+                methodDefinition.put("ownerSuperClassValue",
+                        resolveIdentifier(extractPropertyName(superClassNode), resolvedClosure));
             }
             return interpretedFunction(methodDefinition);
         }
@@ -13389,10 +13390,10 @@ public final class JavaEsmGlobal {
                 copyIfMissing(runtimeDefinition, definition, "ownerSuperClassFunction");
                 copyIfMissing(runtimeDefinition, definition, "ownerSuperClassValue");
             }
-            Object rawSuperName = extractPropertyName(astNode.get("superClass"));
-            if (rawSuperName != null) {
-                Object superClassValue = resolveIdentifier(String.valueOf(rawSuperName), env);
-                runtimeDefinition.put("ownerSuperClass", astNode.get("superClass"));
+            Object superClassNode = astNode.get("superClass");
+            if (superClassNode != null) {
+                Object superClassValue = resolveIdentifier(extractPropertyName(superClassNode), env);
+                runtimeDefinition.put("ownerSuperClass", superClassNode);
                 runtimeDefinition.put("ownerSuperClassValue", superClassValue);
                 if (superClassValue instanceof InterpretedFunction interpretedSuperClass) {
                     runtimeDefinition.put("ownerSuperClassFunction", interpretedSuperClass);
