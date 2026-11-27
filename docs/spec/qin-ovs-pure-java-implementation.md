@@ -29,7 +29,7 @@ Node OVS compiler 是语义和输出对照。两边功能保持一致，分别�
 | Java ESM/style emitter 集成 | 15% | SlimeGenerator、runtime imports、CSS 与 atom 产物及位置映射 | 进行中。OVS 与 `.cssts` 均调用 Java SlimeGenerator；样式 imports、动态 atom、配置 classPrefix/pseudo/classGroup 的 CSS 与 atom 模块已验证。source map/customProperties 尚未实现 |
 | Qin 单文件/批量标准入口切换 | 10% | QinOvsCompiler 单件和批处理直接走 Java pipeline，缓存指纹覆盖 Java compiler inputs | 进行中。单文件与批量标准入口已调用 `QinOvsJavaCompiler`，移除 `QinOvsCompiler` 内 JS package runner/wrapper；缓存身份含 Java parser/runtime 与 Java OVS compiler 指纹。项目自定义 JS transform 插件暂未迁移 |
 | 全量行为与错误对照 | 10% | 登记 OVS/CSSTS corpus、负例和真实 balance-monitoring project 回归 | 进行中。balance-monitoring 全量构建通过并生成 Java OVS/CSSTS 输出；完整 Node parity corpus、错误诊断和 source-map 对照尚未开始 |
-| 冷启动性能验收 | 5% | 新 JVM 首次转换，各阶段对比 Node，结果可复现 | 未开始 |
+| 冷启动性能验收 | 5% | 新 JVM 首次转换，各阶段对比 Node，结果可复现 | 进行中。Java 端已能在新 JVM 进程用 fresh marker 完成真实 9 个 OVS 模块转换，Node 同输入的阶段对照仍未建立 |
 
 权重之和为 100%。只按上表验收项更新完成度，不按代码行数或局部 smoke 通过率更新。
 
@@ -40,6 +40,7 @@ Node OVS compiler 是语义和输出对照。两边功能保持一致，分别�
 - `slime/java-slime/slime-generator/.../SlimeGenerator.java` 提供 Java AST 到 ESM 的生成器。
 - `QinOvsCompiler.java` 的单文件与批量标准 OVS 路径现已直接调用 `QinOvsJavaCompiler`，不再把 CST 编码成 JS Map，也不再调用 Qin JS package runner。批量入口逐项执行 Java 编译并复用现有内存/磁盘缓存。
 - `QinOvsCompilerNoFallbackSmokeTestMain` 对 `QinOvsCompiler` 与 `QinOvsJavaCompiler` 做源码级约束，禁止重新引入 Qin JS package runner、`InterpretedFunction`、GraalJS 或 `generated-runtime-adapter`。该测试同时执行一次 Java OVS 编译并检查 Java 入口生成的 ESM。
+- 使用 `QinOvsCompilerBatchProfileProbeMain` 在新 JVM 进程、`--fresh-marker` 下对 `balance-monitoring/app` 的 9 个 OVS 模块做真实 Java 转换，记录 `java OVS transform` 约 1077 ms，整批约 1154 ms。第二次命中 9 个磁盘缓存约 77 ms。这是 Java 侧证据，不能代替尚未完成的 Node 同输入对照，也不能把缓存命中时间当作转换性能。
 - `QinOvsCstToAst.java` 目前有 Java 标准 visitor 委托、基础 OVS render/property、顶层 runtime import/component wrapper、嵌套 if 和 view lowering。view focused AST 与 runtime ESM smoke 覆盖 destructured/default/rest 参数、NoRender 语句与显式返回 render；完整 Node view corpus 语义仍待对照。
 - Java visitor 现已覆盖 `css { ... }` lowering，并按模块与命名导入检查后补齐 `ovsjs` / CSSTS runtime imports，避免重复声明。parser smoke 验证已有完整 runtime imports 时不再重复注入。
 - Java `CsstsAtomNames` 承载 CSSTS CSS 属性映射、命名颜色与默认 pseudo/classGroup 配置，识别动态 atom 并保持非 atom 变量引用。parser smoke 覆盖 `displayFlex`、`colorRed`、普通变量、`hover` 与 `click`。
