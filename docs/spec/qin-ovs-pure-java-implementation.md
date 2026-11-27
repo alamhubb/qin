@@ -41,6 +41,7 @@ Node OVS compiler 是语义和输出对照。两边功能保持一致，分别�
 - `QinOvsCompiler.java` 的单文件与批量标准 OVS 路径现已直接调用 `QinOvsJavaCompiler`，不再把 CST 编码成 JS Map，也不再调用 Qin JS package runner。批量入口逐项执行 Java 编译并复用现有内存/磁盘缓存。
 - `QinOvsCompilerNoFallbackSmokeTestMain` 对 `QinOvsCompiler` 与 `QinOvsJavaCompiler` 做源码级约束，禁止重新引入 Qin JS package runner、`InterpretedFunction`、GraalJS 或 `generated-runtime-adapter`。该测试同时执行一次 Java OVS 编译并检查 Java 入口生成的 ESM。
 - 使用 `QinOvsCompilerBatchProfileProbeMain` 在新 JVM 进程、`--fresh-marker` 下对 `balance-monitoring/app` 的 9 个 OVS 模块做真实 Java 转换，记录 `java OVS transform` 约 1077 ms，整批约 1154 ms。第二次命中 9 个磁盘缓存约 77 ms。这是 Java 侧证据，不能代替尚未完成的 Node 同输入对照，也不能把缓存命中时间当作转换性能。
+- Java OVS 编译器现在在 `qin.profile` 开启时单独记录 `parse source`、`cst to ast`、`generate esm` 和产物阶段。一次新 JVM 采样中首个模块解析约 329 ms，随后 8 个模块解析为 3–40 ms，CST→AST 为 1–12 ms，ESM 生成为 0–2 ms。首个解析值包含 JVM 类加载/初始化，阶段计时因此保留为诊断证据，不能直接当作算法稳态耗时。
 - `QinOvsCstToAst.java` 目前有 Java 标准 visitor 委托、基础 OVS render/property、顶层 runtime import/component wrapper、嵌套 if 和 view lowering。view focused AST 与 runtime ESM smoke 覆盖 destructured/default/rest 参数、NoRender 语句与显式返回 render；完整 Node view corpus 语义仍待对照。
 - Java visitor 现已覆盖 `css { ... }` lowering，并按模块与命名导入检查后补齐 `ovsjs` / CSSTS runtime imports，避免重复声明。parser smoke 验证已有完整 runtime imports 时不再重复注入。
 - Java `CsstsAtomNames` 承载 CSSTS CSS 属性映射、命名颜色与默认 pseudo/classGroup 配置，识别动态 atom 并保持非 atom 变量引用。parser smoke 覆盖 `displayFlex`、`colorRed`、普通变量、`hover` 与 `click`。
