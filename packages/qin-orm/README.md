@@ -6,7 +6,7 @@ transactions. Spring Data JPA repositories remain responsible for CRUD.
 
 ```java
 QinOrmSession db = QinOrm.session(entityManager);
-UserModel User = new UserModel();
+UserEntityQin User = new UserEntityQin();
 
 List<UserEntity> users = db.select(User)
         .where(User.status.eq("active").and(User.id.gt(10L)))
@@ -135,6 +135,12 @@ as a final ordering key when needed. It rejects collection joins, composite
 identifiers, nullable cursor values, non-basic sort fields, and backward
 positions until those cases have a defined portable result contract.
 
+The `QinOrmEntityProcessor` generates `<Entity>Qin` descriptors for scalar
+JPA properties. With annotation processing enabled, `UserEntity` produces
+`UserEntityQin`, whose typed column fields can be used directly in query
+expressions. Relationship and embedded properties are excluded. Handwritten
+`QinOrmEntity` descriptors remain available for custom models.
+
 ## Current Boundary
 
 The current DSL supports one entity root, one explicit entity join using an
@@ -143,7 +149,7 @@ joins are not implemented yet. Subquery scalar selection is limited to one
 expression, as required by JPQL. Database-specific JSONB and window-function
 queries can use a separate parameterized native-query API when needed.
 
-Entity and column descriptors are currently declared explicitly. The JPA
-metamodel validates descriptors at execution. Qin compiler-generated
-descriptors are a future integration so source code can use `User.id` without
-handwritten descriptor declarations.
+The processor covers standard field and JavaBeans property access for scalar
+properties. Generated Java source can also be consumed by Qin when it is on
+the project source or class path. JPA Metamodel validation still runs before
+query execution.
