@@ -177,7 +177,7 @@ public class OvsParser extends CssTsParser {
     @SubhutiRule
     public void StatementListItem(StatementParams params) {
         Or(
-            gate(() -> matchIdentifierValue("view") && "IdentifierName".equals(tokenNameAt(2)), this::OvsViewDeclaration),
+            gate(this::canStartOvsViewDeclaration, this::OvsViewDeclaration),
             () -> super.StatementListItem(params)
         );
     }
@@ -186,9 +186,15 @@ public class OvsParser extends CssTsParser {
     @SubhutiRule
     public void Declaration(DeclarationParams params) {
         Or(
-            gate(() -> matchIdentifierValue("view") && "IdentifierName".equals(tokenNameAt(2)), this::OvsViewDeclaration),
+            gate(this::canStartOvsViewDeclaration, this::OvsViewDeclaration),
             () -> super.Declaration(params)
         );
+    }
+
+    @SubhutiDecisionPredicate
+    private boolean canStartOvsViewDeclaration() {
+        return matchIdentifierValue("view") && "IdentifierName".equals(tokenNameAt(2))
+            && !lineBreakBeforeTokenAt(2);
     }
 
     @Override
@@ -204,7 +210,7 @@ public class OvsParser extends CssTsParser {
         Option(() -> OvsArguments(params));
         assertNoLineBreak();
         tokenConsumer.LBrace();
-        Option(() -> StatementList(new StatementParams(params.yield(), params.await(), true)));
+        Option(() -> StatementList(new StatementParams(params.yield(), params.await(), false)));
         tokenConsumer.RBrace();
     }
 

@@ -22,6 +22,10 @@ public final class QinEsmSemanticAnalyzer {
     private final QinEsmStaticBindingCollector staticBindingCollector = new QinEsmStaticBindingCollector();
 
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
+        return analyze(graph, Map.of());
+    }
+
+    public QinEsmSemanticModel analyze(QinModuleGraph graph, Map<Path, QinEsmModuleSemantic> emittedModules) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
         int index = 0;
         for (QinModuleSource module : graph.modules()) {
@@ -31,18 +35,19 @@ public final class QinEsmSemanticAnalyzer {
                         + " chars=" + module.source().length()
                         + " file=" + module.file());
             }
-            QinEsmStaticBindingCollector.Result staticBindings = collectStaticBindings(module);
-            List<QinEsmImportBinding> imports = staticBindings.imports();
-            List<QinEsmExportBinding> exports = finalizeExports(module, staticBindings.exports());
-            modules.put(
-                    module.file(),
-                    new QinEsmModuleSemantic(module.file(), imports, exports));
+            QinEsmModuleSemantic bindings = emittedModules.get(module.file());
+            if (bindings == null) {
+                QinEsmStaticBindingCollector.Result staticBindings = collectStaticBindings(module);
+                bindings = new QinEsmModuleSemantic(module.file(), staticBindings.imports(),
+                        finalizeExports(module, staticBindings.exports()));
+            }
+            modules.put(module.file(), bindings);
             if (PROFILE) {
                 long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
                 System.out.println("[QinEsmSemanticAnalyzer] module done index=" + index
                         + " elapsedMs=" + elapsedMs
-                        + " imports=" + imports.size()
-                        + " exports=" + exports.size()
+                        + " imports=" + bindings.imports().size()
+                        + " exports=" + bindings.exports().size()
                         + " file=" + module.file());
             }
             index++;

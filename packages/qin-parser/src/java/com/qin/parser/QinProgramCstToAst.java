@@ -99,7 +99,8 @@ final class QinProgramCstToAst {
         if ("ImportDeclaration".equals(cst.getName())) {
             return List.of((AstNode) SlimeImportCstToAst.createImportDeclarationAst(cst));
         }
-        SubhutiCst exportDeclaration = directChildByName(cst, "ExportDeclaration");
+        SubhutiCst exportDeclaration = "ExportDeclaration".equals(cst.getName())
+                ? cst : directChildByName(cst, "ExportDeclaration");
         if (exportDeclaration != null && containsName(exportDeclaration, "QinObjectDeclarationBody")) {
             return createExportQinObjectNodes(exportDeclaration);
         }

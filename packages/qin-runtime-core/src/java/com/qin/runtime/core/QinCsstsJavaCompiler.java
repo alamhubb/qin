@@ -1,7 +1,8 @@
 package com.qin.runtime.core;
 
+import com.qin.lang.sema.esm.QinEsmModuleBindings;
 import com.qin.parser.CsstsAtomNames;
-import com.qin.parser.OvsParser;
+import com.qin.parser.CssTsParser;
 import com.qin.parser.QinOvsCstToAst;
 import com.slime.ast.Expression;
 import com.slime.ast.nodes.misc.Program;
@@ -13,6 +14,7 @@ import com.subhuti.struct.SubhutiCst;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,9 +26,22 @@ public final class QinCsstsJavaCompiler {
     }
 
     public static QinCsstsCompiler.QinCsstsCompileResult compile(String source, String configSource) {
+        return compile(source, configSource, false);
+    }
+
+    public static QinEsmSourceMap.Result<QinCsstsCompiler.QinCsstsCompileResult> compileWithSourceMap(
+            String source, String configSource, String sourceName) {
+        var result = compile(source, configSource, true);
+        return new QinEsmSourceMap.Result<>(
+                new QinCsstsCompiler.QinCsstsCompileResult(result.code(), result.rawCode(), result.hasStyles(),
+                        result.css(), result.atomModule(), List.of(), result.moduleBindings()),
+                QinEsmSourceMap.encode(result.mappedCode(), sourceName, source == null ? "" : source));
+    }
+
+    static QinCsstsCompiler.QinCsstsCompileResult compile(String source, String configSource, boolean sourceMap) {
         String input = source == null ? "" : source;
         QinPhaseTimer profile = QinPhaseTimer.start("java-cssts-transform");
-        OvsParser parser = new OvsParser(input);
+        CssTsParser parser = new CssTsParser(input);
         SubhutiCst cst = parser.Program(SlimeParser.SourceType.MODULE);
         profile.checkpoint("parse source");
         if (parser.isParserFail() || cst == null || !parser.isAtEnd()) {
@@ -38,25 +53,36 @@ public final class QinCsstsJavaCompiler {
         converter.configureCsstsAtoms(options.pseudoStyles().keySet(), options.classGroups().keySet());
         Program ast = converter.toOvsFileAst(cst);
         profile.checkpoint("cst to ast");
-        String code = new SlimeGenerator().generate(ast);
+        var generator = new SlimeGenerator(SlimeGenerator.OutputLanguage.JAVASCRIPT);
+        var mapped = sourceMap ? generator.generateWithMappings(ast) : null;
+        String code = mapped == null ? generator.generate(ast) : mapped.code();
         profile.checkpoint("generate esm");
         String prefix = options.prefix();
         List<String> atoms = converter.usedCsstsAtoms().stream().sorted().toList();
         String css = generateCss(atoms, prefix, options.pseudoStyles(), options.classGroups());
         String atomModule = generateAtomModule(atoms, prefix, options.pseudoStyles(), options.classGroups());
+        QinEsmModuleBindings moduleBindings = QinEsmModuleBindings.fromProgram(ast);
         profile.done("atoms=" + atoms.size());
         boolean hasStyles = !atoms.isEmpty();
-        return new QinCsstsCompiler.QinCsstsCompileResult(code, code, hasStyles, css, atomModule);
+        return new QinCsstsCompiler.QinCsstsCompileResult(code, code, hasStyles, css, atomModule,
+                mapped == null ? List.of() : mapped.mappings(), moduleBindings);
     }
 
     static CsstsOptions parseOptions(String configSource) {
+        return parseOptions(configSource, DefaultOptions.CSSTS);
+    }
+
+    static CsstsOptions parseOvsProjectOptions(String configSource) {
+        return parseOptions(configSource, DefaultOptions.OVS);
+    }
+
+    private static CsstsOptions parseOptions(String configSource, CsstsOptions defaults) {
+        if (configSource == null || configSource.isBlank()) return defaults;
         Map<String, Map<String, String>> pseudoStyles = new LinkedHashMap<>(CsstsAtomNames.pseudoAtoms());
         Map<String, List<String>> classGroups = new LinkedHashMap<>(CsstsAtomNames.classGroups());
-        if (configSource == null) return new CsstsOptions("cssts_", pseudoStyles, classGroups);
         QinConfigStaticValueReader config = QinConfigStaticValueReader.parse(configSource);
         String configuredPrefix = QinConfigStaticValueReader.stringValue(config.firstProperty("classPrefix"));
-        String prefix = configuredPrefix == null ? "cssts" : configuredPrefix;
-        prefix = prefix.isEmpty() ? "" : prefix.endsWith("_") || prefix.endsWith("-") ? prefix : prefix + "_";
+        String prefix = configuredPrefix == null ? defaults.prefix() : normalizeClassPrefix(configuredPrefix);
         Expression pseudoValue = config.firstProperty("pseudoClassConfig");
         if (pseudoValue instanceof ObjectExpression pseudoObject) {
             QinConfigStaticValueReader.objectProperties(pseudoObject).forEach((name, stylesValue) -> {
@@ -78,6 +104,17 @@ public final class QinCsstsJavaCompiler {
         return new CsstsOptions(prefix, pseudoStyles, classGroups);
     }
 
+    private static final class DefaultOptions {
+        private static final CsstsOptions CSSTS =
+                new CsstsOptions("cssts_", CsstsAtomNames.pseudoAtoms(), CsstsAtomNames.classGroups());
+        private static final CsstsOptions OVS = CSSTS.withPrefix("cmp-");
+    }
+
+    static String normalizeClassPrefix(String prefix) {
+        if (prefix == null || prefix.isEmpty()) return "";
+        return prefix.endsWith("_") || prefix.endsWith("-") ? prefix : prefix + "_";
+    }
+
     record CsstsOptions(String prefix, Map<String, Map<String, String>> pseudoStyles, Map<String, List<String>> classGroups) {
         CsstsOptions {
             pseudoStyles = Collections.unmodifiableMap(new LinkedHashMap<>(pseudoStyles));
@@ -85,6 +122,10 @@ public final class QinCsstsJavaCompiler {
         }
         Set<String> pseudoNames() { return pseudoStyles.keySet(); }
         Set<String> groupNames() { return classGroups.keySet(); }
+
+        CsstsOptions withPrefix(String prefix) {
+            return this.prefix.equals(prefix) ? this : new CsstsOptions(prefix, pseudoStyles, classGroups);
+        }
     }
 
     static String generateCss(List<String> atoms, String prefix) {
@@ -94,7 +135,19 @@ public final class QinCsstsJavaCompiler {
     static String generateCss(List<String> atoms, String prefix, Map<String, Map<String, String>> pseudoStyles,
             Map<String, List<String>> classGroups) {
         Map<String, List<String>> groupedRules = new LinkedHashMap<>();
+        Set<String> variants = new LinkedHashSet<>();
         for (String name : atoms) {
+            var variant = CsstsAtomNames.pseudoVariant(name);
+            if (variant != null) {
+                String selector = camelToKebab(variant.base()).replace("$", "\\$");
+                for (String pseudo : variant.pseudos()) {
+                    var styles = pseudoStyles.get(pseudo);
+                    if (styles != null) {
+                        variants.add("." + prefix + selector + ":" + pseudo + " { " + renderDeclarations(styles) + "; }");
+                    }
+                }
+                continue;
+            }
             CsstsAtomNames.AtomData atom = CsstsAtomNames.parseTsAtom(name);
             if (atom == null) continue;
             String rule = "." + prefix + atom.property() + "_" + escapeCssClassValue(atom.value())
@@ -108,6 +161,11 @@ public final class QinCsstsJavaCompiler {
             for (String rule : entry.getValue()) css.append(rule).append('\n');
             css.append('\n');
         });
+        if (!variants.isEmpty()) {
+            css.append("/* $$ Pseudo-class styles */\n");
+            for (String rule : variants) css.append(rule).append('\n');
+            css.append('\n');
+        }
         css.append("/* CSSTS Pseudo-class atoms */\n");
         pseudoStyles.forEach((pseudo, styles) -> css.append('.')
                 .append(prefix).append(pseudo).append(':').append(pseudo).append(" { ")
@@ -127,7 +185,11 @@ public final class QinCsstsJavaCompiler {
         for (int index = 0; index < atoms.size(); index++) {
             String name = atoms.get(index);
             CsstsAtomNames.AtomData atom = CsstsAtomNames.parseTsAtom(name);
-            if (atom != null) {
+            var variant = CsstsAtomNames.pseudoVariant(name);
+            if (variant != null) {
+                module.append("  ").append(name).append(": { '").append(prefix)
+                        .append(camelToKebab(variant.base())).append("': null }");
+            } else if (atom != null) {
                 module.append("  ").append(name).append(": { '")
                         .append(prefix).append(atom.property()).append('_').append(atom.value())
                         .append("': '").append(atom.property()).append("' }");

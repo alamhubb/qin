@@ -15,10 +15,13 @@ import com.qin.lang.sema.esm.QinEsmImportBinding;
 import com.qin.lang.sema.esm.QinEsmImportKind;
 import com.qin.lang.sema.esm.QinEsmLinkValidator;
 import com.qin.lang.sema.esm.QinEsmModuleSemantic;
+import com.qin.lang.sema.esm.QinEsmModuleBindings;
 import com.qin.lang.sema.esm.QinEsmRuntimeFeatureValidator;
 import com.qin.lang.sema.esm.QinEsmSemanticAnalyzer;
 import com.qin.lang.sema.esm.QinEsmSemanticModel;
 import com.qin.parser.QinParserFacade;
+import com.slime.generator.SlimeGenerator.MappedCode;
+import com.slime.generator.SlimeGenerator.ModuleLayout;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -78,8 +81,11 @@ public final class QinFrontendEsmService {
     private final Map<Path, String> moduleUrlMap;
     private final Map<String, Path> requestPathMap;
     private final Map<String, String> virtualModuleContentMap;
-    private final Map<Path, String> transpiledModuleCache = new LinkedHashMap<>();
+    private final Map<Path, TranspiledModule> transpiledModuleCache = new LinkedHashMap<>();
     private final Map<Path, CachedOvsModule> ovsTranspiledModuleCache = new LinkedHashMap<>();
+    private final Map<Path, QinEsmModuleSemantic> emittedModuleBindings = new LinkedHashMap<>();
+    private final Set<Path> invalidatedCsstsBindings = new LinkedHashSet<>();
+    private QinEsmSemanticModel initialSemanticModel;
     private final String entryModuleUrl;
     private final QinVueSfcCompiler vueSfcCompiler;
     private final QinOvsCompiler ovsCompiler;
@@ -122,8 +128,6 @@ public final class QinFrontendEsmService {
                         virtualFrontendServerControllerSource(root, importer, resolvedModule, resolvedSource))
                 .build(entry);
         profile.checkpoint("build module graph", "modules=" + graph.modules().size());
-        validatePolicyAndSemantics(root, graph);
-        profile.checkpoint("validate policy and semantics");
 
         Map<Path, QinModuleSource> sourceMap = new LinkedHashMap<>();
         Map<Path, String> urlMap = new LinkedHashMap<>();
@@ -163,6 +167,8 @@ public final class QinFrontendEsmService {
                 vueCompiler,
                 new QinOvsCompiler(),
                 new QinCsstsCompiler());
+        service.validatePolicyAndSemantics();
+        profile.checkpoint("validate policy and semantics");
         service.prewarmCsstsGraphModules();
         profile.done("entry=" + entry.getFileName());
         return service;
@@ -261,17 +267,17 @@ public final class QinFrontendEsmService {
         return null;
     }
 
-    private String injectQinHmrPrelude(String requestPath, Path moduleFile, String transpiled) {
-        if (transpiled == null || requestPath == null || requestPath.contains("?")) {
-            return transpiled;
+    private String injectQinHmrPrelude(String requestPath, Path moduleFile, TranspiledModule transpiled) {
+        if (requestPath == null || requestPath.contains("?")) {
+            return transpiled.render();
         }
         String moduleUrl = toModuleUrl(projectRoot, moduleFile.toAbsolutePath().normalize());
         String escapedModuleUrl = escapeJsStringLiteral(moduleUrl);
-        return """
+        String prelude = """
                 import { createHotContext as __qinCreateHotContext } from "/@qin/dev-client.js";
                 import.meta.hot = __qinCreateHotContext("%s");
-                %s
-                """.formatted(escapedModuleUrl, transpiled);
+                """.formatted(escapedModuleUrl);
+        return transpiled.renderWithPrelude(prelude);
     }
 
     public void emitProduction(Path staticRoot) throws IOException {
@@ -315,7 +321,7 @@ public final class QinFrontendEsmService {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            Files.writeString(output, transpileModule(file), StandardCharsets.UTF_8);
+            Files.writeString(output, transpileModule(file).render(), StandardCharsets.UTF_8);
             writtenModules++;
         }
         profile.checkpoint("write graph modules", "modules=" + writtenModules);
@@ -327,7 +333,7 @@ public final class QinFrontendEsmService {
         profile.done("bootstrap");
     }
 
-    private synchronized String transpileModule(Path moduleFile) throws IOException {
+    private synchronized TranspiledModule transpileModule(Path moduleFile) throws IOException {
         Path normalizedModuleFile = moduleFile.toAbsolutePath().normalize();
         QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
         if (module == null) {
@@ -337,25 +343,29 @@ public final class QinFrontendEsmService {
         String source = module.source();
         boolean cacheable = !isOvsModuleFile(normalizedModuleFile);
         if (cacheable) {
-            String cached = transpiledModuleCache.get(normalizedModuleFile);
+            TranspiledModule cached = transpiledModuleCache.get(normalizedModuleFile);
             if (cached != null) {
                 return cached;
             }
         }
 
-        String transpiled;
+        TranspiledModule transpiled;
         if (isServerControllerModule(moduleFile, readSource(moduleFile))) {
-            transpiled = renderQinWebRpcControllerClient(readSource(moduleFile));
+            transpiled = TranspiledModule.plain(renderQinWebRpcControllerClient(readSource(moduleFile)));
         } else if (isVueModuleFile(moduleFile)) {
-            transpiled = transpileVueModule(moduleFile, source);
+            transpiled = TranspiledModule.plain(transpileVueModule(moduleFile, source));
         } else if (isOvsModuleFile(moduleFile)) {
             transpiled = transpileOvsModule(moduleFile, source);
         } else if (isCsstsModuleFile(moduleFile)) {
             transpiled = transpileCsstsModule(moduleFile, source);
+            if (invalidatedCsstsBindings.contains(normalizedModuleFile)) {
+                validateEmittedModuleBindings(Map.of(normalizedModuleFile, resolveEmittedBindings(module, transpiled)));
+                invalidatedCsstsBindings.remove(normalizedModuleFile);
+            }
         } else if (isCssModuleFile(moduleFile)) {
-            transpiled = renderCssInjectionModule(source);
+            transpiled = TranspiledModule.plain(renderCssInjectionModule(source));
         } else if (isAssetModuleFile(moduleFile)) {
-            transpiled = renderAssetUrlModule(moduleFile);
+            transpiled = TranspiledModule.plain(renderAssetUrlModule(moduleFile));
         } else {
             if (isUnifiedAppEntry(moduleFile, source)) {
                 source = frontendSourceFromUnifiedAppEntry(source);
@@ -363,7 +373,7 @@ public final class QinFrontendEsmService {
             source = rewriteSpecifiers(module, source, IMPORT_FROM_PATTERN);
             source = rewriteSpecifiers(module, source, EXPORT_FROM_PATTERN);
             source = rewriteSpecifiers(module, source, IMPORT_SIDE_EFFECT_PATTERN);
-            transpiled = source;
+            transpiled = TranspiledModule.plain(source);
         }
         if (cacheable) {
             transpiledModuleCache.put(normalizedModuleFile, transpiled);
@@ -409,6 +419,8 @@ public final class QinFrontendEsmService {
         Path normalized = moduleFile.toAbsolutePath().normalize();
         transpiledModuleCache.remove(normalized);
         ovsTranspiledModuleCache.remove(normalized);
+        emittedModuleBindings.remove(normalized);
+        if (isCsstsModuleFile(normalized)) invalidatedCsstsBindings.add(normalized);
         clearVirtualModulesForModule(normalized);
         csstsCssByModule.remove(normalized);
         csstsAtomByModule.remove(normalized);
@@ -563,8 +575,10 @@ public final class QinFrontendEsmService {
         }
     }
 
-    private void prewarmOvsModules(List<Path> files) throws IOException {
+    private synchronized void prewarmOvsModules(List<Path> files) throws IOException {
         Map<Path, String> sources = new LinkedHashMap<>();
+        Map<Path, CachedOvsModule> transformed = new LinkedHashMap<>();
+        Map<Path, QinEsmModuleSemantic> bindings = new LinkedHashMap<>();
         for (Path file : files) {
             Path normalizedFile = file.toAbsolutePath().normalize();
             QinModuleSource module = moduleSourceMap.get(normalizedFile);
@@ -593,14 +607,17 @@ public final class QinFrontendEsmService {
                     ? module
                     : new QinModuleSource(normalizedFile, readSource(normalizedFile), List.of());
             String source = sources.getOrDefault(normalizedFile, sourceModule.source());
-            String transpiled = finishOvsModule(normalizedFile, sourceModule, result);
-            ovsTranspiledModuleCache.put(
-                    normalizedFile,
-                    new CachedOvsModule(
-                            source == null ? "" : source,
-                            cacheIdentities.get(normalizedFile),
-                            transpiled));
+            String cacheSource = source == null ? "" : source;
+            String cacheIdentity = cacheIdentities.get(normalizedFile);
+            CachedOvsModule previous = ovsTranspiledModuleCache.get(normalizedFile);
+            if (previous != null && cacheIdentity != null && cacheIdentity.equals(previous.cacheIdentity())
+                    && cacheSource.equals(previous.source())) continue;
+            TranspiledModule transpiled = finishOvsModule(normalizedFile, sourceModule, result);
+            bindings.put(normalizedFile, resolveEmittedBindings(sourceModule, transpiled));
+            transformed.put(normalizedFile, new CachedOvsModule(cacheSource, cacheIdentity, transpiled));
         }
+        if (!bindings.isEmpty()) validateEmittedModuleBindings(bindings);
+        ovsTranspiledModuleCache.putAll(transformed);
     }
 
     private String transpileVueModule(Path moduleFile, String source) {
@@ -671,7 +688,7 @@ public final class QinFrontendEsmService {
                 : result.moduleCode();
     }
 
-    private synchronized String transpileOvsModule(Path moduleFile, String source) {
+    private synchronized TranspiledModule transpileOvsModule(Path moduleFile, String source) {
         Path normalizedModuleFile = moduleFile.toAbsolutePath().normalize();
         String cacheSource = source == null ? "" : source;
         CachedOvsModule cached = ovsTranspiledModuleCache.get(normalizedModuleFile);
@@ -720,17 +737,15 @@ public final class QinFrontendEsmService {
         return new ArrayList<>(files);
     }
 
-    private String finishOvsModule(
+    private TranspiledModule finishOvsModule(
             Path moduleFile,
             QinModuleSource sourceModule,
             QinOvsCompiler.QinOvsCompileResult result) {
-        String compiled = result.code();
-        compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_FROM_PATTERN);
-        compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
-        compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_SIDE_EFFECT_PATTERN);
-        result = ensureOvsCsstsArtifacts(result, compiled);
+        result = ensureOvsCsstsArtifacts(result, result.code());
         registerOvsVirtualModules(moduleFile, result);
-        return mountOvsModule(moduleFile, compiled);
+        MountedOvsModule mounted = mountOvsModule(moduleFile, result);
+        return new TranspiledModule(rewriteMappedSpecifiers(sourceModule, mounted.generated()),
+                toPublicUrl(projectRoot, moduleFile), sourceModule.source(), mounted.bindings());
     }
 
     private QinOvsCompiler.QinOvsCompileResult ensureOvsCsstsArtifacts(
@@ -763,10 +778,11 @@ public final class QinFrontendEsmService {
                 result.code(),
                 result.hasStyles(),
                 css == null ? "" : css,
-                atomModule == null ? "" : atomModule);
+                atomModule == null ? "" : atomModule,
+                result.mappings(), result.moduleBindings(), result.moduleLayout());
     }
 
-    private String transpileCsstsModule(Path moduleFile, String source) {
+    private TranspiledModule transpileCsstsModule(Path moduleFile, String source) {
         QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
         QinModuleSource sourceModule = module != null
                 ? module
@@ -779,15 +795,13 @@ public final class QinFrontendEsmService {
         }
 
         registerCsstsVirtualModules(moduleFile, result);
-        String compiled = result.code();
-        compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_FROM_PATTERN);
-        compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
-        compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_SIDE_EFFECT_PATTERN);
-        return mountCsstsModule(compiled);
+        MappedCode compiled = rewriteMappedSpecifiers(sourceModule, result.mappedCode());
+        return new TranspiledModule(mountCsstsModule(compiled), toPublicUrl(projectRoot, moduleFile), source,
+                result.moduleBindings());
     }
 
-    private String mountCsstsModule(String source) {
-        String body = source == null ? "" : source;
+    private MappedCode mountCsstsModule(MappedCode source) {
+        String body = source.code();
         StringBuilder prelude = new StringBuilder();
         if (!importsCsstsRuntimeBinding(body)) {
             prelude.append("import { cssts } from \"")
@@ -804,7 +818,7 @@ public final class QinFrontendEsmService {
                     .append(CSSTS_STYLE_VIRTUAL_MODULE_URL)
                     .append("\";\n");
         }
-        return prelude.append(body).toString();
+        return new QinEsmSourceMap.Builder().append(prelude.toString()).append(source).build();
     }
 
     private boolean importsCsstsRuntimeBinding(String source) {
@@ -942,6 +956,26 @@ public final class QinFrontendEsmService {
         }
         matcher.appendTail(sb);
         return sb.toString();
+    }
+
+    private MappedCode rewriteMappedSpecifiers(QinModuleSource module, MappedCode source) {
+        for (Pattern pattern : List.of(IMPORT_FROM_PATTERN, EXPORT_FROM_PATTERN, IMPORT_SIDE_EFFECT_PATTERN)) {
+            Matcher matcher = pattern.matcher(source.code());
+            var output = new QinEsmSourceMap.Builder();
+            int copied = 0;
+            while (matcher.find()) {
+                String specifier = matcher.group(2);
+                String rewritten = rewriteSpecifier(module, specifier);
+                if (!specifier.equals(rewritten)) {
+                    output.append(source, copied, matcher.start(2)).append(rewritten);
+                    copied = matcher.end(2);
+                }
+            }
+            if (copied > 0) {
+                source = output.append(source, copied, source.code().length()).build();
+            }
+        }
+        return source;
     }
 
     private String rewriteSpecifier(QinModuleSource module, String specifier) {
@@ -1446,8 +1480,9 @@ public final class QinFrontendEsmService {
                 .replace("_vw", "vw");
     }
 
-    private String mountOvsModule(Path moduleFile, String source) {
-        String vueRuntime = "/@qin-mod/qin-vue-runtime.js?qin-vue=runtime";
+    private MountedOvsModule mountOvsModule(Path moduleFile, QinOvsCompiler.QinOvsCompileResult result) {
+        MappedCode body = result.mappedCode();
+        String source = body.code();
         String vueCreateAppRuntime = "/@qin-mod/qin-vue-runtime.js?qin-vue=browser-runtime";
         String csstsStyle = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=style";
         String csstsRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=runtime";
@@ -1457,41 +1492,60 @@ public final class QinFrontendEsmService {
                 ? ""
                 : "const { " + String.join(", ", atomNames) + " } = __qinOvsCsstsAtom;\n";
         String ovsRuntimePrelude = missingOvsRuntimeImportPrelude(moduleFile, source);
+        String csstsPrelude = result.moduleBindings().imports().stream().anyMatch(binding ->
+                binding.localName().equals("cssts") || "cssts-ts".equals(binding.moduleSpecifier())
+                        && "cssts".equals(binding.importedName()))
+                ? "" : "import * as cssts from \"" + csstsRuntime + "\";";
         String marker = "export default ";
-        int exportIndex = source.indexOf(marker);
+        ModuleLayout layout = result.moduleLayout();
+        int exportIndex = layout.defaultExportOffset();
         if (exportIndex < 0) {
-            String implicitModule = mountImplicitDefaultOvsModule(
-                    moduleFile,
-                    source,
-                    vueRuntime,
-                    csstsStyle,
-                    csstsRuntime,
-                    csstsAtom,
-                    atomPrelude,
-                    ovsRuntimePrelude);
-            if (implicitModule != null) {
-                return implicitModule;
+            if (!layout.hasExports() && layout.expressionStart() >= 0) {
+                MappedCode module = mountImplicitDefaultOvsModule(moduleFile, body, layout,
+                        csstsStyle, csstsPrelude, csstsAtom, atomPrelude, ovsRuntimePrelude);
+                return new MountedOvsModule(module, ovsMountedBindings(result.moduleBindings(), true));
             }
-            return """
+            String prelude = """
                     import "%s";
-                    import * as cssts from "%s";
+                    %s
                     import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                     %s
                     %s
-                    %s
-                    """.formatted(csstsStyle, csstsRuntime, csstsAtom, atomPrelude, ovsRuntimePrelude, source);
+                    """.formatted(csstsStyle, csstsPrelude, csstsAtom, atomPrelude, ovsRuntimePrelude);
+            MappedCode module = new QinEsmSourceMap.Builder().append(prelude).append(body).append("\n").build();
+            return new MountedOvsModule(module, result.moduleBindings());
         }
-        String transformed = source.substring(0, exportIndex)
-                + "const __qinOvsComponent = "
-                + source.substring(exportIndex + marker.length());
-        return """
+        String prelude = """
                 import { createApp as __qinCreateApp } from "%s";
                 import "%s";
-                import * as cssts from "%s";
+                %s
                 import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                 %s
                 %s
-                %s
+                """.formatted(vueCreateAppRuntime, csstsStyle, csstsPrelude, csstsAtom, atomPrelude, ovsRuntimePrelude);
+        MappedCode module = new QinEsmSourceMap.Builder().append(prelude)
+                .append(body, 0, exportIndex)
+                .append("const __qinOvsComponent = ")
+                .append(body, exportIndex + marker.length(), source.length())
+                .append("\n").append(ovsMountExports()).build();
+        return new MountedOvsModule(module, ovsMountedBindings(result.moduleBindings(), false));
+    }
+
+    private static QinEsmModuleBindings ovsMountedBindings(QinEsmModuleBindings bindings, boolean implicitDefault) {
+        List<QinEsmModuleBindings.Export> exports = new ArrayList<>(bindings.exports());
+        if (implicitDefault) {
+            exports.add(QinEsmModuleBindings.Export.local(QinEsmExportKind.LOCAL_DEFAULT, "default"));
+        }
+        exports.add(QinEsmModuleBindings.Export.local(QinEsmExportKind.LOCAL_NAMED, "__qinMountOvs"));
+        exports.add(QinEsmModuleBindings.Export.local(QinEsmExportKind.LOCAL_NAMED, "__qinMountVue"));
+        return new QinEsmModuleBindings(bindings.imports(), exports);
+    }
+
+    private record MountedOvsModule(MappedCode generated, QinEsmModuleBindings bindings) {
+    }
+
+    private static String ovsMountExports() {
+        return """
                 const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
                   ? __qinOvsComponent.__vueComponent
                   : __qinOvsComponent;
@@ -1516,77 +1570,43 @@ public final class QinFrontendEsmService {
                 }
                 export { __qinMountOvs, __qinMountVue };
                 export default __qinVueComponent;
-                """.formatted(vueCreateAppRuntime, csstsStyle, csstsRuntime, csstsAtom, atomPrelude, ovsRuntimePrelude, transformed);
+                """;
     }
 
-    private String mountImplicitDefaultOvsModule(
+    private MappedCode mountImplicitDefaultOvsModule(
             Path moduleFile,
-            String source,
-            String vueRuntime,
+            MappedCode body,
+            ModuleLayout layout,
             String csstsStyle,
-            String csstsRuntime,
+            String csstsPrelude,
             String csstsAtom,
             String atomPrelude,
             String ovsRuntimePrelude) {
-        if (containsTopLevelExport(source)) {
-            return null;
-        }
-        StatementRange expression = findLastTopLevelExpressionStatement(source);
-        if (expression == null) {
-            return null;
-        }
-        String before = source.substring(0, expression.start());
-        String after = source.substring(expression.end());
-        String expressionSource = trimTrailingSemicolon(source.substring(expression.start(), expression.end()).trim());
+        String source = body.code();
         String ovsRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-ovs=runtime";
         String vueCreateAppRuntime = "/@qin-mod/qin-vue-runtime.js?qin-vue=browser-runtime";
-        return """
+        String prelude = """
                 import { createApp as __qinCreateApp } from "%s";
                 import "%s";
-                import * as cssts from "%s";
+                %s
                 import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                 import { defineOvsComponent as __qinDefineOvsComponent } from "%s";
                 %s
                 %s
-                %s%s
-                const __qinOvsComponent = __qinDefineOvsComponent(() => {
-                  return (%s);
-                });
-                const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
-                  ? __qinOvsComponent.__vueComponent
-                  : __qinOvsComponent;
-                function __qinMountOvs(target = null) {
-                  if (typeof document === 'undefined') return null;
-                  const __qinOvsTarget = typeof target === 'string'
-                    ? document.querySelector(target)
-                    : (target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo'));
-                  if (!__qinOvsTarget) return null;
-                  __qinOvsTarget.innerHTML = '';
-                  return __qinCreateApp(__qinVueComponent).mount(__qinOvsTarget);
-                }
-                function __qinMountVue(target) {
-                  return __qinMountOvs(target);
-                }
-                __qinVueComponent.component = __qinOvsComponent;
-                __qinVueComponent.__qinMountVue = __qinMountVue;
-                __qinVueComponent.__qinMountOvs = __qinMountOvs;
-                if (typeof document !== 'undefined'
-                    && (document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo'))) {
-                  setTimeout(__qinMountOvs, 0);
-                }
-                export { __qinMountOvs, __qinMountVue };
-                export default __qinVueComponent;
                 """.formatted(
                 vueCreateAppRuntime,
                 csstsStyle,
-                csstsRuntime,
+                csstsPrelude,
                 csstsAtom,
                 ovsRuntime,
                 atomPrelude,
-                ovsRuntimePrelude,
-                before,
-                after,
-                expressionSource);
+                ovsRuntimePrelude);
+        return new QinEsmSourceMap.Builder().append(prelude)
+                .append(body, 0, layout.expressionStart())
+                .append(body, layout.expressionEnd(), source.length())
+                .append("\nconst __qinOvsComponent = __qinDefineOvsComponent(() => {\n  return (")
+                .append(body, layout.expressionStart(), layout.expressionEnd() - 1)
+                .append(");\n});\n").append(ovsMountExports()).build();
     }
 
     private String missingOvsRuntimeImportPrelude(Path moduleFile, String source) {
@@ -1609,146 +1629,6 @@ public final class QinFrontendEsmService {
                 + Pattern.quote(name)
                 + "(?:\\s+as\\s+[A-Za-z_$][\\w$]*)?[^}]*}\\s*from\\s*[\"'][^\"']+[\"']");
         return pattern.matcher(source).find();
-    }
-
-    private boolean containsTopLevelExport(String source) {
-        Matcher matcher = Pattern.compile("(?m)^\\s*export\\s+").matcher(source);
-        return matcher.find();
-    }
-
-    private StatementRange findLastTopLevelExpressionStatement(String source) {
-        List<Integer> semicolons = topLevelSemicolonPositions(source);
-        for (int i = semicolons.size() - 1; i >= 0; i--) {
-            int end = semicolons.get(i) + 1;
-            int start = i == 0 ? findFirstNonImportStatementStart(source) : semicolons.get(i - 1) + 1;
-            while (start < end && Character.isWhitespace(source.charAt(start))) {
-                start++;
-            }
-            if (start >= end) {
-                continue;
-            }
-            String candidate = source.substring(start, end).trim();
-            if (looksLikeExpressionStatement(candidate)) {
-                return new StatementRange(start, end);
-            }
-        }
-        return null;
-    }
-
-    private List<Integer> topLevelSemicolonPositions(String source) {
-        List<Integer> positions = new ArrayList<>();
-        int parenDepth = 0;
-        int bracketDepth = 0;
-        int braceDepth = 0;
-        char quote = 0;
-        boolean escaping = false;
-        boolean lineComment = false;
-        boolean blockComment = false;
-        for (int i = 0; i < source.length(); i++) {
-            char ch = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : 0;
-            if (lineComment) {
-                if (ch == '\n' || ch == '\r') {
-                    lineComment = false;
-                }
-                continue;
-            }
-            if (blockComment) {
-                if (ch == '*' && next == '/') {
-                    blockComment = false;
-                    i++;
-                }
-                continue;
-            }
-            if (quote != 0) {
-                if (escaping) {
-                    escaping = false;
-                } else if (ch == '\\') {
-                    escaping = true;
-                } else if (ch == quote) {
-                    quote = 0;
-                }
-                continue;
-            }
-            if (ch == '/' && next == '/') {
-                lineComment = true;
-                i++;
-                continue;
-            }
-            if (ch == '/' && next == '*') {
-                blockComment = true;
-                i++;
-                continue;
-            }
-            if (ch == '"' || ch == '\'' || ch == '`') {
-                quote = ch;
-                continue;
-            }
-            if (ch == '(') {
-                parenDepth++;
-            } else if (ch == ')' && parenDepth > 0) {
-                parenDepth--;
-            } else if (ch == '[') {
-                bracketDepth++;
-            } else if (ch == ']' && bracketDepth > 0) {
-                bracketDepth--;
-            } else if (ch == '{') {
-                braceDepth++;
-            } else if (ch == '}' && braceDepth > 0) {
-                braceDepth--;
-            } else if (ch == ';' && parenDepth == 0 && bracketDepth == 0 && braceDepth == 0) {
-                positions.add(i);
-            }
-        }
-        return positions;
-    }
-
-    private int findFirstNonImportStatementStart(String source) {
-        int index = 0;
-        while (index < source.length()) {
-            while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
-                index++;
-            }
-            if (!source.startsWith("import ", index)
-                    && !source.startsWith("import{", index)
-                    && !source.startsWith("import*", index)
-                    && !source.startsWith("import\"", index)
-                    && !source.startsWith("import'", index)) {
-                return index;
-            }
-            int nextLine = source.indexOf('\n', index);
-            if (nextLine < 0) {
-                return source.length();
-            }
-            index = nextLine + 1;
-        }
-        return index;
-    }
-
-    private boolean looksLikeExpressionStatement(String statement) {
-        String text = trimTrailingSemicolon(statement).trim();
-        if (text.isEmpty()) {
-            return false;
-        }
-        for (String keyword : List.of(
-                "import ", "export ", "const ", "let ", "var ", "function ", "class ",
-                "if ", "for ", "while ", "switch ", "try ", "return ", "throw ")) {
-            if (text.startsWith(keyword)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private String trimTrailingSemicolon(String text) {
-        String result = text.stripTrailing();
-        if (result.endsWith(";")) {
-            return result.substring(0, result.length() - 1).stripTrailing();
-        }
-        return result;
-    }
-
-    private record StatementRange(int start, int end) {
     }
 
     private String readOvsRuntimeModule(String vueRuntimeRequestPath) {
@@ -2186,7 +2066,25 @@ public final class QinFrontendEsmService {
         return "export default \"" + escapeJsStringLiteral(toPublicUrl(projectRoot, moduleFile)) + "\";\n";
     }
 
-    private record CachedOvsModule(String source, String cacheIdentity, String transpiled) {
+    private record CachedOvsModule(String source, String cacheIdentity, TranspiledModule transpiled) {
+    }
+
+    private record TranspiledModule(MappedCode generated, String sourceName, String source,
+                                    QinEsmModuleBindings moduleBindings) {
+        static TranspiledModule plain(String code) {
+            return new TranspiledModule(new MappedCode(code, List.of()), null, null, QinEsmModuleBindings.EMPTY);
+        }
+
+        String render() {
+            return sourceName == null ? generated.code() : QinEsmSourceMap.inline(generated, sourceName, source);
+        }
+
+        String renderWithPrelude(String prelude) {
+            if (generated.code() == null) return null;
+            if (sourceName == null) return prelude + generated.code() + "\n";
+            MappedCode prefixed = new QinEsmSourceMap.Builder().append(prelude).append(generated).build();
+            return QinEsmSourceMap.inline(prefixed, sourceName, source);
+        }
     }
 
     private static String escapeJsStringLiteral(String text) {
@@ -2227,7 +2125,7 @@ public final class QinFrontendEsmService {
         }
     }
 
-    private static void validatePolicyAndSemantics(Path root, QinModuleGraph graph) throws Exception {
+    private void validatePolicyAndSemantics() throws Exception {
         QinPhaseTimer profile = QinPhaseTimer.start("frontend-service-validate");
         List<QinImportDescriptor> imports = new ArrayList<>();
         for (QinModuleSource module : graph.modules()) {
@@ -2237,27 +2135,62 @@ public final class QinFrontendEsmService {
         }
         profile.checkpoint("collect imports", "imports=" + imports.size());
 
-        new QinImportPolicyChecker().validate(root, imports);
+        new QinImportPolicyChecker().validate(projectRoot, imports);
         profile.checkpoint("import policy");
         QinEsmRuntimeFeatureValidator.forBrowserFrontend().validate(graph);
         profile.checkpoint("runtime feature scan");
-        QinEsmSemanticModel model = analyzeFrontendSemanticsWithCache(root, graph);
-        profile.checkpoint("semantic analyze", "modules=" + model.modules().size());
-        new QinEsmLinkValidator().validate(model);
+        initialSemanticModel = analyzeFrontendSemanticsWithCache();
+        profile.checkpoint("semantic analyze", "modules=" + initialSemanticModel.modules().size());
+        validateEmittedModuleBindings(Map.of());
         profile.done("link validate");
     }
 
-    private static QinEsmSemanticModel analyzeFrontendSemanticsWithCache(Path root, QinModuleGraph graph) throws Exception {
-        String cacheKey = frontendSemanticCacheKey(root, graph);
-        QinEsmSemanticModel cached = tryReadFrontendSemanticCache(root, cacheKey);
+    private QinEsmSemanticModel analyzeFrontendSemanticsWithCache() throws Exception {
+        String cacheKey = frontendSemanticCacheKey(projectRoot, graph);
+        QinEsmSemanticModel cached = tryReadFrontendSemanticCache(projectRoot, cacheKey);
         if (cached != null) {
             System.out.println("[QinFrontendEsmService] frontend semantic cache hit :: modules="
                     + cached.modules().size());
             return cached;
         }
-        QinEsmSemanticModel model = new QinEsmSemanticAnalyzer().analyze(graph);
-        writeFrontendSemanticCache(root, cacheKey, model);
+        QinEsmSemanticAnalyzer analyzer = new QinEsmSemanticAnalyzer();
+        Map<Path, QinEsmModuleSemantic> emittedModules = new LinkedHashMap<>();
+        for (QinModuleSource module : graph.modules()) {
+            Path file = module.file();
+            if (isCsstsModuleFile(file)) emittedModules.put(file, resolveEmittedBindings(module, transpileModule(file)));
+        }
+        QinEsmSemanticModel model = analyzer.analyze(graph, emittedModules);
+        writeFrontendSemanticCache(projectRoot, cacheKey, model);
         return model;
+    }
+
+    private QinEsmModuleSemantic resolveEmittedBindings(QinModuleSource module, TranspiledModule transpiled) {
+        try {
+            return transpiled.moduleBindings().resolve(module.file(), specifier -> {
+                String rewritten = rewriteSpecifier(module, specifier);
+                Path emittedTarget = requestPathMap.get(rewritten);
+                if (emittedTarget != null) return emittedTarget;
+                if (!rewritten.equals(specifier)) return null;
+                QinResolvedImport resolved = findResolvedImport(module, specifier);
+                return resolved == null ? null : resolved.resolvedModule();
+            });
+        } catch (RuntimeException error) {
+            throw new IllegalArgumentException("Failed to resolve bindings for emitted frontend module: " + module.file(), error);
+        }
+    }
+
+    private void validateEmittedModuleBindings(Map<Path, QinEsmModuleSemantic> bindings) {
+        Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>(initialSemanticModel.modules());
+        modules.putAll(emittedModuleBindings);
+        modules.putAll(bindings);
+        Set<Path> deferred = new LinkedHashSet<>();
+        for (Path file : moduleUrlMap.keySet()) {
+            if (isOvsModuleFile(file) && !emittedModuleBindings.containsKey(file) && !bindings.containsKey(file)) {
+                deferred.add(file);
+            }
+        }
+        new QinEsmLinkValidator().validate(new QinEsmSemanticModel(initialSemanticModel.entryFile(), modules), deferred);
+        emittedModuleBindings.putAll(bindings);
     }
 
     private static QinEsmSemanticModel tryReadFrontendSemanticCache(Path root, String cacheKey) throws IOException {
@@ -2421,9 +2354,20 @@ public final class QinFrontendEsmService {
         updateDigest(digest, encodeCachePath(normalizedRoot, graph.entryFile()));
         updateClassResourceDigest(digest, QinFrontendEsmService.class);
         updateClassResourceDigest(digest, QinEsmSemanticAnalyzer.class);
+        updateClassResourceDigest(digest, QinEsmSemanticAnalyzer.class, "QinEsmAstBindingCollector.class");
+        updateClassResourceDigest(digest, QinEsmModuleBindings.class);
+        updateClassResourceDigest(digest, QinFrontendModuleMetadata.class);
         updateClassResourceDigest(digest, QinEsmLinkValidator.class);
         updateClassResourceDigest(digest, QinEsmRuntimeFeatureValidator.class);
         updateClassResourceDigest(digest, QinParserFacade.class);
+        updateDigest(digest, QinParserFacade.runtimeFingerprint());
+        updateClassResourceDigest(digest, QinOvsCompiler.class);
+        updateClassResourceDigest(digest, QinOvsJavaCompiler.class);
+        updateClassResourceDigest(digest, QinCsstsCompiler.class);
+        updateClassResourceDigest(digest, QinCsstsJavaCompiler.class);
+        updateClassResourceDigest(digest, QinConfigStaticValueReader.class);
+        updateClassResourceDigest(digest, com.qin.parser.QinOvsCstToAst.class);
+        updateClassResourceDigest(digest, com.qin.parser.CsstsAtomNames.class);
         List<QinModuleSource> modules = graph.modules().stream()
                 .sorted(Comparator.comparing(module -> module.file().toString()))
                 .toList();
@@ -2456,8 +2400,13 @@ public final class QinFrontendEsmService {
     }
 
     private static void updateClassResourceDigest(MessageDigest digest, Class<?> type) throws IOException {
-        updateDigest(digest, "class:" + type.getName());
         String resourceName = "/" + type.getName().replace('.', '/') + ".class";
+        updateClassResourceDigest(digest, type, resourceName);
+    }
+
+    private static void updateClassResourceDigest(MessageDigest digest, Class<?> type, String resourceName)
+            throws IOException {
+        updateDigest(digest, "class:" + type.getName() + ":" + resourceName);
         try (InputStream input = type.getResourceAsStream(resourceName)) {
             if (input == null) {
                 updateDigest(digest, "missing");

@@ -37,9 +37,12 @@ publication. Deployment contains generated parsers and the Java runtime.
 The public base package consumes its pinned Step 19 receipt, while the three
 Qin dialects are generated from the current author sources.
 
-`QinParserFacade` is the normal Qin parse entry. `QinOvsCompiler` parses OVS with
-the generated Java OvsParser and passes its CST and tokens to the existing
-`ovs-compiler` AST/emitter through `parsedInput`. Transform cache identities
+`QinParserFacade` is the normal Qin parse entry. `QinOvsCompiler` invokes
+`QinOvsJavaCompiler`, which consumes the generated Java OvsParser CST through
+`QinOvsCstToAst` and emits ESM with Java `SlimeGenerator`. `QinCsstsCompiler`
+uses the same Java visitor with `CssTsParser` and Java CSS/atom collection.
+The independent Node compiler supplies behavior and performance comparisons.
+Transform cache identities
 include the generated Java parser fingerprint. Default parse calls have no
 application-defined quotas for source length, token count, CST size, nesting,
 elapsed time, or total lookahead reads. The local Chevrotain decision tables

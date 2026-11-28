@@ -2,11 +2,13 @@ package com.qin.lang.sema.esm;
 
 import com.qin.lang.module.resolver.QinModuleGraph;
 import com.qin.lang.module.resolver.QinModuleGraphBuilder;
+import com.qin.lang.module.resolver.QinModuleSource;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
 
 public final class QinEsmAstBindingCollectorSmokeTestMain {
     private QinEsmAstBindingCollectorSmokeTestMain() {
@@ -93,8 +95,34 @@ public final class QinEsmAstBindingCollectorSmokeTestMain {
         require(exportKinds.contains(QinEsmExportKind.RE_EXPORT_NAMED), "named re-export missing");
         require(exportKinds.contains(QinEsmExportKind.RE_EXPORT_ALL), "export-all missing");
         require(exportKinds.contains(QinEsmExportKind.RE_EXPORT_NAMESPACE), "namespace re-export missing");
+        assertTypeReexportsDoNotSatisfyValueImports(root);
 
         System.out.println("QinEsmAstBindingCollectorSmokeTestMain passed.");
+    }
+
+    private static void assertTypeReexportsDoNotSatisfyValueImports(Path root) throws Exception {
+        String source = """
+                import "./dep.js";
+                export type * from "./dep.js";
+                export type * as typeBag from "./dep.js";
+                """;
+        Path barrel = Files.writeString(root.resolve("barrel.js"), source);
+        var bindings = new QinEsmAstBindingCollector().collect(new QinModuleSource(barrel, source, List.of())).exports();
+        require(bindings.size() == 2 && bindings.stream().allMatch(QinEsmExportBinding::typeOnly),
+                "AST collector lost the type flag on star exports");
+
+        Path entry = Files.writeString(root.resolve("invalid.js"), """
+                import { named, typeBag } from "./barrel.js";
+                """);
+        var semantic = new QinEsmSemanticAnalyzer().analyze(new QinModuleGraphBuilder().build(entry));
+        try {
+            new QinEsmLinkValidator().validate(semantic);
+            throw new IllegalStateException("Type re-exports satisfied runtime imports");
+        } catch (QinEsmSemanticException expected) {
+            require(expected.diagnostics().size() == 2
+                            && expected.diagnostics().stream().allMatch(diagnostic -> "ESM2003".equals(diagnostic.code())),
+                    "Expected two missing runtime export diagnostics: " + expected.getMessage());
+        }
     }
 
     private static void require(boolean condition, String message) {

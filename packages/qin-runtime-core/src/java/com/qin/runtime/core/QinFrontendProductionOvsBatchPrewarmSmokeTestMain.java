@@ -47,13 +47,8 @@ public final class QinFrontendProductionOvsBatchPrewarmSmokeTestMain {
                 secondMarker,
                 "second production OVS output");
         String log = captured.toString(StandardCharsets.UTF_8);
-        int wrapperRuns = countOccurrences(log, "compile and run wrapper");
-        if (wrapperRuns != 1) {
-            throw new IllegalStateException("Production OVS emit should batch prewarm graph modules once; wrapper runs="
-                    + wrapperRuns + "\n" + log);
-        }
-        if (!log.contains("vite_plugin_ovs_transform_batch")) {
-            throw new IllegalStateException("Production OVS emit should use the batch transform wrapper:\n" + log);
+        if (log.contains("vite_plugin_ovs_transform") || log.contains("compile and run wrapper")) {
+            throw new IllegalStateException("Production OVS emit must use the Java compiler without a JS transform wrapper:\n" + log);
         }
 
         System.out.println("QinFrontendProductionOvsBatchPrewarmSmokeTestMain OK");
@@ -73,17 +68,4 @@ public final class QinFrontendProductionOvsBatchPrewarmSmokeTestMain {
         }
     }
 
-    private static int countOccurrences(String text, String needle) {
-        int count = 0;
-        int offset = 0;
-        while (text != null && needle != null && !needle.isEmpty()) {
-            int index = text.indexOf(needle, offset);
-            if (index < 0) {
-                return count;
-            }
-            count++;
-            offset = index + needle.length();
-        }
-        return count;
-    }
 }

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /** Guards the standard OVS entry against reintroducing a JavaScript fallback. */
 public final class QinOvsCompilerNoFallbackSmokeTestMain {
@@ -13,11 +14,24 @@ public final class QinOvsCompilerNoFallbackSmokeTestMain {
     public static void main(String[] args) throws Exception {
         assertJavaOnlySource("src/java/com/qin/runtime/core/QinOvsCompiler.java");
         assertJavaOnlySource("src/java/com/qin/runtime/core/QinOvsJavaCompiler.java");
-        QinOvsCompiler.QinOvsCompileResult result = QinOvsJavaCompiler.compile("div { \"java-only\" }");
-        if (!result.code().contains("$OvsHtmlTag.div") || result.code().contains("generated-runtime-adapter")) {
-            throw new IllegalStateException("OVS Java entry did not produce a Java-native result");
-        }
+        Path project = Files.createTempDirectory("qin-ovs-java-only-");
+        var compiler = new QinOvsCompiler();
+        var single = compiler.compile(project, project.resolve("Single.ovs"), "div { \"single\" }");
+        assertRender(single, "$OvsHtmlTag.div", "single");
+
+        Path heading = project.resolve("Heading.ovs");
+        Path body = project.resolve("Body.ovs");
+        var batch = compiler.compileAll(project, Map.of(heading, "h1 { \"heading\" }", body, "p { \"body\" }"));
+        assertRender(batch.get(heading), "$OvsHtmlTag.h1", "heading");
+        assertRender(batch.get(body), "$OvsHtmlTag.p", "body");
         System.out.println("QinOvsCompilerNoFallbackSmokeTestMain OK");
+    }
+
+    private static void assertRender(QinOvsCompiler.QinOvsCompileResult result, String tag, String content) {
+        if (result == null || !result.code().contains(tag) || !result.code().contains(content)
+                || result.mappings().isEmpty() || result.code().contains("generated-runtime-adapter")) {
+            throw new AssertionError("OVS Java compile entry did not generate the expected mapped render: " + tag);
+        }
     }
 
     private static void assertJavaOnlySource(String relativePath) throws Exception {

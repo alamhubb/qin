@@ -19,10 +19,14 @@ public final class QinEsmLinkValidator {
     private static final int MAX_EXPORT_RESOLUTION_DEPTH = 128;
 
     public void validate(QinEsmSemanticModel model) {
+        validate(model, Set.of());
+    }
+
+    public void validate(QinEsmSemanticModel model, Set<Path> deferredModules) {
         List<QinEsmDiagnostic> diagnostics = new ArrayList<>();
         for (QinEsmModuleSemantic module : model.modules().values()) {
             validateDuplicateExports(module, diagnostics);
-            validateImports(module, model, diagnostics);
+            validateImports(module, model, deferredModules, diagnostics);
         }
         if (!diagnostics.isEmpty()) {
             throw new QinEsmSemanticException(diagnostics);
@@ -51,6 +55,7 @@ public final class QinEsmLinkValidator {
     private void validateImports(
             QinEsmModuleSemantic module,
             QinEsmSemanticModel model,
+            Set<Path> deferredModules,
             List<QinEsmDiagnostic> diagnostics) {
         Map<String, Boolean> typeDeclarationCache = new HashMap<>();
         for (QinEsmImportBinding importBinding : module.imports()) {
@@ -78,7 +83,8 @@ public final class QinEsmLinkValidator {
                 continue;
             }
 
-            ExportResolution resolution = resolveExportName(model, resolvedModule, importName, new HashSet<>(), 0);
+            ExportResolution resolution = resolveExportName(
+                    model, resolvedModule, importName, deferredModules, new HashSet<>(), 0);
             if (resolution.isAmbiguous()) {
                 diagnostics.add(new QinEsmDiagnostic(
                         "ESM2004",
@@ -87,7 +93,7 @@ public final class QinEsmLinkValidator {
                         importBinding.sourceFile(),
                         importBinding.line(),
                         importBinding.column()));
-            } else if (!resolution.exists()) {
+            } else if (!resolution.exists() && !resolution.pending()) {
                 if (isDeclaredTypeOnlyImport(importBinding, typeDeclarationCache)) {
                     continue;
                 }
@@ -170,6 +176,7 @@ public final class QinEsmLinkValidator {
             QinEsmSemanticModel model,
             Path moduleFile,
             String exportName,
+            Set<Path> deferredModules,
             Set<String> visiting,
             int depth) {
         if (moduleFile == null || exportName == null || exportName.isBlank()) {
@@ -178,6 +185,7 @@ public final class QinEsmLinkValidator {
         if (depth > MAX_EXPORT_RESOLUTION_DEPTH) {
             return ExportResolution.notResolved();
         }
+        if (deferredModules.contains(moduleFile)) return ExportResolution.pendingResult();
 
         String visitKey = moduleFile.toString() + "::" + exportName;
         if (!visiting.add(visitKey)) {
@@ -195,7 +203,10 @@ public final class QinEsmLinkValidator {
             List<QinEsmExportBinding> exportAll = new ArrayList<>();
             for (QinEsmExportBinding exportBinding : module.exports()) {
                 if (QinEsmExportKind.RE_EXPORT_ALL.equals(exportBinding.kind())) {
-                    exportAll.add(exportBinding);
+                    if (!exportBinding.typeOnly()) exportAll.add(exportBinding);
+                    continue;
+                }
+                if (exportBinding.typeOnly() && QinEsmExportKind.RE_EXPORT_NAMESPACE.equals(exportBinding.kind())) {
                     continue;
                 }
                 if (exportName.equals(exportBinding.exportName())) {
@@ -216,6 +227,7 @@ public final class QinEsmLinkValidator {
                             model,
                             binding.resolvedModule(),
                             binding.localName(),
+                            deferredModules,
                             visiting,
                             depth + 1);
                 }
@@ -231,6 +243,7 @@ public final class QinEsmLinkValidator {
                             model,
                             binding.resolvedModule(),
                             binding.localName(),
+                            deferredModules,
                             visiting,
                             depth + 1);
                 }
@@ -238,16 +251,20 @@ public final class QinEsmLinkValidator {
             }
 
             ExportResolution found = ExportResolution.notResolved();
+            if ("default".equals(exportName)) return found;
+            boolean pending = false;
             for (QinEsmExportBinding star : exportAll) {
                 ExportResolution sub = resolveExportName(
                         model,
                         star.resolvedModule(),
                         exportName,
+                        deferredModules,
                         visiting,
                         depth + 1);
                 if (sub.isAmbiguous()) {
                     return ExportResolution.ambiguousResult();
                 }
+                pending |= sub.pending();
                 if (sub.exists()) {
                     if (found.exists() && !sameResolvedBinding(found, sub)) {
                         return ExportResolution.ambiguousResult();
@@ -255,7 +272,7 @@ public final class QinEsmLinkValidator {
                     found = sub;
                 }
             }
-            return found;
+            return found.exists() || !pending ? found : ExportResolution.pendingResult();
         } finally {
             visiting.remove(visitKey);
         }
@@ -271,17 +288,21 @@ public final class QinEsmLinkValidator {
                 && left.exportName().equals(right.exportName());
     }
 
-    private record ExportResolution(boolean exists, boolean isAmbiguous, Path owner, String exportName) {
+    private record ExportResolution(boolean exists, boolean isAmbiguous, boolean pending, Path owner, String exportName) {
         private static ExportResolution foundResult(Path owner, String exportName) {
-            return new ExportResolution(true, false, owner, exportName);
+            return new ExportResolution(true, false, false, owner, exportName);
         }
 
         private static ExportResolution ambiguousResult() {
-            return new ExportResolution(false, true, null, "");
+            return new ExportResolution(false, true, false, null, "");
         }
 
         private static ExportResolution notResolved() {
-            return new ExportResolution(false, false, null, "");
+            return new ExportResolution(false, false, false, null, "");
+        }
+
+        private static ExportResolution pendingResult() {
+            return new ExportResolution(false, false, true, null, "");
         }
     }
 }

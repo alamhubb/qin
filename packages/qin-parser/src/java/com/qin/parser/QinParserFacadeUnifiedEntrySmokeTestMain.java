@@ -8,6 +8,15 @@ public final class QinParserFacadeUnifiedEntrySmokeTestMain {
 
     public static void main(String[] args) {
         preservesJavaImportsBeforeDeclarations();
+        validatesNullishOperators();
+        new QinParserFacade().parseSource("const methods = { regionMatches(value, ...args) { return args; } };");
+        new QinParserFacade().parseSource("function f(value, ...args) { return args; } const g = (value,) => value;");
+        new QinParserFacade().parseSource("while (index < items.length && compare(items[index], value) < 0) { index++; }");
+        new QinParserFacade().parseSource("const value = identity<Array<string>>([]); const box = new Box<string>();");
+        new QinParserFacade().parseSource("class Flags { public override(): boolean { return true; } readonly() { return false; } declare() {} }");
+        new QinParserFacade().parseSource("const options = { ...defaults, value: 1, }; const names = [...values,];");
+        String comparison = new QinParserFacade().parseProgram("const atEnd = offset >= bytes.length;").toString();
+        if (!comparison.contains("operator=>=")) throw new AssertionError("Expected the complete >= operator in the AST");
 
         String source = """
                 let _showRulePath = true;
@@ -83,6 +92,18 @@ public final class QinParserFacadeUnifiedEntrySmokeTestMain {
                 || !(parsed.requireProgram().body().get(0) instanceof ImportDeclaration)
                 || !"ClassDeclaration".equals(parsed.requireProgram().body().get(1).getClass().getSimpleName())) {
             throw new AssertionError("ModuleItemList must preserve imports before following declarations");
+        }
+    }
+
+    private static void validatesNullishOperators() {
+        QinParser parser = new QinParser("const result = (a && b) ?? c;");
+        if (parser.Program() == null || parser.isParserFail()) {
+            throw new AssertionError("Parenthesized nullish/logical expressions should parse");
+        }
+        for (String expression : new String[]{"a && b ?? c", "a || b ?? c", "a ?? b && c", "a ?? b || c"}) {
+            QinParser invalid = new QinParser("const result = " + expression + ";");
+            invalid.Program();
+            if (!invalid.isParserFail()) throw new AssertionError("Accepted mixed nullish/logical expression " + expression);
         }
     }
 }

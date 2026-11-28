@@ -4,7 +4,6 @@ import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJsImport;
 import com.slime.ast.nodes.misc.Program;
 import com.subhuti.struct.SubhutiCst;
-import com.subhuti.struct.SubhutiMatchToken;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +23,7 @@ import java.util.regex.Pattern;
  * packages do not need to bind directly to raw Slime parser construction.
  */
 public final class QinParserFacade {
+    public static String runtimeFingerprint() { return QinParser.BACKEND_FINGERPRINT; }
     private static final DateTimeFormatter FAILURE_SNAPSHOT_TIME = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
     private static final Pattern SOURCE_HASHBANG_PATTERN = Pattern.compile("\\A#![^\\r\\n]*(\\r?\\n|\\z)");
     public Program parseProgram(String source) {
@@ -57,8 +57,7 @@ public final class QinParserFacade {
     }
 
     public SubhutiCst createProgramCst(String source) {
-        QinParser parser = QinParserStaticEnhanced.create(source);
-        parser.cache(true);
+        QinParser parser = new QinParser(source);
         SubhutiCst cst = parser.Program(QinParser.SourceType.MODULE);
         if (cst == null) {
             cst = parser.getCst();
@@ -109,30 +108,12 @@ public final class QinParserFacade {
 
     private void ensureParserFinished(QinParser parser) {
         if (parser.isParserFail()) {
-            throw new IllegalArgumentException("Qin parser failed: " + parser.getErrorInfo());
+            throw new IllegalArgumentException("Qin parser failed: " + parser.getDiagnostics());
         }
-        if (parser.parserFailOrIsEof()) {
+        if (parser.isAtEnd()) {
             return;
         }
-        SubhutiMatchToken token = parser.getCurToken();
-        if (token == null) {
-            String remaining = parser.getSourceCode().substring(parser.getCurrentIndex());
-            if (remaining.isBlank()) {
-                return;
-            }
-            throw new IllegalArgumentException(
-                    "Qin parser left unconsumed source at position "
-                            + parser.getCurrentIndex());
-        }
-        if (!token.isEof()) {
-            throw new IllegalArgumentException(
-                    "Qin parser left unconsumed source. Next token: "
-                            + token.value()
-                            + " ("
-                            + token.tokenName()
-                            + ") at position "
-                            + token.index());
-        }
+        throw new IllegalArgumentException("Qin parser left unconsumed source at position " + parser.getCurrentIndex());
     }
 
     private static String safeMessage(Throwable throwable) {

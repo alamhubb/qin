@@ -17,11 +17,16 @@ import com.slime.ast.nodes.misc.ImportDefaultSpecifier;
 import com.slime.ast.nodes.misc.ImportNamespaceSpecifier;
 import com.slime.ast.nodes.misc.ImportSpecifier;
 import com.slime.ast.nodes.misc.Program;
+import com.slime.ast.nodes.misc.Property;
 import com.slime.ast.nodes.misc.VariableDeclarator;
 import com.slime.ast.nodes.modules.ExportAllDeclaration;
 import com.slime.ast.nodes.modules.ExportDefaultDeclaration;
 import com.slime.ast.nodes.modules.ExportNamedDeclaration;
 import com.slime.ast.nodes.modules.ImportDeclaration;
+import com.slime.ast.nodes.patterns.ArrayPattern;
+import com.slime.ast.nodes.patterns.AssignmentPattern;
+import com.slime.ast.nodes.patterns.ObjectPattern;
+import com.slime.ast.nodes.patterns.RestElement;
 import com.slime.ast.nodes.typescript.TSEnumDeclaration;
 import com.slime.ast.nodes.typescript.TSInterfaceDeclaration;
 import com.slime.ast.nodes.typescript.TSTypeAliasDeclaration;
@@ -56,32 +61,38 @@ final class QinEsmAstBindingCollector {
         if (!parsed.hasProgram()) {
             return new Result(List.of(), List.of());
         }
-        Program program = parsed.requireProgram();
-        List<QinEsmImportBinding> imports = new ArrayList<>();
-        List<QinEsmExportBinding> exports = new ArrayList<>();
+        var bindings = describe(parsed.requireProgram(), !parsed.hasAnyPreExtractedImport())
+                .resolve(module.file(), specifier -> QinEsmSemanticAnalyzer.resolveTargetModule(module, specifier));
         if (parsed.hasAnyPreExtractedImport()) {
+            List<QinEsmImportBinding> imports = new ArrayList<>();
             collectPreExtractedJsImports(module, parsed.jsImports(), imports);
+            return new Result(imports, bindings.exports());
         }
+        return new Result(bindings.imports(), bindings.exports());
+    }
+
+    static QinEsmModuleBindings describe(Program program, boolean includeImports) {
+        List<QinEsmModuleBindings.Import> imports = new ArrayList<>();
+        List<QinEsmModuleBindings.Export> exports = new ArrayList<>();
+        java.util.Set<String> exportedEnums = null;
         for (AstNode statement : program.body()) {
             if (statement instanceof ImportDeclaration importDeclaration) {
-                if (!parsed.hasAnyPreExtractedImport()) {
-                    collectImport(module, importDeclaration, imports);
+                if (includeImports) collectImport(importDeclaration, imports);
+            } else if (statement instanceof ExportNamedDeclaration declaration) {
+                if (declaration.declaration() instanceof TSEnumDeclaration enumeration) {
+                    if (exportedEnums == null) exportedEnums = new java.util.HashSet<>();
+                    if (!exportedEnums.add(enumeration.id().name())) continue;
                 }
-                continue;
-            }
-            if (statement instanceof ExportNamedDeclaration exportNamedDeclaration) {
-                collectNamedExport(module, exportNamedDeclaration, exports);
-                continue;
-            }
-            if (statement instanceof ExportDefaultDeclaration exportDefaultDeclaration) {
-                collectDefaultExport(module, exportDefaultDeclaration, exports);
-                continue;
-            }
-            if (statement instanceof ExportAllDeclaration exportAllDeclaration) {
-                collectExportAll(module, exportAllDeclaration, exports);
+                collectNamedExport(declaration, exports);
+            } else if (statement instanceof ExportDefaultDeclaration declaration) {
+                int[] position = lineCol(declaration.location());
+                exports.add(new QinEsmModuleBindings.Export(QinEsmExportKind.LOCAL_DEFAULT, "default", "default",
+                        false, null, position[0], position[1]));
+            } else if (statement instanceof ExportAllDeclaration declaration) {
+                collectExportAll(declaration, exports);
             }
         }
-        return new Result(List.copyOf(imports), List.copyOf(exports));
+        return new QinEsmModuleBindings(imports, exports);
     }
 
     private void collectPreExtractedJsImports(
@@ -138,10 +149,7 @@ final class QinEsmAstBindingCollector {
                 || fileName.endsWith(".avif");
     }
 
-    private void collectImport(
-            QinModuleSource module,
-            ImportDeclaration importDeclaration,
-            List<QinEsmImportBinding> out) {
+    private static void collectImport(ImportDeclaration importDeclaration, List<QinEsmModuleBindings.Import> out) {
         if (importDeclaration.typeOnly()) {
             return;
         }
@@ -149,73 +157,54 @@ final class QinEsmAstBindingCollector {
         if (moduleSpecifier.isBlank() || moduleSpecifier.startsWith("java:")) {
             return;
         }
-        Path resolvedModule = QinEsmSemanticAnalyzer.resolveTargetModule(module, moduleSpecifier);
         int[] lineCol = lineCol(importDeclaration.location());
         if (importDeclaration.specifiers() == null || importDeclaration.specifiers().isEmpty()) {
-            out.add(new QinEsmImportBinding(
-                    module.file(),
-                    moduleSpecifier,
-                    QinEsmImportKind.SIDE_EFFECT,
-                    "",
-                    "",
-                    lineCol[0],
-                    lineCol[1],
-                    resolvedModule));
+            out.add(new QinEsmModuleBindings.Import(moduleSpecifier, QinEsmImportKind.SIDE_EFFECT,
+                    "", "", lineCol[0], lineCol[1]));
             return;
         }
         for (AstNode specifier : importDeclaration.specifiers()) {
             if (specifier instanceof ImportDefaultSpecifier defaultSpecifier) {
-                out.add(new QinEsmImportBinding(
-                        module.file(),
+                out.add(new QinEsmModuleBindings.Import(
                         moduleSpecifier,
                         QinEsmImportKind.DEFAULT,
                         "default",
                         identifierName(defaultSpecifier.local()),
                         lineCol[0],
-                        lineCol[1],
-                        resolvedModule));
+                        lineCol[1]));
                 continue;
             }
             if (specifier instanceof ImportNamespaceSpecifier namespaceSpecifier) {
-                out.add(new QinEsmImportBinding(
-                        module.file(),
+                out.add(new QinEsmModuleBindings.Import(
                         moduleSpecifier,
                         QinEsmImportKind.NAMESPACE,
                         "*",
                         identifierName(namespaceSpecifier.local()),
                         lineCol[0],
-                        lineCol[1],
-                        resolvedModule));
+                        lineCol[1]));
                 continue;
             }
             if (specifier instanceof ImportSpecifier importSpecifier) {
                 if (importSpecifier.typeOnly()) {
                     continue;
                 }
-                out.add(new QinEsmImportBinding(
-                        module.file(),
+                out.add(new QinEsmModuleBindings.Import(
                         moduleSpecifier,
                         QinEsmImportKind.NAMED,
                         identifierName(importSpecifier.imported()),
                         identifierName(importSpecifier.local()),
                         lineCol[0],
-                        lineCol[1],
-                        resolvedModule));
+                        lineCol[1]));
             }
         }
     }
 
-    private void collectNamedExport(
-            QinModuleSource module,
-            ExportNamedDeclaration exportNamedDeclaration,
-            List<QinEsmExportBinding> out) {
+    private static void collectNamedExport(
+            ExportNamedDeclaration exportNamedDeclaration, List<QinEsmModuleBindings.Export> out) {
         if (exportNamedDeclaration.declaration() != null) {
-            collectDeclarationExport(module, exportNamedDeclaration.declaration(), out);
+            collectDeclarationExport(exportNamedDeclaration.declaration(), out);
         }
         String moduleSpecifier = sourceValue(exportNamedDeclaration.source());
-        Path resolvedModule = moduleSpecifier.isBlank()
-                ? null
-                : QinEsmSemanticAnalyzer.resolveTargetModule(module, moduleSpecifier);
         int[] lineCol = lineCol(exportNamedDeclaration.location());
         if (exportNamedDeclaration.specifiers() == null) {
             return;
@@ -225,119 +214,80 @@ final class QinEsmAstBindingCollector {
             String exportName = identifierName(specifier.exported());
             boolean reExport = !moduleSpecifier.isBlank();
             boolean typeOnly = exportNamedDeclaration.typeOnly() || specifier.typeOnly();
-            out.add(new QinEsmExportBinding(
-                    module.file(),
+            out.add(new QinEsmModuleBindings.Export(
                     reExport ? QinEsmExportKind.RE_EXPORT_NAMED : QinEsmExportKind.LOCAL_NAMED,
                     exportName,
                     localName,
                     typeOnly,
                     reExport ? moduleSpecifier : null,
-                    reExport ? resolvedModule : null,
                     lineCol[0],
                     lineCol[1]));
         }
     }
 
-    private void collectDeclarationExport(
-            QinModuleSource module,
-            Declaration declaration,
-            List<QinEsmExportBinding> out) {
+    private static void collectDeclarationExport(Declaration declaration, List<QinEsmModuleBindings.Export> out) {
         int[] lineCol = lineCol(nodeLocation(declaration));
         if (declaration instanceof VariableDeclaration variableDeclaration) {
             for (VariableDeclarator declarator : variableDeclaration.declarations()) {
-                if (declarator.id() instanceof Identifier identifier) {
-                    addLocalExport(module, identifierName(identifier), false, lineCol, out);
-                }
+                collectExportedPattern(declarator.id(), lineCol, out);
             }
             return;
         }
         String name = declarationName(declaration);
         if (!name.isBlank()) {
-            addLocalExport(module, name, isTypeOnlyDeclaration(declaration), lineCol, out);
+            addLocalExport(name, isTypeOnlyDeclaration(declaration), lineCol, out);
         }
     }
 
-    private void collectDefaultExport(
-            QinModuleSource module,
-            ExportDefaultDeclaration exportDefaultDeclaration,
-            List<QinEsmExportBinding> out) {
-        int[] lineCol = lineCol(exportDefaultDeclaration.location());
-        out.add(new QinEsmExportBinding(
-                module.file(),
-                QinEsmExportKind.LOCAL_DEFAULT,
-                "default",
-                "default",
-                false,
-                null,
-                null,
-                lineCol[0],
-                lineCol[1]));
-        AstNode declaration = exportDefaultDeclaration.declaration();
-        String namedDeclaration = declarationName(declaration);
-        if (!namedDeclaration.isBlank()) {
-            addLocalExport(module, namedDeclaration, false, lineCol, out);
+    private static void collectExportedPattern(AstNode node, int[] lineCol, List<QinEsmModuleBindings.Export> out) {
+        if (node == null) return;
+        switch (node) {
+            case Identifier identifier -> addLocalExport(identifierName(identifier), false, lineCol, out);
+            case ObjectPattern pattern -> {
+                for (AstNode property : pattern.properties()) collectExportedPattern(property, lineCol, out);
+            }
+            case Property property -> collectExportedPattern(property.value(), lineCol, out);
+            case ArrayPattern pattern -> {
+                for (AstNode element : pattern.elements()) collectExportedPattern(element, lineCol, out);
+            }
+            case AssignmentPattern pattern -> collectExportedPattern(pattern.left(), lineCol, out);
+            case RestElement element -> collectExportedPattern(element.argument(), lineCol, out);
+            default -> { }
         }
     }
 
-    private void collectExportAll(
-            QinModuleSource module,
-            ExportAllDeclaration exportAllDeclaration,
-            List<QinEsmExportBinding> out) {
+    private static void collectExportAll(ExportAllDeclaration exportAllDeclaration, List<QinEsmModuleBindings.Export> out) {
         String moduleSpecifier = sourceValue(exportAllDeclaration.source());
         if (moduleSpecifier.isBlank()) {
             return;
         }
-        Path resolvedModule = QinEsmSemanticAnalyzer.resolveTargetModule(module, moduleSpecifier);
         int[] lineCol = lineCol(exportAllDeclaration.location());
-        Identifier exported = exportAllDeclaration.exported();
-        if (exported == null || identifierName(exported).isBlank()) {
-            out.add(new QinEsmExportBinding(
-                    module.file(),
-                    QinEsmExportKind.RE_EXPORT_ALL,
-                    "*",
-                    "*",
-                    false,
-                    moduleSpecifier,
-                    resolvedModule,
-                    lineCol[0],
-                    lineCol[1]));
-            return;
-        }
-        out.add(new QinEsmExportBinding(
-                module.file(),
-                QinEsmExportKind.RE_EXPORT_NAMESPACE,
-                identifierName(exported),
-                "*",
-                false,
-                moduleSpecifier,
-                resolvedModule,
-                lineCol[0],
-                lineCol[1]));
+        String exported = identifierName(exportAllDeclaration.exported());
+        boolean all = exported.isBlank();
+        out.add(new QinEsmModuleBindings.Export(all ? QinEsmExportKind.RE_EXPORT_ALL : QinEsmExportKind.RE_EXPORT_NAMESPACE,
+                all ? "*" : exported, "*", exportAllDeclaration.typeOnly(), moduleSpecifier, lineCol[0], lineCol[1]));
     }
 
-    private void addLocalExport(
-            QinModuleSource module,
+    private static void addLocalExport(
             String name,
             boolean typeOnly,
             int[] lineCol,
-            List<QinEsmExportBinding> out) {
-        out.add(new QinEsmExportBinding(
-                module.file(),
+            List<QinEsmModuleBindings.Export> out) {
+        out.add(new QinEsmModuleBindings.Export(
                 QinEsmExportKind.LOCAL_NAMED,
                 name,
                 name,
                 typeOnly,
                 null,
-                null,
                 lineCol[0],
                 lineCol[1]));
     }
 
-    private boolean isTypeOnlyDeclaration(Declaration declaration) {
+    private static boolean isTypeOnlyDeclaration(Declaration declaration) {
         return declaration instanceof TSTypeAliasDeclaration || declaration instanceof TSInterfaceDeclaration;
     }
 
-    private String declarationName(AstNode declaration) {
+    private static String declarationName(AstNode declaration) {
         if (declaration instanceof FunctionDeclaration functionDeclaration) {
             return identifierName(functionDeclaration.id());
         }
@@ -356,7 +306,7 @@ final class QinEsmAstBindingCollector {
         return "";
     }
 
-    private SourceLocation nodeLocation(AstNode node) {
+    private static SourceLocation nodeLocation(AstNode node) {
         if (node instanceof VariableDeclaration variableDeclaration) {
             return variableDeclaration.location();
         }
@@ -378,15 +328,15 @@ final class QinEsmAstBindingCollector {
         return null;
     }
 
-    private String sourceValue(Literal literal) {
+    private static String sourceValue(Literal literal) {
         return literal == null || literal.value() == null ? "" : String.valueOf(literal.value()).trim();
     }
 
-    private String identifierName(Identifier identifier) {
+    private static String identifierName(Identifier identifier) {
         return identifier == null || identifier.name() == null ? "" : identifier.name().trim();
     }
 
-    private int[] lineCol(SourceLocation location) {
+    private static int[] lineCol(SourceLocation location) {
         if (location == null || location.start() == null) {
             return new int[] {1, 1};
         }

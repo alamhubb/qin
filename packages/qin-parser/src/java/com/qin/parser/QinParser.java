@@ -2,6 +2,7 @@ package com.qin.parser;
 
 import com.slime.parser.SlimeParser;
 import com.subhuti.parser.SubhutiRule;
+import com.subhuti.parser.SubhutiDecisionPredicate;
 import com.subhuti.parser.SubhutiStaticGrammarSource;
 
 import static com.subhuti.parser.SubhutiCompileOnlyDsl.Option;
@@ -62,12 +63,7 @@ public class QinParser extends SlimeParser {
         if (false) {
             Or(
                     gate(this::canStartQinObjectDeclaration, () -> QinObjectDeclaration(params)),
-                    gate(this::canStartTSInterfaceDeclaration, () -> TSInterfaceDeclaration()),
-                    gate(this::canStartTSTypeAliasDeclaration, () -> TSTypeAliasDeclaration()),
-                    gate(this::canStartTSEnumDeclaration, () -> TSEnumDeclaration()),
-                    gate(this::canStartTSModuleDeclaration, () -> TSModuleDeclaration()),
-                    gate(this::canStartTSDeclareStatement, () -> TSDeclareStatement()),
-                    gate(this::declarationStandardStart, () -> StandardDeclaration(params))
+                    () -> super.Declaration(params)
             );
             return;
         }
@@ -119,10 +115,12 @@ public class QinParser extends SlimeParser {
         super.StatementListItem(params);
     }
 
+    @SubhutiDecisionPredicate
     protected boolean canStartQinObjectDeclaration() {
         return canStartQinObjectDeclarationAt(1);
     }
 
+    @SubhutiDecisionPredicate
     protected boolean canStartQinObjectDeclarationAt(int lookaheadOffset) {
         if (matchIdentifierValue("object", lookaheadOffset)) {
             return true;
@@ -134,14 +132,16 @@ public class QinParser extends SlimeParser {
     }
 
     @Override
+    @SubhutiDecisionPredicate
     protected boolean canStartStatementListItemAt(int lookaheadOffset, StatementParams params) {
         return canStartQinObjectDeclarationAt(lookaheadOffset)
                 || super.canStartStatementListItemAt(lookaheadOffset, params);
     }
 
+    @SubhutiDecisionPredicate
     private boolean decoratedQinObjectDeclarationStart(int lookaheadOffset) {
         int depth = 0;
-        for (int offset = lookaheadOffset + 1; offset <= lookaheadOffset + 24; offset++) {
+        for (int offset = lookaheadOffset + 1; ; offset++) {
             String tokenName = tokenNameAt(offset);
             if (tokenName == null) {
                 return false;
@@ -167,33 +167,33 @@ public class QinParser extends SlimeParser {
                 return false;
             }
         }
-        return false;
     }
 
     @Override
     @SubhutiRule public void ExportDeclaration() {
         if (false) {
             Or(
-                    () -> {
+                    gate(() -> "At".equals(tokenNameAt(1)) && decoratedQinObjectDeclarationStart(1), () -> {
                         TSDecorators();
                         tokenConsumer.Export();
-                        tokenConsumer.Default();
-                        QinObjectDeclarationBody(new DeclarationParams(false, true, true));
-                    },
-                    () -> {
-                        TSDecorators();
-                        tokenConsumer.Export();
-                        QinObjectDeclarationBody(new DeclarationParams(false, true, false));
-                    },
-                    () -> {
+                        Or(
+                            () -> {
+                                tokenConsumer.Default();
+                                QinObjectDeclarationBody(new DeclarationParams(false, true, true));
+                            },
+                            () -> QinObjectDeclarationBody(new DeclarationParams(false, true, false))
+                        );
+                    }),
+                    gate(() -> "Export".equals(tokenNameAt(1)) && "Default".equals(tokenNameAt(2))
+                            && canStartQinObjectDeclarationAt(3), () -> {
                         tokenConsumer.Export();
                         tokenConsumer.Default();
                         QinObjectDeclaration(new DeclarationParams(false, true, true));
-                    },
-                    () -> {
+                    }),
+                    gate(() -> "Export".equals(tokenNameAt(1)) && canStartQinObjectDeclarationAt(2), () -> {
                         tokenConsumer.Export();
                         QinObjectDeclaration(new DeclarationParams(false, true, false));
-                    },
+                    }),
                     () -> super.ExportDeclaration()
             );
             return;

@@ -63,7 +63,7 @@ public final class QinFrontendPublicOvsModuleSmokeTestMain {
 
         String atomModule = service.transpileByRequestPath("/@qin-mod/app/Panel.ovs.js?qin-vue-cssts=atom");
         if (atomModule == null
-                || !atomModule.contains("export const csstsAtom = {}")
+                || !java.util.regex.Pattern.compile("export const csstsAtom = \\{\\s*}").matcher(atomModule).find()
                 || !atomModule.contains("export default csstsAtom")) {
             throw new IllegalStateException("Empty OVS atom virtual module must still resolve:\n" + atomModule);
         }
