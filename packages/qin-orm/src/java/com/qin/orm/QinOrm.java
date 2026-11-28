@@ -1,6 +1,7 @@
 package com.qin.orm;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
 
 public final class QinOrm {
     private QinOrm() {
@@ -10,12 +11,8 @@ public final class QinOrm {
         return new QinOrmEntity<>(entityClass);
     }
 
-    @SafeVarargs
-    @SuppressWarnings("varargs")
-    public static <E> QinOrmSelect<E> select(
-            QinOrmEntity<E> entity,
-            QinOrmColumn<E, ?>... columns) {
-        return new QinOrmSelect<>(entity, columns);
+    public static QinOrmSession session(EntityManager entityManager) {
+        return new QinOrmSession(entityManager);
     }
 
     static String resolveEntityName(Class<?> entityClass) {

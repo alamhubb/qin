@@ -1,23 +1,30 @@
 package com.qin.orm;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.metamodel.EntityType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public final class QinOrmSelect<E> {
     private static final String ROOT_ALIAS = "qinEntity";
 
     private final QinOrmEntity<E> entity;
+    private final EntityManager entityManager;
     private final List<QinOrmColumn<E, ?>> columns;
 
     @SafeVarargs
-    QinOrmSelect(QinOrmEntity<E> entity, QinOrmColumn<E, ?>... columns) {
+    QinOrmSelect(
+            QinOrmEntity<E> entity,
+            EntityManager entityManager,
+            QinOrmColumn<E, ?>... columns) {
         this.entity = Objects.requireNonNull(entity, "entity");
+        this.entityManager = Objects.requireNonNull(entityManager, "entityManager");
         Objects.requireNonNull(columns, "columns");
         if (columns.length == 0) {
             throw new IllegalArgumentException("select requires at least one entity column");
@@ -41,10 +48,6 @@ public final class QinOrmSelect<E> {
         return toJpql(entity.entityName());
     }
 
-    public String toJpql(EntityManager entityManager) {
-        return toJpql(resolveManagedEntity(entityManager).getName());
-    }
-
     private String toJpql(String entityName) {
         StringBuilder jpql = new StringBuilder("select ");
         for (int index = 0; index < columns.size(); index++) {
@@ -57,8 +60,8 @@ public final class QinOrmSelect<E> {
         return jpql.append(" from ").append(entityName).append(' ').append(ROOT_ALIAS).toString();
     }
 
-    public List<QinOrmRow> fetch(EntityManager entityManager) {
-        EntityType<E> jpaEntity = resolveManagedEntity(entityManager);
+    public List<QinOrmRow> all() {
+        EntityType<E> jpaEntity = resolveManagedEntity();
         return entityManager.createQuery(toJpql(jpaEntity.getName()), Tuple.class)
                 .getResultList()
                 .stream()
@@ -66,8 +69,43 @@ public final class QinOrmSelect<E> {
                 .toList();
     }
 
-    private EntityType<E> resolveManagedEntity(EntityManager entityManager) {
-        Objects.requireNonNull(entityManager, "entityManager");
+    public Optional<QinOrmRow> one() {
+        EntityType<E> jpaEntity = resolveManagedEntity();
+        List<Tuple> results = entityManager.createQuery(toJpql(jpaEntity.getName()), Tuple.class)
+                .setMaxResults(2)
+                .getResultList();
+        if (results.size() > 1) {
+            throw new NonUniqueResultException("Expected at most one row but query returned multiple rows");
+        }
+        return results.stream().findFirst().map(QinOrmRow::new);
+    }
+
+    public Optional<QinOrmRow> first() {
+        EntityType<E> jpaEntity = resolveManagedEntity();
+        return entityManager.createQuery(toJpql(jpaEntity.getName()), Tuple.class)
+                .setMaxResults(1)
+                .getResultList()
+                .stream()
+                .findFirst()
+                .map(QinOrmRow::new);
+    }
+
+    public long count() {
+        EntityType<E> jpaEntity = resolveManagedEntity();
+        String query = "select count(" + ROOT_ALIAS + ") from " + jpaEntity.getName() + " " + ROOT_ALIAS;
+        return entityManager.createQuery(query, Long.class).getSingleResult();
+    }
+
+    public boolean exists() {
+        EntityType<E> jpaEntity = resolveManagedEntity();
+        String query = "select 1 from " + jpaEntity.getName() + " " + ROOT_ALIAS;
+        return !entityManager.createQuery(query, Integer.class)
+                .setMaxResults(1)
+                .getResultList()
+                .isEmpty();
+    }
+
+    private EntityType<E> resolveManagedEntity() {
         EntityType<E> jpaEntity;
         try {
             jpaEntity = entityManager.getMetamodel().entity(entity.javaType());

@@ -6,23 +6,23 @@ following argument is a typed column descriptor for that entity, so a later
 entity cannot be passed in the column position.
 
 ```java
-import static com.qin.orm.QinOrm.select;
-
+QinOrmSession db = QinOrm.session(entityManager);
 UserModel User = new UserModel();
 QinOrmColumn<UserEntity, Long> id = User.id;
 QinOrmColumn<UserEntity, String> name = User.name;
 
-var query = select(User, User.id, User.name);
+var query = db.select(User, User.id, User.name);
 String jpql = query.toJpql();
+List<QinOrmRow> rows = query.all();
 ```
 
 The three accepted forms are equivalent when the unqualified field variables
 are in scope:
 
 ```java
-select(User, User.id, User.name);
-select(User, User.id, name);
-select(User, id, name);
+db.select(User, User.id, User.name);
+db.select(User, User.id, name);
+db.select(User, id, name);
 ```
 
 The query above renders as:
@@ -44,9 +44,15 @@ not managed entity instances.
 
 - Select one or more scalar entity properties.
 - Render a JPQL select statement.
-- Execute through `EntityManager` and read aliased tuple values.
+- Execute with `all`, `one`, `first`, `count`, and `exists` terminal methods.
+- Read aliased tuple values through `QinOrmRow`.
 - Reject invalid identifiers, duplicate selected properties, unmanaged
   entities, missing persistent properties, and mismatched descriptor types.
+
+`one()` returns an `Optional` and throws `NonUniqueResultException` if multiple
+rows match. `first()` limits the query to one row. Add an `orderBy` clause when
+the first row must be deterministic. The current query builder does not yet
+support `where` or `orderBy` clauses.
 
 The supported call shape is `select(User, User.id, User.name)`. A mixed form
 such as `select(User, User.id, name)` works when `name` is a column descriptor
