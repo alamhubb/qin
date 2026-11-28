@@ -184,6 +184,17 @@ public final class QinOrmSmokeTestMain {
                 QinOrm.session(leftJoinFixture.entityManager()).select(User)
                         .leftJoin(Customer, User.customerId.eq(Customer.id)).toJpql());
 
+        CityModel City = new CityModel();
+        JpaFixture chainedJoinFixture = fixture(List.<Object[]>of(new Object[] { "Ada", "Oslo" }), 1L, false);
+        requireEquals("select qinCustomerEntity.name, qinCityEntity.name from AccountUser qinEntity "
+                        + "join CustomerEntity qinCustomerEntity on qinEntity.customerId = qinCustomerEntity.id "
+                        + "left join CityEntity qinCityEntity on qinCustomerEntity.cityId = qinCityEntity.id",
+                QinOrm.session(chainedJoinFixture.entityManager()).select(User)
+                        .join(Customer, User.customerId.eq(Customer.id))
+                        .leftJoin(City, Customer.cityId.eq(City.id))
+                        .project(Customer.name, City.name)
+                        .toJpql());
+
         JpaFixture subqueryFixture = fixture(List.of(new UserEntity()), 1L, false);
         QinOrmSession subquerySession = QinOrm.session(subqueryFixture.entityManager());
         QinOrmSubquery<Long> correlatedIds = subquerySession.select(Customer, Customer.id)
@@ -288,11 +299,24 @@ public final class QinOrmSmokeTestMain {
                     }
                     return null;
                 });
+        EntityType<CityEntity> cityEntityType = (EntityType<CityEntity>) proxy(EntityType.class,
+                (instance, method, args) -> {
+                    if (method.getName().equals("getName")) {
+                        return "CityEntity";
+                    }
+                    if (method.getName().equals("getAttribute")) {
+                        return attribute(CityEntity.class, (String) args[0]);
+                    }
+                    return null;
+                });
         Metamodel metamodel = proxy(Metamodel.class, (instance, method, args) -> {
             if (!method.getName().equals("entity")) {
                 return null;
             }
-            return args[0] == CustomerEntity.class ? customerEntityType : entityType;
+            if (args[0] == CustomerEntity.class) {
+                return customerEntityType;
+            }
+            return args[0] == CityEntity.class ? cityEntityType : entityType;
         });
         EntityManager entityManager = proxy(EntityManager.class, (instance, method, args) -> {
             if (method.getName().equals("getMetamodel")) {
@@ -347,6 +371,7 @@ public final class QinOrmSmokeTestMain {
         Class<?> propertyType = switch (name) {
             case "id" -> Long.class;
             case "customerId" -> Long.class;
+            case "cityId" -> Long.class;
             case "amount" -> Long.class;
             case "name" -> String.class;
             default -> throw new IllegalArgumentException("Unknown test attribute: " + name);
@@ -417,6 +442,13 @@ public final class QinOrmSmokeTestMain {
     public static class CustomerEntity {
         private Long id;
         private String name;
+        private Long cityId;
+    }
+
+    @Entity
+    public static class CityEntity {
+        private Long id;
+        private String name;
     }
 
     private static final class UserModel extends QinOrmEntity<UserEntity> {
@@ -432,10 +464,20 @@ public final class QinOrmSmokeTestMain {
 
     private static final class CustomerModel extends QinOrmEntity<CustomerEntity> {
         private final QinOrmColumn<CustomerEntity, Long> id = column("id", Long.class);
+        private final QinOrmColumn<CustomerEntity, Long> cityId = column("cityId", Long.class);
         private final QinOrmColumn<CustomerEntity, String> name = column("name", String.class);
 
         private CustomerModel() {
             super(CustomerEntity.class);
+        }
+    }
+
+    private static final class CityModel extends QinOrmEntity<CityEntity> {
+        private final QinOrmColumn<CityEntity, Long> id = column("id", Long.class);
+        private final QinOrmColumn<CityEntity, String> name = column("name", String.class);
+
+        private CityModel() {
+            super(CityEntity.class);
         }
     }
 

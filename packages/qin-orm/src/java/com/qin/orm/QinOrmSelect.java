@@ -883,11 +883,34 @@ public final class QinOrmSelect<E, R> {
             JoinKind kind) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(onPredicate, "onPredicate");
-        if (!joins.isEmpty()) {
-            throw new UnsupportedOperationException("Only one entity join is supported in this first release");
+        if (target.javaType() == entity.javaType()
+                || joins.stream().anyMatch(join -> join.target().javaType() == target.javaType())) {
+            throw new IllegalArgumentException("The same entity type cannot be joined more than once: "
+                    + target.javaType().getName());
         }
-        JoinSpec join = new JoinSpec(target, kind, "qin" + target.javaType().getSimpleName(), onPredicate);
-        return copy(predicate, List.of(join), orders, distinct, limit, offset);
+        List<JoinSpec> nextJoins = new ArrayList<>(joins);
+        nextJoins.add(new JoinSpec(target, kind, joinAlias(target.javaType()), onPredicate));
+        return copy(predicate, nextJoins, orders, distinct, limit, offset);
+    }
+
+    private String joinAlias(Class<?> targetType) {
+        String preferred = "qin" + targetType.getSimpleName();
+        if (!preferred.equals(ROOT_ALIAS)
+                && joins.stream().noneMatch(join -> join.alias().equals(preferred))) {
+            return preferred;
+        }
+        String qualified = targetType.getName().replaceAll("[^A-Za-z0-9_]", "_");
+        String base = "qinJoin" + qualified;
+        String alias = base;
+        int suffix = 2;
+        while (alias.equals(ROOT_ALIAS) || containsJoinAlias(alias)) {
+            alias = base + suffix++;
+        }
+        return alias;
+    }
+
+    private boolean containsJoinAlias(String alias) {
+        return joins.stream().anyMatch(join -> join.alias().equals(alias));
     }
 
     private void requireUngroupedCount() {

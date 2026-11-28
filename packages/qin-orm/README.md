@@ -154,9 +154,10 @@ expressions. Relationship and embedded properties are excluded. Handwritten
 
 The current DSL supports one entity root, one explicit entity join using an
 `ON` predicate, scalar and aggregate expressions, and grouping. Multiple
-joins are not implemented yet. Subquery scalar selection is limited to one
-expression, as required by JPQL. Database-specific JSONB and window functions
-remain available through the parameterized native-query API.
+joins to distinct entity types are supported. Joining the same entity type
+more than once for self-joins is not yet supported. Subquery scalar selection
+is limited to one expression, as required by JPQL. Database-specific JSONB and
+window functions remain available through the parameterized native-query API.
 
 The processor covers standard field and JavaBeans property access for scalar
 properties. Generated Java source can also be consumed by Qin when it is on
