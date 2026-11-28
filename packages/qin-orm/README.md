@@ -1,81 +1,86 @@
 # Qin ORM
 
-Qin ORM starts with entity-first JPQL selection backed by Jakarta Persistence.
-The first argument is an entity descriptor backed by an `@Entity` class. Every
-following argument is a typed column descriptor for that entity, so a later
-entity cannot be passed in the column position.
+Qin ORM is an entity-first Qin query DSL that renders JPQL and executes it
+through the application's JPA `EntityManager`. It does not own entity writes or
+transactions. Spring Data JPA repositories remain responsible for CRUD.
 
 ```java
 QinOrmSession db = QinOrm.session(entityManager);
 UserModel User = new UserModel();
-QinOrmColumn<UserEntity, Long> id = User.id;
-QinOrmColumn<UserEntity, String> name = User.name;
 
-var query = db.select(User, User.id, User.name);
-String jpql = query.toJpql();
-List<QinOrmRow> rows = query.all();
+List<UserEntity> users = db.select(User)
+        .where(User.status.eq("active").and(User.id.gt(10L)))
+        .orderBy(User.name.asc())
+        .limit(50)
+        .all();
+
+UserEntity first = db.select(User)
+        .where(User.email.eq(email))
+        .first();
+
+List<Long> userIds = db.select(User, User.id)
+        .where(User.status.in(List.of("active", "pending")))
+        .all();
+
+List<Object[]> userNames = db.select(User, User.id, User.name)
+        .where(User.status.eq("active"))
+        .all();
+
+List<UserSummary> summaries = db.select(User, User.id, User.name)
+        .where(User.status.eq("active"))
+        .as(UserSummary.class)
+        .all();
 ```
 
-The three accepted forms are equivalent when the unqualified field variables
-are in scope:
-
-```java
-db.select(User, User.id, User.name);
-db.select(User, User.id, name);
-db.select(User, id, name);
-```
-
-The query above renders as:
+The multi-column query renders a standard JPQL constructor projection when
+`.as(...)` is used:
 
 ```sql
-select qinEntity.id as id, qinEntity.name as name from UserEntity qinEntity
+select new com.example.UserSummary(qinEntity.id, qinEntity.name)
+from User qinEntity
+where qinEntity.status = :qin_p0
 ```
 
-When an entity uses `@Entity(name = "...")`, JPQL uses that entity name. The
-default entity name is the Java class's simple name. Before execution, Qin ORM
-resolves the class and each selected property against the JPA `Metamodel`,
-including the mapped property type. Database table and column names remain
-owned by the JPA mapping.
+Every Qin predicate value is bound as a named JPA parameter. Entity and
+property names are resolved from the JPA `Metamodel` before execution. A
+custom `@Entity(name = "...")` name is honored. Database table and column
+names remain owned by JPA mappings.
 
-Selected properties are returned as `QinOrmRow` values. They are projections,
-not managed entity instances.
+## Result Shapes
 
-## Current query surface
+- `select(Entity).all()` returns `List<Entity>`.
+- `select(Entity, column).all()` returns `List<ColumnType>`.
+- `select(Entity, columnA, columnB).all()` returns `List<Object[]>`, matching
+  the standard JPA multi-select result shape.
+- Adding `.as(Dto.class)` uses a JPQL constructor expression and returns
+  `List<Dto>`.
+- `one()` returns the single result or `null`, and throws
+  `NonUniqueResultException` if more than one row matches.
+- `first()` returns the first result or `null`. Add ordering for deterministic
+  results.
+- `count()` returns the number of matching entities.
+- `exists()` returns whether any entity matches.
+- `page(Pageable)` returns Spring Data `Page` and runs a count query.
+- `slice(Pageable)` returns Spring Data `Slice` without a count query.
 
-- Select one or more scalar entity properties.
-- Render a JPQL select statement.
-- Execute with `all`, `one`, `first`, `count`, and `exists` terminal methods.
-- Read aliased tuple values through `QinOrmRow`.
-- Reject invalid identifiers, duplicate selected properties, unmanaged
-  entities, missing persistent properties, and mismatched descriptor types.
+## Supported Predicates
 
-`one()` returns an `Optional` and throws `NonUniqueResultException` if multiple
-rows match. `first()` limits the query to one row. Add an `orderBy` clause when
-the first row must be deterministic. The current query builder does not yet
-support `where` or `orderBy` clauses.
+Columns support `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `between`, `in`, `like`,
+`isNull`, and `isNotNull`. Predicates can be combined with `and`, `or`, and
+`not`. Sorting is available through typed `column.asc()/desc()` descriptors or
+Spring Data `Sort`/`Pageable` values. Sorting properties from those values are
+validated against the JPA metamodel.
 
-The supported call shape is `select(User, User.id, User.name)`. A mixed form
-such as `select(User, User.id, name)` works when `name` is a column descriptor
-already in scope. The fully unqualified form `select(User, id, name)` works
-when `id` and `name` are descriptors in scope. This keeps ordinary Qin name
-resolution intact and makes the Java API's generic signature enforce that all
-selected columns belong to the initial entity.
+## Current Boundary
 
-An entity descriptor is a small model object backed by a JPA entity class:
+The current DSL handles one entity root and scalar properties of that entity.
+Relationship joins, fetch joins, group/having, aggregate projections, and
+subqueries are not implemented yet. Those should be added as typed JPQL
+expression nodes so JPA remains the parser, validator, and execution engine.
+Database-specific JSONB and window-function queries can use a separate
+parameterized native-query API when needed.
 
-```java
-final class UserModel extends QinOrmEntity<UserEntity> {
-    final QinOrmColumn<UserEntity, Long> id = column("id", Long.class);
-    final QinOrmColumn<UserEntity, String> name = column("name", String.class);
-
-    UserModel() {
-        super(UserEntity.class);
-    }
-}
-```
-
-The JPA `Metamodel` is authoritative during execution. It verifies that the
-class is managed, each selected property exists, and the descriptor type
-matches. It also supplies the JPQL entity name, including names supplied by
-mapping metadata. `@Entity` provides a descriptor-time default, but does not
-replace runtime metamodel validation.
+Entity and column descriptors are currently declared explicitly. The JPA
+metamodel validates descriptors at execution. Qin compiler-generated
+descriptors are a future integration so source code can use `User.id` without
+handwritten descriptor declarations.

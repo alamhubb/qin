@@ -1,6 +1,7 @@
 package com.qin.orm;
 
 import java.util.Objects;
+import java.util.Collection;
 
 public final class QinOrmColumn<E, V> {
     private final Class<E> entityClass;
@@ -24,5 +25,68 @@ public final class QinOrmColumn<E, V> {
 
     public Class<V> propertyType() {
         return propertyType;
+    }
+
+    public QinOrmPredicate<E> eq(V value) {
+        return QinOrmPredicate.compare(this, "=", value);
+    }
+
+    public QinOrmPredicate<E> ne(V value) {
+        return QinOrmPredicate.compare(this, "<>", value);
+    }
+
+    public QinOrmPredicate<E> gt(V value) {
+        return QinOrmPredicate.compare(this, ">", requireValue(value));
+    }
+
+    public QinOrmPredicate<E> ge(V value) {
+        return QinOrmPredicate.compare(this, ">=", requireValue(value));
+    }
+
+    public QinOrmPredicate<E> lt(V value) {
+        return QinOrmPredicate.compare(this, "<", requireValue(value));
+    }
+
+    public QinOrmPredicate<E> le(V value) {
+        return QinOrmPredicate.compare(this, "<=", requireValue(value));
+    }
+
+    public QinOrmPredicate<E> between(V lower, V upper) {
+        return QinOrmPredicate.between(this, requireValue(lower), requireValue(upper));
+    }
+
+    public QinOrmPredicate<E> in(Collection<? extends V> values) {
+        Objects.requireNonNull(values, "values");
+        if (values.isEmpty()) {
+            throw new IllegalArgumentException("in requires at least one value");
+        }
+        return QinOrmPredicate.in(this, values);
+    }
+
+    public QinOrmPredicate<E> isNull() {
+        return QinOrmPredicate.nullCheck(this, false);
+    }
+
+    public QinOrmPredicate<E> isNotNull() {
+        return QinOrmPredicate.nullCheck(this, true);
+    }
+
+    public QinOrmPredicate<E> like(String pattern) {
+        if (propertyType != String.class) {
+            throw new IllegalStateException("like is only supported for string properties");
+        }
+        return QinOrmPredicate.compare(this, "like", Objects.requireNonNull(pattern, "pattern"));
+    }
+
+    public QinOrmOrder<E> asc() {
+        return new QinOrmOrder<>(this, true);
+    }
+
+    public QinOrmOrder<E> desc() {
+        return new QinOrmOrder<>(this, false);
+    }
+
+    private V requireValue(V value) {
+        return Objects.requireNonNull(value, "value");
     }
 }
