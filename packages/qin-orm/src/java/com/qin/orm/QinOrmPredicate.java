@@ -223,6 +223,28 @@ public final class QinOrmPredicate<E> {
         return names;
     }
 
+    boolean connects(Class<?> target, Set<Class<?>> sources) {
+        return switch (kind) {
+            case AND -> children.stream().anyMatch(child -> child.connects(target, sources));
+            case OR -> children.stream().allMatch(child -> child.connects(target, sources));
+            case COMPARE -> {
+                if (!"=".equals(operator)) {
+                    yield false;
+                }
+                Class<?> left = entityClass;
+                Class<?> right = comparisonEntityClass;
+                if (expression instanceof QinOrmColumn<?, ?> leftColumn
+                        && comparisonExpression instanceof QinOrmColumn<?, ?> rightColumn) {
+                    left = leftColumn.entityClass();
+                    right = rightColumn.entityClass();
+                }
+                yield right != null && (left == target && sources.contains(right)
+                        || right == target && sources.contains(left));
+            }
+            default -> false;
+        };
+    }
+
     private String renderComparison(QinOrmJpqlContext context, Function<Class<?>, String> aliasFor) {
         if (expression != null) {
             String expressionPath = expression.render(aliasFor);

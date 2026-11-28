@@ -49,7 +49,7 @@ public final class QinOrmEntityProcessor extends AbstractProcessor {
                 generateDescriptor(entityType);
             }
         }
-        return true;
+        return false;
     }
 
     private void generateDescriptor(TypeElement entityType) {
@@ -134,7 +134,10 @@ public final class QinOrmEntityProcessor extends AbstractProcessor {
         List<TypeElement> result = new ArrayList<>();
         TypeElement current = entityType;
         while (current != null && !current.getQualifiedName().contentEquals("java.lang.Object")) {
-            result.add(current);
+            if (current.equals(entityType) || hasAnnotation(current, "jakarta.persistence.Entity")
+                    || hasAnnotation(current, "jakarta.persistence.MappedSuperclass")) {
+                result.add(current);
+            }
             TypeMirror superclass = current.getSuperclass();
             if (superclass.getKind() != TypeKind.DECLARED) {
                 break;

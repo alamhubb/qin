@@ -215,6 +215,10 @@ public final class QinOrmSelect<E, R> {
     }
 
     public QinOrmSubquery<R> subquery() {
+        return subquery(new QinOrmEntity<?>[0]);
+    }
+
+    public QinOrmSubquery<R> subquery(QinOrmEntity<?>... outerEntities) {
         if (!orders.isEmpty() || limit > 0 || offset > 0) {
             throw new IllegalStateException("JPQL subqueries cannot contain order, limit, or offset clauses");
         }
@@ -222,7 +226,17 @@ public final class QinOrmSelect<E, R> {
                 || (selectionKind == SelectionKind.TUPLE && columns.size() != 1)) {
             throw new IllegalStateException("JPQL subqueries must select one expression");
         }
-        return new QinOrmSubquery<>(this);
+        Set<Class<?>> allowed = new HashSet<>();
+        for (QinOrmEntity<?> outer : outerEntities) {
+            Class<?> outerType = outer.javaType();
+            if (outerType == entity.javaType()
+                    || joins.stream().anyMatch(join -> join.target().javaType() == outerType)) {
+                throw new IllegalArgumentException("An outer entity type also occurs in the subquery: "
+                        + outerType.getName());
+            }
+            allowed.add(outerType);
+        }
+        return new QinOrmSubquery<>(this, allowed);
     }
 
     public QinOrmSetQuery<R> union(QinOrmSelect<?, R> other) {
@@ -253,14 +267,13 @@ public final class QinOrmSelect<E, R> {
         return switch (selectionKind) {
             case ENTITY -> List.of(entity.javaType());
             case SCALAR -> List.of(columns.get(0).propertyType());
-            case TUPLE -> {
+            case TUPLE, DTO -> {
                 List<Class<?>> types = new ArrayList<>(columns.size());
                 for (QinOrmExpression<?, ?> expression : columns) {
                     types.add(expression.propertyType());
                 }
                 yield List.copyOf(types);
             }
-            case DTO -> List.of(dtoType);
         };
     }
 
@@ -369,12 +382,12 @@ public final class QinOrmSelect<E, R> {
     public Page<R> page(Pageable pageable) {
         Objects.requireNonNull(pageable, "pageable");
         requireUngroupedCount();
-        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         if (pageable.isUnpaged()) {
-            List<R> content = all();
+            List<R> content = orderBy(pageable.getSort()).all();
             return new PageImpl<>(content, pageable, content.size());
         }
         requirePageCountShape();
+        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         List<QinOrmOrder<?>> pageOrders = ordersForSort(pageable.getSort());
         validateOrders(jpaEntities, pageOrders);
         QueryPlan plan = render(jpaEntities, new QinOrmJpqlContext(), pageOrders);
@@ -387,7 +400,7 @@ public final class QinOrmSelect<E, R> {
     public Slice<R> slice(Pageable pageable) {
         Objects.requireNonNull(pageable, "pageable");
         if (pageable.isUnpaged()) {
-            return new SliceImpl<>(all(), pageable, false);
+            return new SliceImpl<>(orderBy(pageable.getSort()).all(), pageable, false);
         }
         Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         List<QinOrmOrder<?>> pageOrders = ordersForSort(pageable.getSort());
@@ -414,10 +427,10 @@ public final class QinOrmSelect<E, R> {
         }
 
         Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
-        List<QinOrmOrder<?>> scrollOrders = stableScrollOrders(jpaEntities);
+        boolean keyset = position instanceof KeysetScrollPosition;
+        List<QinOrmOrder<?>> scrollOrders = stableScrollOrders(jpaEntities, keyset);
         long firstResult = 0;
         QinOrmPredicate<?> scrollPredicate = predicate;
-        boolean keyset = position instanceof KeysetScrollPosition;
         if (position instanceof OffsetScrollPosition offsetPosition) {
             firstResult = offsetPosition.isInitial() ? 0 : Math.addExact(offsetPosition.getOffset(), 1);
         } else if (keyset && !position.isInitial()) {
@@ -457,20 +470,25 @@ public final class QinOrmSelect<E, R> {
         }, hasNext);
     }
 
-    private List<QinOrmOrder<?>> stableScrollOrders(Map<Class<?>, EntityType<?>> jpaEntities) {
+    private List<QinOrmOrder<?>> stableScrollOrders(Map<Class<?>, EntityType<?>> jpaEntities, boolean keyset) {
         EntityType<?> rootType = jpaEntities.get(entity.javaType());
         if (!rootType.hasSingleIdAttribute()) {
-            throw new UnsupportedOperationException("Keyset scrolling requires a single-field entity identifier");
+            throw new UnsupportedOperationException("Scrolling requires a single-field entity identifier");
         }
-        String idProperty = rootType.getId(Object.class).getName();
+        var identifier = rootType.getId(rootType.getIdType().getJavaType());
+        if (identifier.getPersistentAttributeType() != Attribute.PersistentAttributeType.BASIC) {
+            throw new UnsupportedOperationException("Scrolling requires a basic scalar entity identifier");
+        }
+        String idProperty = identifier.getName();
         List<QinOrmOrder<?>> stableOrders = new ArrayList<>();
         QinOrmOrder<?> idOrder = null;
         for (QinOrmOrder<?> order : orders) {
             if (order.entityClass() != entity.javaType()) {
                 throw new UnsupportedOperationException("Scroll ordering must use root entity properties");
             }
-            if (order.ignoreCase()) {
-                throw new UnsupportedOperationException("ignoreCase sorting is not supported for keyset scrolling");
+            if (keyset && (order.ignoreCase() || order.nullHandling() != Sort.NullHandling.NATIVE)) {
+                throw new UnsupportedOperationException(
+                        "Case folding and explicit null precedence are not supported for keyset scrolling");
             }
             Attribute<?, ?> attribute = rootType.getAttribute(order.propertyName());
             if (attribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.BASIC) {
@@ -590,7 +608,7 @@ public final class QinOrmSelect<E, R> {
         for (JoinSpec join : joins) {
             jpql.append(join.kind() == JoinKind.LEFT ? " left join " : " join ");
             jpql.append(jpaEntities.get(join.target().javaType()).getName()).append(' ')
-                    .append(join.alias()).append(" on ")
+                    .append(aliasResolver.apply(join.target().javaType())).append(" on ")
                     .append(join.onPredicate().render(context, aliasResolver));
         }
     }
@@ -609,11 +627,10 @@ public final class QinOrmSelect<E, R> {
     private void appendDtoSelection(
             StringBuilder jpql,
             java.util.function.Function<Class<?>, String> aliasResolver) {
-        String dtoName = dtoType.getCanonicalName();
-        if (dtoName == null) {
+        if (dtoType.getCanonicalName() == null) {
             throw new IllegalArgumentException("DTO projection type must have a canonical class name");
         }
-        jpql.append("new ").append(dtoName).append('(');
+        jpql.append("new ").append(dtoType.getName()).append('(');
         appendColumnSelection(jpql, aliasResolver);
         jpql.append(')');
     }
@@ -690,6 +707,11 @@ public final class QinOrmSelect<E, R> {
             String path = aliasResolver.apply(order.entityClass()) + "." + order.propertyName();
             jpql.append(order.ignoreCase() ? "lower(" + path + ")" : path)
                     .append(order.ascending() ? " asc" : " desc");
+            switch (order.nullHandling()) {
+                case NULLS_FIRST -> jpql.append(" nulls first");
+                case NULLS_LAST -> jpql.append(" nulls last");
+                case NATIVE -> { }
+            }
         }
     }
 
@@ -699,11 +721,9 @@ public final class QinOrmSelect<E, R> {
         }
         List<QinOrmOrder<?>> combined = new ArrayList<>(orders);
         for (Sort.Order order : sort) {
-            if (order.getNullHandling() != Sort.NullHandling.NATIVE) {
-                throw new UnsupportedOperationException("Explicit null precedence is not supported");
-            }
             String property = QinOrmEntity.requireIdentifier(order.getProperty(), "sort property");
-            combined.add(new QinOrmOrder<>(entity.javaType(), property, order.isAscending(), order.isIgnoreCase()));
+            combined.add(new QinOrmOrder<>(entity.javaType(), property, order.isAscending(),
+                    order.isIgnoreCase(), order.getNullHandling()));
         }
         return combined;
     }
@@ -787,7 +807,8 @@ public final class QinOrmSelect<E, R> {
         }
         for (QinOrmPredicate.PropertyReference reference : expression.propertyReferences()) {
             Class<?> mappedType = validatePropertyReference(jpaEntities, reference, parentAliases);
-            if (expression instanceof QinOrmColumn<?, ?> column && !mappedType.equals(column.propertyType())) {
+            if (expression instanceof QinOrmColumn<?, ?> column
+                    && !QinOrmColumn.boxedType(mappedType).equals(column.propertyType())) {
                 throw new IllegalArgumentException("Column type mismatch for " + column.propertyName()
                         + ": mapped type is " + mappedType.getTypeName()
                         + " but descriptor declares " + column.propertyType().getTypeName());
@@ -847,12 +868,17 @@ public final class QinOrmSelect<E, R> {
     }
 
     private Class<?> validateProperty(EntityType<?> jpaEntity, String propertyName) {
+        Attribute<?, ?> attribute;
         try {
-            return jpaEntity.getAttribute(propertyName).getJavaType();
+            attribute = jpaEntity.getAttribute(propertyName);
         } catch (IllegalArgumentException error) {
             throw new IllegalArgumentException("Unknown persistent property " + propertyName
                     + " on " + jpaEntity.getJavaType().getName(), error);
         }
+        if (attribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.BASIC) {
+            throw new IllegalArgumentException("Qin ORM requires a basic scalar property: " + propertyName);
+        }
+        return attribute.getJavaType();
     }
 
     private String aliasFor(Class<?> javaType) {
@@ -868,7 +894,7 @@ public final class QinOrmSelect<E, R> {
         }
         for (JoinSpec join : joins) {
             if (join.target().javaType() == javaType) {
-                return join.alias();
+                return rootAlias.equals(ROOT_ALIAS) ? join.alias() : rootAlias + "_" + join.alias();
             }
         }
         if (parentAliases != null) {
@@ -887,6 +913,14 @@ public final class QinOrmSelect<E, R> {
                 || joins.stream().anyMatch(join -> join.target().javaType() == target.javaType())) {
             throw new IllegalArgumentException("The same entity type cannot be joined more than once: "
                     + target.javaType().getName());
+        }
+        Set<Class<?>> sources = new HashSet<>();
+        sources.add(entity.javaType());
+        for (JoinSpec join : joins) {
+            sources.add(join.target().javaType());
+        }
+        if (!onPredicate.connects(target.javaType(), sources)) {
+            throw new IllegalArgumentException("Join ON requires equality between a target field and an existing entity field");
         }
         List<JoinSpec> nextJoins = new ArrayList<>(joins);
         nextJoins.add(new JoinSpec(target, kind, joinAlias(target.javaType()), onPredicate));
@@ -936,7 +970,9 @@ public final class QinOrmSelect<E, R> {
         if (selectionKind == SelectionKind.ENTITY && distinct) {
             countExpression = "count(distinct " + ROOT_ALIAS + ")";
         } else if (distinct && selectionKind != SelectionKind.ENTITY) {
-            countExpression = "count(distinct " + columns.get(0).render(this::aliasFor) + ")";
+            String path = columns.getFirst().render(this::aliasFor);
+            countExpression = "count(distinct " + path + ") + case when count(" + ROOT_ALIAS
+                    + ") > count(" + path + ") then 1 else 0 end";
         } else {
             countExpression = "count(" + ROOT_ALIAS + ")";
         }

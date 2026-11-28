@@ -48,9 +48,9 @@ public final class QinOrmSmokeTestMain {
         expectFailure(IllegalArgumentException.class,
                 () -> QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User)
                         .orderBy(Sort.by(Sort.Order.asc("amount").ignoreCase())).toJpql());
-        expectFailure(UnsupportedOperationException.class,
-                () -> QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User)
-                        .orderBy(Sort.by(Sort.Order.asc("name").nullsFirst())));
+        requireEquals("select qinEntity from AccountUser qinEntity order by qinEntity.name asc nulls first",
+                QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User)
+                        .orderBy(Sort.by(Sort.Order.asc("name").nullsFirst())).toJpql());
         requireEquals(1, entityQuery.all().size());
         requireEquals(Map.of("qin_p0", 12L, "qin_p1", "A%"), entityFixture.parameters().get());
 
@@ -123,7 +123,7 @@ public final class QinOrmSmokeTestMain {
                 .select(User, User.id, User.name)
                 .as(UserSummary.class)
                 .first());
-        requireEquals("select new com.qin.orm.QinOrmSmokeTestMain.UserSummary(qinEntity.id, qinEntity.name) from AccountUser qinEntity",
+        requireEquals("select new com.qin.orm.QinOrmSmokeTestMain$UserSummary(qinEntity.id, qinEntity.name) from AccountUser qinEntity",
                 dtoFixture.jpql().get());
 
         JpaFixture oneFixture = fixture(List.of(new UserEntity()), 1L, false);
@@ -198,7 +198,7 @@ public final class QinOrmSmokeTestMain {
         JpaFixture subqueryFixture = fixture(List.of(new UserEntity()), 1L, false);
         QinOrmSession subquerySession = QinOrm.session(subqueryFixture.entityManager());
         QinOrmSubquery<Long> correlatedIds = subquerySession.select(Customer, Customer.id)
-                .where(Customer.id.eq(User.id)).subquery();
+                .where(Customer.id.eq(User.id)).subquery(User);
         requireEquals("select qinEntity from AccountUser qinEntity where exists "
                         + "(select qinSubquery0.id from CustomerEntity qinSubquery0 "
                         + "where qinSubquery0.id = qinEntity.id)",
@@ -236,7 +236,8 @@ public final class QinOrmSmokeTestMain {
         Page<String> distinctScalarPage = QinOrm.session(distinctScalarPageFixture.entityManager())
                 .select(User, User.name).distinct().page(PageRequest.of(0, 1));
         requireEquals(4L, distinctScalarPage.getTotalElements());
-        requireEquals("select count(distinct qinEntity.name) from AccountUser qinEntity",
+        requireEquals("select count(distinct qinEntity.name) + case when count(qinEntity) > count(qinEntity.name)"
+                        + " then 1 else 0 end from AccountUser qinEntity",
                 distinctScalarPageFixture.jpql().get());
 
         JpaFixture distinctTupleFixture = fixture(List.of(), 0L, false);
@@ -277,8 +278,15 @@ public final class QinOrmSmokeTestMain {
                 return true;
             }
             if (method.getName().equals("getId")) {
-                return proxy(SingularAttribute.class, (target, idMethod, idArgs) ->
-                        idMethod.getName().equals("getName") ? "id" : null);
+                return proxy(SingularAttribute.class, (target, idMethod, idArgs) -> switch (idMethod.getName()) {
+                    case "getName" -> "id";
+                    case "getPersistentAttributeType" -> Attribute.PersistentAttributeType.BASIC;
+                    default -> null;
+                });
+            }
+            if (method.getName().equals("getIdType")) {
+                return proxy(jakarta.persistence.metamodel.Type.class, (target, typeMethod, typeArgs) ->
+                        typeMethod.getName().equals("getJavaType") ? Long.class : null);
             }
             return null;
         });

@@ -1,0 +1,13 @@
+import { PaymentQin, CustomerQin, QinOrm, QinOrmHibernateSmokeTestMain } from "java:com.qin.orm";
+
+const factory = QinOrmHibernateSmokeTestMain.database();
+const manager = factory.createEntityManager();
+QinOrmHibernateSmokeTestMain.seed(manager);
+const db = QinOrm.session(manager);
+const Payment = new PaymentQin();
+const Customer = new CustomerQin();
+const query = db.select(Payment).join(Customer, Payment.customerId.eq(Customer.id));
+const matched = query.count();
+manager.close();
+factory.close();
+console.log(matched);

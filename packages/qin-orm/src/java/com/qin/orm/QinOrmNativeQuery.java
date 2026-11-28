@@ -38,6 +38,10 @@ public final class QinOrmNativeQuery<R> {
         this.offset = offset;
     }
 
+    public <T> QinOrmNativeQuery<T> as(Class<T> type) {
+        return new QinOrmNativeQuery<>(entityManager, sql, type, parameters, limit, offset);
+    }
+
     public QinOrmNativeQuery<R> bind(String name, Object value) {
         String parameterName = QinOrmEntity.requireIdentifier(name, "parameter name");
         Map<String, Object> nextParameters = new LinkedHashMap<>(parameters);
@@ -87,7 +91,9 @@ public final class QinOrmNativeQuery<R> {
     }
 
     private Query createQuery(int maxResults) {
-        Query query = entityManager.createNativeQuery(sql, resultType);
+        Query query = resultType == Object.class
+                ? entityManager.createNativeQuery(sql)
+                : entityManager.createNativeQuery(sql, resultType);
         parameters.forEach(query::setParameter);
         if (offset > 0) {
             query.setFirstResult(offset);

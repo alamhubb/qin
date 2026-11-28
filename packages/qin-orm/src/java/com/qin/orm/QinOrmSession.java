@@ -18,6 +18,10 @@ public final class QinOrmSession {
         return new QinOrmNativeQuery<>(entityManager, sql, resultType);
     }
 
+    public QinOrmNativeQuery<Object> nativeQuery(String sql) {
+        return nativeQuery(sql, Object.class);
+    }
+
     public <E, V> QinOrmSelect<E, V> select(
             QinOrmEntity<E> entity,
             QinOrmExpression<E, V> column) {

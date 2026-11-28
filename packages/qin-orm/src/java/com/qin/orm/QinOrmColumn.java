@@ -1,5 +1,6 @@
 package com.qin.orm;
 
+import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.Collection;
 import java.util.Set;
@@ -14,7 +15,12 @@ public final class QinOrmColumn<E, V> implements QinOrmExpression<E, V> {
         Objects.requireNonNull(entity, "entity");
         this.entityClass = entity.javaType();
         this.propertyName = QinOrmEntity.requireIdentifier(propertyName, "propertyName");
-        this.propertyType = Objects.requireNonNull(propertyType, "propertyType");
+        this.propertyType = boxedType(Objects.requireNonNull(propertyType, "propertyType"));
+    }
+
+    @SuppressWarnings("unchecked")
+    static <V> Class<V> boxedType(Class<V> type) {
+        return type.isPrimitive() ? (Class<V>) MethodType.methodType(type).wrap().returnType() : type;
     }
 
     @Override

@@ -114,11 +114,16 @@ public final class QinOrmSetQuery<R> {
     private Plan render() {
         QinOrmJpqlContext context = new QinOrmJpqlContext();
         StringBuilder jpql = new StringBuilder();
+        // Reproduce left-associative method chaining even when INTERSECT binds more tightly.
+        jpql.append("(".repeat(operands.size() - 2));
         for (int index = 0; index < operands.size(); index++) {
             if (index > 0) {
                 jpql.append(' ').append(operators.get(index - 1).jpql()).append(' ');
             }
             jpql.append(operands.get(index).renderSetOperand(context));
+            if (index > 0 && index < operands.size() - 1) {
+                jpql.append(')');
+            }
         }
         return new Plan(jpql.toString(), context.parameters());
     }
@@ -153,7 +158,7 @@ public final class QinOrmSetQuery<R> {
         if (first.entityManager() != second.entityManager()) {
             throw new IllegalArgumentException("Set operation queries must use the same EntityManager");
         }
-        if (!first.selectionTypes().equals(second.selectionTypes())) {
+        if (first.resultType() != second.resultType() || !first.selectionTypes().equals(second.selectionTypes())) {
             throw new IllegalArgumentException("Set operation operands must select the same result shape and types");
         }
     }

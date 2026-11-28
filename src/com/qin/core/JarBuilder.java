@@ -7,7 +7,6 @@ import com.qin.types.QinConfig;
 import java.io.*;
 import java.nio.file.*;
 import java.util.jar.*;
-import java.util.zip.ZipEntry;
 
 /**
  * JAR 打包器
@@ -51,11 +50,14 @@ public class JarBuilder {
                     new FileOutputStream(jarPath.toFile()),
                     createManifest())) {
 
-                // 添加 classes 目录中的所有文件
-                addDirectory(jos, classesDir, classesDir);
+                Path resourcesDir = Paths.get(projectDir, "src/main/resources");
+                // BuildLifecycle also copies resources into the compiler output.
+                addDirectory(jos, classesDir, resourcesDir);
 
-                // 添加资源文件
-                addResources(jos);
+                if (Files.isDirectory(resourcesDir)) {
+                    System.out.println("  Adding resources from: src/main/resources");
+                    addDirectory(jos, resourcesDir, null);
+                }
             }
 
             long jarSize = Files.size(jarPath);
@@ -96,37 +98,21 @@ public class JarBuilder {
     /**
      * 递归添加目录到 JAR
      */
-    private void addDirectory(JarOutputStream jos, Path sourceDir, Path baseDir) throws IOException {
+    private void addDirectory(JarOutputStream jos, Path sourceDir, Path resourcesDir) throws IOException {
         try (var stream = Files.walk(sourceDir)) {
-            stream.filter(Files::isRegularFile)
-                  .forEach(file -> {
-                      try {
-                          Path relativePath = baseDir.relativize(file);
-                          String entryName = relativePath.toString().replace('\\', '/');
-
-                          JarEntry entry = new JarEntry(entryName);
-                          entry.setTime(Files.getLastModifiedTime(file).toMillis());
-                          jos.putNextEntry(entry);
-
-                          Files.copy(file, jos);
-                          jos.closeEntry();
-
-                      } catch (IOException e) {
-                          throw new UncheckedIOException(e);
-                      }
-                  });
-        }
-    }
-
-    /**
-     * 添加资源文件
-     */
-    private void addResources(JarOutputStream jos) throws IOException {
-        // 检查是否有 resources 目录
-        Path resourcesDir = Paths.get(projectDir, "src/main/resources");
-        if (Files.exists(resourcesDir)) {
-            System.out.println("  Adding resources from: src/main/resources");
-            addDirectory(jos, resourcesDir, resourcesDir);
+            var files = stream.filter(Files::isRegularFile).iterator();
+            while (files.hasNext()) {
+                Path file = files.next();
+                Path relativePath = sourceDir.relativize(file);
+                if (resourcesDir != null && Files.isRegularFile(resourcesDir.resolve(relativePath))) {
+                    continue;
+                }
+                JarEntry entry = new JarEntry(relativePath.toString().replace('\\', '/'));
+                entry.setTime(Files.getLastModifiedTime(file).toMillis());
+                jos.putNextEntry(entry);
+                Files.copy(file, jos);
+                jos.closeEntry();
+            }
         }
     }
 

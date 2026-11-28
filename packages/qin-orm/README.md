@@ -45,7 +45,7 @@ List<Object[]> totalsByCustomer = db.select(User, User.customerId, total)
 QinOrmSubquery<Long> customerIds = db.select(Customer, Customer.id)
         .where(Customer.name.eq("Ada"))
         .subquery();
-List<UserEntity> users = db.select(User)
+List<UserEntity> namedUsers = db.select(User)
         .where(User.id.in(customerIds))
         .all();
 
@@ -54,9 +54,10 @@ List<Long> activeIds = db.select(User, User.id)
         .union(db.select(User, User.id).where(User.status.eq("pending")))
         .all();
 
-List<Long> nativeIds = db.nativeQuery(
-        "select id from account_user where status = :status", Long.class)
+String table = QinOrm.nativeIdentifier(sourceTable, Set.of("account_user", "archive_user"));
+List<Long> nativeIds = db.nativeQuery("select id from " + table + " where status = :status")
         .bind("status", "active")
+        .as(Long.class)
         .all();
 
 Window<UserEntity> usersWindow = db.select(User)
@@ -96,13 +97,14 @@ use JPA `@OneToMany` or `@ManyToOne` mappings.
 - `first()` returns the first result or `null`. Add ordering for deterministic
   results.
 - `count()` returns the number of matching entities.
-- `countDistinct(expression)` counts distinct scalar values.
+- `countDistinct(expression)` counts distinct non-null scalar values.
 - `exists()` returns whether any entity matches.
 - `page(Pageable)` returns Spring Data `Page` and runs a count query.
 - `slice(Pageable)` returns Spring Data `Slice` without a count query.
 
-Page totals follow the result shape. Scalar `distinct()` uses
-`count(distinct expression)`. Distinct projections with multiple expressions
+Page totals follow the result shape. A scalar `distinct()` page counts
+distinct non-null values and includes one result for null when present.
+Distinct projections with multiple expressions
 and aggregate projections reject `page()` because JPQL cannot portably count
 those result rows. Use `slice()` for those shapes.
 
@@ -121,45 +123,58 @@ predicates, including comparisons against aggregates. Grouped queries support
 grouped queries because portable JPQL cannot count grouped result rows without
 wrapping the query in a derived table.
 
-Spring `Sort.Order.ignoreCase()` is rendered as `lower(property)` after the
-metamodel confirms the property is a string. Explicit null precedence is
-rejected because it is not portable across the supported JPA provider range.
+Spring `Sort.Order.ignoreCase()` uses `lower(property)` for string properties.
+`nullsFirst()` and `nullsLast()` use the corresponding JPQL 3.2 clauses.
+Use a JPA provider that supports those clauses.
 
-Subqueries support `exists()` and scalar `in(subquery)`. Predicates inside a
-subquery can reference outer query entity descriptors, which are resolved to
-the enclosing aliases and validated through the JPA metamodel. Subqueries use
-separate aliases and share the outer named-parameter context.
+Subqueries support `exists()` and scalar `in(subquery)`. Declare outer
+descriptors explicitly for correlated predicates.
+
+```java
+var customerExists = db.select(Customer, Customer.id)
+        .where(Customer.id.eq(User.customerId))
+        .subquery(User);
+var linkedUsers = db.select(User).where(customerExists.exists()).all();
+```
 
 Set queries support JPQL 3.2 `union`, `unionAll`, `intersect`, and `except`.
 Operands must use the same `EntityManager` and select the same result types.
 Provider support for these operators depends on the JPA implementation version.
 
-Database-specific SQL is available only through the explicitly named
-`nativeQuery(sql, resultType)` escape hatch. Bind values by name with `bind`,
-so SQL text and parameter values remain separate. This API is read-only.
+Use trusted SQL with `nativeQuery(sql).bind(name, value).as(Result.class)`
+for database-specific queries. For dynamic table or column names, pass the
+requested identifier through `QinOrm.nativeIdentifier` with an application-owned
+allowlist before inserting it into the SQL. Named parameters and native DTO
+mapping depend on the JPA provider.
 
 Entity queries support Spring Data `Window` scrolling with offset or forward
-keyset positions. Keyset scrolling appends the single-field entity identifier
-as a final ordering key when needed. It rejects collection joins, composite
-identifiers, nullable cursor values, non-basic sort fields, and backward
-positions until those cases have a defined portable result contract.
+keyset positions. The single basic identifier is the final ordering key.
+Use unjoined entity queries and non-null basic sort keys for keyset scrolling.
 
 The `QinOrmEntityProcessor` generates `<Entity>Qin` descriptors for scalar
 JPA properties. With annotation processing enabled, `UserEntity` produces
 `UserEntityQin`, whose typed column fields can be used directly in query
-expressions. Relationship and embedded properties are excluded. Handwritten
-`QinOrmEntity` descriptors remain available for custom models.
+expressions. The processor generates columns for basic properties. Activate
+the processor in the application build, for example by placing the Qin ORM JAR
+on the javac processor path. Qin source can import the compiled descriptor.
 
-## Current Boundary
+```ts
+import { UserEntityQin } from "java:com.example";
 
-The current DSL supports one entity root, one explicit entity join using an
-`ON` predicate, scalar and aggregate expressions, and grouping. Multiple
-joins to distinct entity types are supported. Joining the same entity type
-more than once for self-joins is not yet supported. Subquery scalar selection
-is limited to one expression, as required by JPQL. Database-specific JSONB and
-window functions remain available through the parameterized native-query API.
+const User = new UserEntityQin();
+const id = User.id;
+```
 
-The processor covers standard field and JavaBeans property access for scalar
-properties. Generated Java source can also be consumed by Qin when it is on
-the project source or class path. JPA Metamodel validation still runs before
-query execution.
+Joins and correlated subqueries currently identify entity occurrences by Java
+type. Use distinct entity types within a join chain and across correlated
+references.
+
+## Integration smoke
+
+Compile `src/integration/java/com/qin/orm/QinOrmHibernateSmokeTestMain.java`
+with the Qin ORM JAR on the classpath and processor path. Add Jakarta
+Persistence, Spring Data Commons, Hibernate ORM and H2 with their runtime
+dependencies to the classpath. Run `com.qin.orm.QinOrmHibernateSmokeTestMain`.
+The fixture has been verified with Hibernate ORM 7.4.17.Final and H2 2.3.232.
+With the integration classes and dependencies on the Qin runtime classpath,
+`src/integration/descriptor.qin` exercises a join using generated columns.
