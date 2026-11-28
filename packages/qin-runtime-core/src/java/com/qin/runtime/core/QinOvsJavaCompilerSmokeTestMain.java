@@ -73,6 +73,18 @@ public final class QinOvsJavaCompilerSmokeTestMain {
                 || !conditional.code().contains("if (ready)")) {
             throw new AssertionError("Java OVS compiler did not preserve reactive render control flow: " + conditional.code());
         }
+        var svg = QinOvsJavaCompiler.compile("""
+                import { Polyline } from "./Polyline.ovs";
+                svg {
+                  polyline(points = "0,0 10,10") {}
+                  Polyline { }
+                }
+                """);
+        if (!svg.code().contains("$OvsHtmlTag.svg(")
+                || !svg.code().contains("$OvsHtmlTag.polyline(")
+                || !svg.code().contains("() => Polyline(")) {
+            throw new AssertionError("OVS must distinguish native SVG polyline from a component: " + svg.code());
+        }
         var complexView = QinOvsJavaCompiler.compile("""
                 view Stable(props) {
                   div {

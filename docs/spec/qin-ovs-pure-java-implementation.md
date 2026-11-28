@@ -54,6 +54,8 @@ Java 标准链路为 `OvsParser / CssTsParser → SubhutiCst → QinOvsCstToAst 
 
 ## 当前证据
 
+- 余额监控的首轮真实数据触发了 `Sparkline.ovs` 的 SVG 分支。Java 和 Node 的 OVS 转换现在将小写 `polyline` 降低为原生元素，`ovsjs` 提供对应的 VNode 工厂。Java smoke 同时验证大写 `Polyline` 仍解析为业务组件。OVS 转换缓存指纹纳入 CST-to-AST visitor 的字节码，避免升级后继续使用旧 ESM。
+
 - `qin/packages/qin-parser/src/java/com/qin/parser/OvsParser.java` 已是 Java OVS grammar，覆盖 OVS render、view 和 NoRender CST 规则。
 - `slime/java-slime/slime-parser/.../SlimeCstToAstUtils.java` 提供类型化 Java Slime AST 构造入口。
 - `slime/java-slime/slime-generator/.../SlimeGenerator.java` 提供 Java AST 到 ESM 的生成器。

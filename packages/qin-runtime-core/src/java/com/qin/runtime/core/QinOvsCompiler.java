@@ -332,6 +332,7 @@ public final class QinOvsCompiler {
         updateClassResourceDigest(digest, QinConfigStaticValueReader.class);
         updateClassResourceDigest(digest, QinOvsCompiler.class);
         updateClassResourceDigest(digest, QinOvsJavaCompiler.class);
+        updateClassResourceDigest(digest, com.qin.parser.QinOvsCstToAst.class);
         updateClassResourceDigest(digest, QinCsstsJavaCompiler.class);
         updateClassResourceDigest(digest, QinEsmSourceMap.class);
         updateClassResourceDigest(digest, QinFrontendModuleMetadata.class);

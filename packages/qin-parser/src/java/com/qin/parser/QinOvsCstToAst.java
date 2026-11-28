@@ -1148,7 +1148,7 @@ public final class QinOvsCstToAst extends SlimeCstToAstUtils {
     private Expression createTagCallee(String tagName, SubhutiCst render) {
         String normalized = tagName.trim();
         SubhutiSourceLocation sourceLocation = location(children(render).getFirst());
-        if (HTML_TAGS.contains(normalized.toLowerCase(Locale.ROOT))) {
+        if (HTML_TAGS.contains(normalized.toLowerCase(Locale.ROOT)) || normalized.equals("polyline")) {
             MemberExpression member = SlimeAstCreateUtils.createMemberExpression(
                     runtimeIdentifier(HTML_TAG, null),
                     SlimeAstCreateUtils.createIdentifier(normalized, sourceLocation),
