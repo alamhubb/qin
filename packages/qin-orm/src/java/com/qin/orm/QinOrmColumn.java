@@ -31,8 +31,16 @@ public final class QinOrmColumn<E, V> {
         return QinOrmPredicate.compare(this, "=", value);
     }
 
+    public <T> QinOrmPredicate<E> eq(QinOrmColumn<T, ? extends V> other) {
+        return QinOrmPredicate.compareColumns(this, other, "=");
+    }
+
     public QinOrmPredicate<E> ne(V value) {
         return QinOrmPredicate.compare(this, "<>", value);
+    }
+
+    public <T> QinOrmPredicate<E> ne(QinOrmColumn<T, ? extends V> other) {
+        return QinOrmPredicate.compareColumns(this, other, "<>");
     }
 
     public QinOrmPredicate<E> gt(V value) {

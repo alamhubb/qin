@@ -77,8 +77,30 @@ public final class QinOrmSmokeTestMain {
         JpaFixture countFixture = fixture(List.of(), 7L, false);
         requireEquals(7L, QinOrm.session(countFixture.entityManager()).select(User, User.id)
                 .where(User.id.in(List.of(2L, 3L))).count());
-        requireEquals("select count(qinEntity) from AccountUser qinEntity where qinEntity.id in :qin_p0",
+        requireEquals("select count(distinct qinEntity) from AccountUser qinEntity where qinEntity.id in :qin_p0",
                 countFixture.jpql().get());
+
+        CustomerModel Customer = new CustomerModel();
+        JpaFixture joinedFixture = fixture(List.<Object[]>of(new Object[] { "Ada" }), 1L, false);
+        QinOrmSelect<UserEntity, Object[]> joined = QinOrm.session(joinedFixture.entityManager())
+                .select(User)
+                .join(Customer, User.customerId.eq(Customer.id))
+                .project(Customer.name)
+                .where(User.id.eq(12L).and(Customer.name.eq("Ada")))
+                .orderBy(Customer.name.desc());
+        requireEquals("select qinCustomerEntity.name from AccountUser qinEntity "
+                        + "join CustomerEntity qinCustomerEntity on qinEntity.customerId = qinCustomerEntity.id "
+                        + "where (qinEntity.id = :qin_p0) and (qinCustomerEntity.name = :qin_p1) "
+                        + "order by qinCustomerEntity.name desc",
+                joined.toJpql());
+        joined.all();
+        requireEquals("Ada", joinedFixture.parameters().get().get("qin_p1"));
+
+        JpaFixture leftJoinFixture = fixture(List.of(new UserEntity()), 1L, false);
+        requireEquals("select qinEntity from AccountUser qinEntity left join CustomerEntity qinCustomerEntity "
+                        + "on qinEntity.customerId = qinCustomerEntity.id",
+                QinOrm.session(leftJoinFixture.entityManager()).select(User)
+                        .leftJoin(Customer, User.customerId.eq(Customer.id)).toJpql());
 
         require(QinOrm.session(fixture(List.of(1), 0L, true).entityManager()).select(User).exists(),
                 "exists should return true when a row is present");
@@ -123,12 +145,26 @@ public final class QinOrmSmokeTestMain {
                 return "AccountUser";
             }
             if (method.getName().equals("getAttribute")) {
-                return attribute((String) args[0]);
+                return attribute(UserEntity.class, (String) args[0]);
             }
             return null;
         });
-        Metamodel metamodel = proxy(Metamodel.class, (instance, method, args) ->
-                method.getName().equals("entity") ? entityType : null);
+        EntityType<CustomerEntity> customerEntityType = (EntityType<CustomerEntity>) proxy(EntityType.class,
+                (instance, method, args) -> {
+                    if (method.getName().equals("getName")) {
+                        return "CustomerEntity";
+                    }
+                    if (method.getName().equals("getAttribute")) {
+                        return attribute(CustomerEntity.class, (String) args[0]);
+                    }
+                    return null;
+                });
+        Metamodel metamodel = proxy(Metamodel.class, (instance, method, args) -> {
+            if (!method.getName().equals("entity")) {
+                return null;
+            }
+            return args[0] == CustomerEntity.class ? customerEntityType : entityType;
+        });
         EntityManager entityManager = proxy(EntityManager.class, (instance, method, args) -> {
             if (method.getName().equals("getMetamodel")) {
                 return metamodel;
@@ -178,14 +214,17 @@ public final class QinOrmSmokeTestMain {
         return new JpaFixture(entityManager, jpql, parameters, maxResults, firstResult);
     }
 
-    private static Attribute<?, ?> attribute(String name) {
+    private static Attribute<?, ?> attribute(Class<?> owner, String name) {
         Class<?> propertyType = switch (name) {
             case "id" -> Long.class;
+            case "customerId" -> Long.class;
             case "name" -> String.class;
             default -> throw new IllegalArgumentException("Unknown test attribute: " + name);
         };
-        return proxy(Attribute.class, (instance, method, args) ->
-                method.getName().equals("getJavaType") ? propertyType : null);
+        return proxy(Attribute.class, (instance, method, args) -> switch (method.getName()) {
+            case "getJavaType" -> propertyType;
+            default -> null;
+        });
     }
 
     private static <T> T proxy(Class<T> type, InvocationHandler handler) {
@@ -232,14 +271,31 @@ public final class QinOrmSmokeTestMain {
     public static class UserEntity {
         private Long id;
         private String name;
+        private Long customerId;
+    }
+
+    @Entity
+    public static class CustomerEntity {
+        private Long id;
+        private String name;
     }
 
     private static final class UserModel extends QinOrmEntity<UserEntity> {
         private final QinOrmColumn<UserEntity, Long> id = column("id", Long.class);
+        private final QinOrmColumn<UserEntity, Long> customerId = column("customerId", Long.class);
         private final QinOrmColumn<UserEntity, String> name = column("name", String.class);
 
         private UserModel() {
             super(UserEntity.class);
+        }
+    }
+
+    private static final class CustomerModel extends QinOrmEntity<CustomerEntity> {
+        private final QinOrmColumn<CustomerEntity, Long> id = column("id", Long.class);
+        private final QinOrmColumn<CustomerEntity, String> name = column("name", String.class);
+
+        private CustomerModel() {
+            super(CustomerEntity.class);
         }
     }
 

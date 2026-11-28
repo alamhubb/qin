@@ -35,4 +35,5 @@ public class QinOrmEntity<E> {
     public <V> QinOrmColumn<E, V> column(String propertyName, Class<V> propertyType) {
         return new QinOrmColumn<>(this, propertyName, propertyType);
     }
+
 }

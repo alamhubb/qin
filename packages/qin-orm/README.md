@@ -30,6 +30,11 @@ List<UserSummary> summaries = db.select(User, User.id, User.name)
         .where(User.status.eq("active"))
         .as(UserSummary.class)
         .all();
+
+List<Object[]> usersWithCustomers = db.select(User)
+        .join(Customer, User.customerId.eq(Customer.id))
+        .project(User.name, Customer.name)
+        .all();
 ```
 
 The multi-column query renders a standard JPQL constructor projection when
@@ -45,6 +50,11 @@ Every Qin predicate value is bound as a named JPA parameter. Entity and
 property names are resolved from the JPA `Metamodel` before execution. A
 custom `@Entity(name = "...")` name is honored. Database table and column
 names remain owned by JPA mappings.
+
+Joins target an entity explicitly and state the matching scalar fields with
+`ON`, for example `join(Customer, User.customerId.eq(Customer.id))`. This uses
+ordinary mapped properties and JPQL range joins. Qin ORM does not require or
+use JPA `@OneToMany` or `@ManyToOne` mappings.
 
 ## Result Shapes
 
@@ -73,11 +83,10 @@ validated against the JPA metamodel.
 
 ## Current Boundary
 
-The current DSL handles one entity root and scalar properties of that entity.
-Relationship joins, fetch joins, group/having, aggregate projections, and
-subqueries are not implemented yet. Those should be added as typed JPQL
-expression nodes so JPA remains the parser, validator, and execution engine.
-Database-specific JSONB and window-function queries can use a separate
+The current DSL supports one entity root, one explicit entity join using an
+`ON` predicate, and scalar properties from entities in that query. Multiple
+joins, group/having, aggregate projections, and subqueries are not implemented
+yet. Database-specific JSONB and window-function queries can use a separate
 parameterized native-query API when needed.
 
 Entity and column descriptors are currently declared explicitly. The JPA

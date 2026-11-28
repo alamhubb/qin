@@ -6,27 +6,34 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import java.util.function.Function;
 
 public final class QinOrmPredicate<E> {
     private final Class<E> entityClass;
     private final Kind kind;
     private final String propertyName;
+    private final Class<?> comparisonEntityClass;
+    private final String comparisonPropertyName;
     private final String operator;
     private final Object firstValue;
     private final Object secondValue;
-    private final List<QinOrmPredicate<E>> children;
+    private final List<QinOrmPredicate<?>> children;
 
     private QinOrmPredicate(
             Class<E> entityClass,
             Kind kind,
             String propertyName,
+            Class<?> comparisonEntityClass,
+            String comparisonPropertyName,
             String operator,
             Object firstValue,
             Object secondValue,
-            List<QinOrmPredicate<E>> children) {
+            List<QinOrmPredicate<?>> children) {
         this.entityClass = Objects.requireNonNull(entityClass, "entityClass");
         this.kind = Objects.requireNonNull(kind, "kind");
         this.propertyName = propertyName;
+        this.comparisonEntityClass = comparisonEntityClass;
+        this.comparisonPropertyName = comparisonPropertyName;
         this.operator = operator;
         this.firstValue = firstValue;
         this.secondValue = secondValue;
@@ -34,35 +41,44 @@ public final class QinOrmPredicate<E> {
     }
 
     static <E> QinOrmPredicate<E> compare(QinOrmColumn<E, ?> column, String operator, Object value) {
-        return new QinOrmPredicate<>(column.entityClass(), Kind.COMPARE, column.propertyName(), operator,
+        return new QinOrmPredicate<>(column.entityClass(), Kind.COMPARE, column.propertyName(), null, null, operator,
                 value, null, List.of());
     }
 
+    static <E, V> QinOrmPredicate<E> compareColumns(
+            QinOrmColumn<E, V> column,
+            QinOrmColumn<?, ? extends V> other,
+            String operator) {
+        Objects.requireNonNull(other, "other");
+        return new QinOrmPredicate<>(column.entityClass(), Kind.COMPARE, column.propertyName(),
+                other.entityClass(), other.propertyName(), operator, null, null, List.of());
+    }
+
     static <E> QinOrmPredicate<E> between(QinOrmColumn<E, ?> column, Object lower, Object upper) {
-        return new QinOrmPredicate<>(column.entityClass(), Kind.BETWEEN, column.propertyName(), null,
+        return new QinOrmPredicate<>(column.entityClass(), Kind.BETWEEN, column.propertyName(), null, null, null,
                 lower, upper, List.of());
     }
 
     static <E> QinOrmPredicate<E> in(QinOrmColumn<E, ?> column, Collection<?> values) {
-        return new QinOrmPredicate<>(column.entityClass(), Kind.IN, column.propertyName(), null,
+        return new QinOrmPredicate<>(column.entityClass(), Kind.IN, column.propertyName(), null, null, null,
                 List.copyOf(values), null, List.of());
     }
 
     static <E> QinOrmPredicate<E> nullCheck(QinOrmColumn<E, ?> column, boolean negated) {
         return new QinOrmPredicate<>(column.entityClass(), negated ? Kind.IS_NOT_NULL : Kind.IS_NULL,
-                column.propertyName(), null, null, null, List.of());
+                column.propertyName(), null, null, null, null, null, List.of());
     }
 
-    public QinOrmPredicate<E> and(QinOrmPredicate<E> other) {
+    public QinOrmPredicate<E> and(QinOrmPredicate<?> other) {
         return combine(Kind.AND, other);
     }
 
-    public QinOrmPredicate<E> or(QinOrmPredicate<E> other) {
+    public QinOrmPredicate<E> or(QinOrmPredicate<?> other) {
         return combine(Kind.OR, other);
     }
 
     public QinOrmPredicate<E> not() {
-        return new QinOrmPredicate<>(entityClass, Kind.NOT, null, null, null, null, List.of(this));
+        return new QinOrmPredicate<>(entityClass, Kind.NOT, null, null, null, null, null, null, List.of(this));
     }
 
     static <E> QinOrmPredicate<E> andAll(Collection<QinOrmPredicate<E>> predicates) {
@@ -77,58 +93,64 @@ public final class QinOrmPredicate<E> {
         return entityClass;
     }
 
-    String render(QinOrmJpqlContext context, String alias) {
+    String render(QinOrmJpqlContext context, Function<Class<?>, String> aliasFor) {
         return switch (kind) {
-            case COMPARE -> renderComparison(context, alias);
-            case BETWEEN -> alias + "." + propertyName + " between " + context.bind(firstValue)
+            case COMPARE -> renderComparison(context, aliasFor);
+            case BETWEEN -> aliasFor.apply(entityClass) + "." + propertyName + " between " + context.bind(firstValue)
                     + " and " + context.bind(secondValue);
-            case IN -> alias + "." + propertyName + " in " + context.bind(firstValue);
-            case IS_NULL -> alias + "." + propertyName + " is null";
-            case IS_NOT_NULL -> alias + "." + propertyName + " is not null";
-            case AND, OR -> renderChildren(context, alias);
-            case NOT -> "not (" + children.get(0).render(context, alias) + ")";
+            case IN -> aliasFor.apply(entityClass) + "." + propertyName + " in " + context.bind(firstValue);
+            case IS_NULL -> aliasFor.apply(entityClass) + "." + propertyName + " is null";
+            case IS_NOT_NULL -> aliasFor.apply(entityClass) + "." + propertyName + " is not null";
+            case AND, OR -> renderChildren(context, aliasFor);
+            case NOT -> "not (" + children.get(0).render(context, aliasFor) + ")";
         };
     }
 
-    Set<String> propertyNames() {
-        Set<String> names = new LinkedHashSet<>();
+    Set<PropertyReference> propertyReferences() {
+        Set<PropertyReference> names = new LinkedHashSet<>();
         if (propertyName != null) {
-            names.add(propertyName);
+            names.add(new PropertyReference(entityClass, propertyName));
         }
-        for (QinOrmPredicate<E> child : children) {
-            names.addAll(child.propertyNames());
+        if (comparisonPropertyName != null) {
+            names.add(new PropertyReference(comparisonEntityClass, comparisonPropertyName));
+        }
+        for (QinOrmPredicate<?> child : children) {
+            names.addAll(child.propertyReferences());
         }
         return names;
     }
 
-    private String renderComparison(QinOrmJpqlContext context, String alias) {
+    private String renderComparison(QinOrmJpqlContext context, Function<Class<?>, String> aliasFor) {
+        String path = aliasFor.apply(entityClass) + "." + propertyName;
+        if (comparisonPropertyName != null) {
+            return path + " " + operator + " " + aliasFor.apply(comparisonEntityClass)
+                    + "." + comparisonPropertyName;
+        }
         if (firstValue == null && operator.equals("=")) {
-            return alias + "." + propertyName + " is null";
+            return path + " is null";
         }
         if (firstValue == null && operator.equals("<>")) {
-            return alias + "." + propertyName + " is not null";
+            return path + " is not null";
         }
-        return alias + "." + propertyName + " " + operator + " " + context.bind(firstValue);
+        return path + " " + operator + " " + context.bind(firstValue);
     }
 
-    private String renderChildren(QinOrmJpqlContext context, String alias) {
+    private String renderChildren(QinOrmJpqlContext context, Function<Class<?>, String> aliasFor) {
         String separator = kind == Kind.AND ? " and " : " or ";
         List<String> expressions = new ArrayList<>(children.size());
-        for (QinOrmPredicate<E> child : children) {
-            expressions.add("(" + child.render(context, alias) + ")");
+        for (QinOrmPredicate<?> child : children) {
+            expressions.add("(" + child.render(context, aliasFor) + ")");
         }
         return String.join(separator, expressions);
     }
 
-    private QinOrmPredicate<E> combine(Kind combinedKind, QinOrmPredicate<E> other) {
+    private QinOrmPredicate<E> combine(Kind combinedKind, QinOrmPredicate<?> other) {
         Objects.requireNonNull(other, "other");
-        if (entityClass != other.entityClass) {
-            throw new IllegalArgumentException("Cannot combine predicates from different entities");
-        }
-        List<QinOrmPredicate<E>> combined = new ArrayList<>();
+        List<QinOrmPredicate<?>> combined = new ArrayList<>();
         appendFlattened(combined, combinedKind, this);
         appendFlattened(combined, combinedKind, other);
-        return new QinOrmPredicate<>(entityClass, combinedKind, null, null, null, null, List.copyOf(combined));
+        return new QinOrmPredicate<>(entityClass, combinedKind, null, null, null, null, null, null,
+                List.copyOf(combined));
     }
 
     private static <E> QinOrmPredicate<E> combineAll(Kind kind, Collection<QinOrmPredicate<E>> predicates) {
@@ -143,10 +165,10 @@ public final class QinOrmPredicate<E> {
         return result;
     }
 
-    private static <E> void appendFlattened(
-            List<QinOrmPredicate<E>> target,
+    private static void appendFlattened(
+            List<QinOrmPredicate<?>> target,
             Kind kind,
-            QinOrmPredicate<E> predicate) {
+            QinOrmPredicate<?> predicate) {
         if (predicate.kind == kind) {
             target.addAll(predicate.children);
         } else {
@@ -163,5 +185,8 @@ public final class QinOrmPredicate<E> {
         AND,
         OR,
         NOT
+    }
+
+    record PropertyReference(Class<?> entityType, String propertyName) {
     }
 }
