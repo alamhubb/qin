@@ -72,6 +72,25 @@ public final class QinOrmSmokeTestMain {
         requireEquals("select id from account_user where status = :status", nativeFixture.jpql().get());
         requireEquals("active", nativeFixture.parameters().get().get("status"));
 
+        JpaFixture setFixture = fixture(List.of(5L, 7L), 2L, false);
+        QinOrmSession setSession = QinOrm.session(setFixture.entityManager());
+        QinOrmSelect<UserEntity, Long> firstSetOperand = setSession.select(User, User.id)
+                .where(User.id.eq(5L));
+        QinOrmSelect<UserEntity, Long> secondSetOperand = setSession.select(User, User.id)
+                .where(User.id.eq(7L));
+        QinOrmSetQuery<Long> unionQuery = firstSetOperand.union(secondSetOperand);
+        requireEquals("select qinEntity.id from AccountUser qinEntity where qinEntity.id = :qin_p0 "
+                        + "union select qinEntity.id from AccountUser qinEntity where qinEntity.id = :qin_p1",
+                unionQuery.toJpql());
+        requireEquals(List.of(5L, 7L), unionQuery.all());
+        requireEquals(Map.of("qin_p0", 5L, "qin_p1", 7L), setFixture.parameters().get());
+        require(firstSetOperand.unionAll(secondSetOperand).toJpql().contains(" union all "),
+                "unionAll should serialize with its duplicate-preserving operator");
+        require(firstSetOperand.intersect(secondSetOperand).toJpql().contains(" intersect "),
+                "intersect should serialize as a JPQL set operator");
+        require(firstSetOperand.except(secondSetOperand).toJpql().contains(" except "),
+                "except should serialize as a JPQL set operator");
+
         UserEntity firstScrollUser = new UserEntity();
         firstScrollUser.id = 1L;
         firstScrollUser.name = "Ada";

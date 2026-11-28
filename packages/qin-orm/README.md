@@ -49,6 +49,11 @@ List<UserEntity> users = db.select(User)
         .where(User.id.in(customerIds))
         .all();
 
+List<Long> activeIds = db.select(User, User.id)
+        .where(User.status.eq("active"))
+        .union(db.select(User, User.id).where(User.status.eq("pending")))
+        .all();
+
 List<Long> nativeIds = db.nativeQuery(
         "select id from account_user where status = :status", Long.class)
         .bind("status", "active")
@@ -125,6 +130,10 @@ subquery can reference outer query entity descriptors, which are resolved to
 the enclosing aliases and validated through the JPA metamodel. Subqueries use
 separate aliases and share the outer named-parameter context.
 
+Set queries support JPQL 3.2 `union`, `unionAll`, `intersect`, and `except`.
+Operands must use the same `EntityManager` and select the same result types.
+Provider support for these operators depends on the JPA implementation version.
+
 Database-specific SQL is available only through the explicitly named
 `nativeQuery(sql, resultType)` escape hatch. Bind values by name with `bind`,
 so SQL text and parameter values remain separate. This API is read-only.
@@ -146,8 +155,8 @@ expressions. Relationship and embedded properties are excluded. Handwritten
 The current DSL supports one entity root, one explicit entity join using an
 `ON` predicate, scalar and aggregate expressions, and grouping. Multiple
 joins are not implemented yet. Subquery scalar selection is limited to one
-expression, as required by JPQL. Database-specific JSONB and window-function
-queries can use a separate parameterized native-query API when needed.
+expression, as required by JPQL. Database-specific JSONB and window functions
+remain available through the parameterized native-query API.
 
 The processor covers standard field and JavaBeans property access for scalar
 properties. Generated Java source can also be consumed by Qin when it is on

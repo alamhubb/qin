@@ -225,6 +225,53 @@ public final class QinOrmSelect<E, R> {
         return new QinOrmSubquery<>(this);
     }
 
+    public QinOrmSetQuery<R> union(QinOrmSelect<?, R> other) {
+        return QinOrmSetQuery.start(this, other, QinOrmSetQuery.Operator.UNION);
+    }
+
+    public QinOrmSetQuery<R> unionAll(QinOrmSelect<?, R> other) {
+        return QinOrmSetQuery.start(this, other, QinOrmSetQuery.Operator.UNION_ALL);
+    }
+
+    public QinOrmSetQuery<R> intersect(QinOrmSelect<?, R> other) {
+        return QinOrmSetQuery.start(this, other, QinOrmSetQuery.Operator.INTERSECT);
+    }
+
+    public QinOrmSetQuery<R> except(QinOrmSelect<?, R> other) {
+        return QinOrmSetQuery.start(this, other, QinOrmSetQuery.Operator.EXCEPT);
+    }
+
+    jakarta.persistence.EntityManager entityManager() {
+        return entityManager;
+    }
+
+    Class<R> resultType() {
+        return resultType;
+    }
+
+    List<Class<?>> selectionTypes() {
+        return switch (selectionKind) {
+            case ENTITY -> List.of(entity.javaType());
+            case SCALAR -> List.of(columns.get(0).propertyType());
+            case TUPLE -> {
+                List<Class<?>> types = new ArrayList<>(columns.size());
+                for (QinOrmExpression<?, ?> expression : columns) {
+                    types.add(expression.propertyType());
+                }
+                yield List.copyOf(types);
+            }
+            case DTO -> List.of(dtoType);
+        };
+    }
+
+    String renderSetOperand(QinOrmJpqlContext context) {
+        if (!orders.isEmpty() || limit > 0 || offset > 0) {
+            throw new UnsupportedOperationException("Set-operation operands cannot contain order, limit, or offset");
+        }
+        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
+        return render(jpaEntities, context, List.of()).jpql();
+    }
+
     String renderSubquery(
             QinOrmJpqlContext context,
             java.util.function.Function<Class<?>, String> parentAliases) {
