@@ -2,6 +2,8 @@ package com.qin.lang.module.resolver;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,6 +49,7 @@ public final class QinEsmSpecifierResolver {
     private static final Pattern QIN_PACKAGE_OVERRIDE_ENTRY = Pattern.compile(
             "['\"]([^'\"]+)['\"]\\s*:\\s*['\"]([^'\"]+)['\"]");
     private final Path projectOverrideRoot;
+    private final QinTsConfigPathResolver tsConfigPathResolver = new QinTsConfigPathResolver();
 
     public QinEsmSpecifierResolver() {
         this(null);
@@ -188,6 +191,10 @@ public final class QinEsmSpecifierResolver {
     }
 
     private Path resolveBareModule(Path importerFile, String specifier) {
+        Path pathAlias = resolveTsConfigPath(importerFile, specifier);
+        if (pathAlias != null) {
+            return pathAlias;
+        }
         BareSpecifier bare = parseBareSpecifier(specifier);
         Path selfReference = resolvePackageSelfReference(importerFile, bare);
         if (selfReference != null) {
@@ -240,6 +247,17 @@ public final class QinEsmSpecifierResolver {
         }
         throw new IllegalArgumentException(
                 "Cannot resolve bare module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
+    }
+
+    private Path resolveTsConfigPath(Path importerFile, String specifier) {
+        List<Path> candidates = new ArrayList<>(tsConfigPathResolver.resolveCandidates(importerFile, specifier));
+        for (Path candidate : candidates) {
+            Path resolved = resolveAsFile(candidate);
+            if (resolved != null) {
+                return resolved;
+            }
+        }
+        return null;
     }
 
     private Path resolvePackageSelfReference(Path importerFile, BareSpecifier bare) {

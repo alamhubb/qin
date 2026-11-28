@@ -4,7 +4,8 @@ export default {
     "description":  "ESM module graph resolver and linker for Qin source files",
     "entry":  "src/java/com/qin/lang/module/resolver/ModuleResolverPackageMarker.java",
     "dependencies":  {
-                         "com.qin:qin-lang-module-policy":  "0.1.0"
+                         "com.qin:qin-lang-module-policy":  "0.1.0",
+                         "com.google.code.gson@gson":  "2.10.1"
                      },
     "java":  {
                  "version":  "21",

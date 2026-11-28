@@ -7,6 +7,7 @@ ESM module-resolution layer for Qin source files.
 - Resolve local `.js` module specifiers.
 - Resolve npm-style bare specifiers from `node_modules`.
   - package entry priority: `exports.import` -> `exports["."]` -> `module` -> `main` -> `index.js`
+- Resolve bare specifiers through the nearest `tsconfig.json` `compilerOptions.paths` mappings, using `baseUrl` and inherited configs.
 - Build a module graph from an entry file.
 - Keep legal cyclic dependencies in graph (ESM-compatible).
 - Emit linked source for current Qin frontend adapter flow.
