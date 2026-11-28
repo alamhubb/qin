@@ -3,14 +3,22 @@ package com.qin.orm;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.OffsetScrollPosition;
+import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Window;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -346,6 +354,144 @@ public final class QinOrmSelect<E, R> {
         return new SliceImpl<>(content, pageable, hasNext);
     }
 
+    public Window<R> scroll(ScrollPosition position, int windowSize) {
+        Objects.requireNonNull(position, "position");
+        if (windowSize < 1 || windowSize == Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("windowSize must be greater than zero");
+        }
+        if (selectionKind != SelectionKind.ENTITY || !groupBy.isEmpty() || having != null) {
+            throw new UnsupportedOperationException("Scroll requires an ungrouped entity selection");
+        }
+        if (!joins.isEmpty() || limit > 0 || offset > 0) {
+            throw new UnsupportedOperationException("Scroll cannot be combined with joins, limit, or offset");
+        }
+
+        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
+        List<QinOrmOrder<?>> scrollOrders = stableScrollOrders(jpaEntities);
+        long firstResult = 0;
+        QinOrmPredicate<?> scrollPredicate = predicate;
+        boolean keyset = position instanceof KeysetScrollPosition;
+        if (position instanceof OffsetScrollPosition offsetPosition) {
+            firstResult = offsetPosition.isInitial() ? 0 : Math.addExact(offsetPosition.getOffset(), 1);
+        } else if (keyset && !position.isInitial()) {
+            if (((KeysetScrollPosition) position).scrollsBackward()) {
+                throw new UnsupportedOperationException("Backward keyset scrolling is not supported");
+            }
+            scrollPredicate = combine(scrollPredicate,
+                    keysetPredicate(scrollOrders, ((KeysetScrollPosition) position).getKeys()));
+        } else if (!keyset) {
+            throw new IllegalArgumentException("ScrollPosition must be offset-based or keyset-based");
+        }
+
+        QinOrmSelect<E, R> scrollQuery = copy(scrollPredicate, joins, scrollOrders,
+                groupBy, having, distinct, limit, offset);
+        QueryPlan plan = scrollQuery.render(jpaEntities, new QinOrmJpqlContext(), scrollOrders);
+        TypedQuery<R> query = scrollQuery.createQuery(plan);
+        applyRange(query, firstResult, windowSize + 1);
+        List<R> results = query.getResultList();
+        boolean hasNext = results.size() > windowSize;
+        List<R> content = new ArrayList<>(hasNext ? results.subList(0, windowSize) : results);
+        EntityType<?> rootType = jpaEntities.get(entity.javaType());
+        List<String> keyProperties = scrollOrders.stream().map(QinOrmOrder::propertyName).toList();
+        long windowOffset = firstResult;
+        return Window.from(content, index -> {
+            if (position instanceof OffsetScrollPosition) {
+                return ScrollPosition.offset(windowOffset + index);
+            }
+            Map<String, Object> keys = new LinkedHashMap<>();
+            for (String property : keyProperties) {
+                Object value = readProperty(rootType, content.get(index), property);
+                if (value == null) {
+                    throw new IllegalStateException("Keyset scrolling does not support null sort values: " + property);
+                }
+                keys.put(property, value);
+            }
+            return ScrollPosition.forward(keys);
+        }, hasNext);
+    }
+
+    private List<QinOrmOrder<?>> stableScrollOrders(Map<Class<?>, EntityType<?>> jpaEntities) {
+        EntityType<?> rootType = jpaEntities.get(entity.javaType());
+        if (!rootType.hasSingleIdAttribute()) {
+            throw new UnsupportedOperationException("Keyset scrolling requires a single-field entity identifier");
+        }
+        String idProperty = rootType.getId(Object.class).getName();
+        List<QinOrmOrder<?>> stableOrders = new ArrayList<>();
+        QinOrmOrder<?> idOrder = null;
+        for (QinOrmOrder<?> order : orders) {
+            if (order.entityClass() != entity.javaType()) {
+                throw new UnsupportedOperationException("Scroll ordering must use root entity properties");
+            }
+            if (order.ignoreCase()) {
+                throw new UnsupportedOperationException("ignoreCase sorting is not supported for keyset scrolling");
+            }
+            Attribute<?, ?> attribute = rootType.getAttribute(order.propertyName());
+            if (attribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.BASIC) {
+                throw new UnsupportedOperationException("Keyset sort keys must be basic scalar properties: "
+                        + order.propertyName());
+            }
+            if (order.propertyName().equals(idProperty)) {
+                idOrder = order;
+            } else {
+                stableOrders.add(order);
+            }
+        }
+        stableOrders.add(idOrder == null
+                ? new QinOrmOrder<>(entity.javaType(), idProperty, true)
+                : idOrder);
+        validateOrders(jpaEntities, stableOrders);
+        return List.copyOf(stableOrders);
+    }
+
+    private QinOrmPredicate<?> keysetPredicate(
+            List<QinOrmOrder<?>> scrollOrders,
+            Map<String, Object> keys) {
+        QinOrmPredicate<?> disjunction = null;
+        QinOrmPredicate<?> equalPrefix = null;
+        for (QinOrmOrder<?> order : scrollOrders) {
+            if (!keys.containsKey(order.propertyName())) {
+                throw new IllegalArgumentException("Keyset position is missing sort property: " + order.propertyName());
+            }
+            Object key = keys.get(order.propertyName());
+            if (key == null) {
+                throw new IllegalArgumentException("Keyset position cannot contain null sort values: "
+                        + order.propertyName());
+            }
+            QinOrmColumn<E, Object> column = entity.column(order.propertyName(), Object.class);
+            String operator = order.ascending() ? ">" : "<";
+            QinOrmPredicate<?> comparison = QinOrmPredicate.compare(column, operator, key);
+            QinOrmPredicate<?> branch = equalPrefix == null ? comparison : equalPrefix.and(comparison);
+            disjunction = disjunction == null ? branch : disjunction.or(branch);
+            QinOrmPredicate<?> equalsKey = QinOrmPredicate.compare(column, "=", key);
+            equalPrefix = equalPrefix == null ? equalsKey : equalPrefix.and(equalsKey);
+        }
+        return Objects.requireNonNull(disjunction, "scrollOrders");
+    }
+
+    private static QinOrmPredicate<?> combine(
+            QinOrmPredicate<?> first,
+            QinOrmPredicate<?> second) {
+        return first == null ? second : first.and(second);
+    }
+
+    private Object readProperty(EntityType<?> entityType, Object instance, String propertyName) {
+        Attribute<?, ?> attribute = entityType.getAttribute(propertyName);
+        Member member = attribute.getJavaMember();
+        try {
+            if (member instanceof Field field) {
+                field.trySetAccessible();
+                return field.get(instance);
+            }
+            if (member instanceof Method method) {
+                method.trySetAccessible();
+                return method.invoke(instance);
+            }
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalStateException("Cannot read scroll key property " + propertyName, error);
+        }
+        throw new IllegalArgumentException("Unsupported JPA member for scroll key: " + propertyName);
+    }
+
     private QueryPlan render(
             Map<Class<?>, EntityType<?>> jpaEntities,
             QinOrmJpqlContext context,
@@ -526,7 +672,7 @@ public final class QinOrmSelect<E, R> {
     }
 
     private static void applyRange(TypedQuery<?> query, long firstResult, int maxResults) {
-        if (firstResult > Integer.MAX_VALUE) {
+        if (firstResult < 0 || firstResult > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("JPA offset exceeds the supported integer range");
         }
         query.setFirstResult((int) firstResult);

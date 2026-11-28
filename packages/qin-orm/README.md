@@ -53,6 +53,10 @@ List<Long> nativeIds = db.nativeQuery(
         "select id from account_user where status = :status", Long.class)
         .bind("status", "active")
         .all();
+
+Window<UserEntity> usersWindow = db.select(User)
+        .orderBy(User.createdAt.desc())
+        .scroll(ScrollPosition.keyset(), 100);
 ```
 
 The multi-column query renders a standard JPQL constructor projection when
@@ -124,6 +128,12 @@ separate aliases and share the outer named-parameter context.
 Database-specific SQL is available only through the explicitly named
 `nativeQuery(sql, resultType)` escape hatch. Bind values by name with `bind`,
 so SQL text and parameter values remain separate. This API is read-only.
+
+Entity queries support Spring Data `Window` scrolling with offset or forward
+keyset positions. Keyset scrolling appends the single-field entity identifier
+as a final ordering key when needed. It rejects collection joins, composite
+identifiers, nullable cursor values, non-basic sort fields, and backward
+positions until those cases have a defined portable result contract.
 
 ## Current Boundary
 

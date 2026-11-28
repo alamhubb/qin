@@ -7,10 +7,14 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
+import jakarta.persistence.metamodel.SingularAttribute;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Window;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -67,6 +71,27 @@ public final class QinOrmSmokeTestMain {
         requireEquals(List.of(5L, 7L), nativeIds);
         requireEquals("select id from account_user where status = :status", nativeFixture.jpql().get());
         requireEquals("active", nativeFixture.parameters().get().get("status"));
+
+        UserEntity firstScrollUser = new UserEntity();
+        firstScrollUser.id = 1L;
+        firstScrollUser.name = "Ada";
+        UserEntity secondScrollUser = new UserEntity();
+        secondScrollUser.id = 2L;
+        secondScrollUser.name = "Lin";
+        JpaFixture scrollFixture = fixture(List.of(firstScrollUser, secondScrollUser), 2L, false);
+        QinOrmSelect<UserEntity, UserEntity> scrollQuery = QinOrm.session(scrollFixture.entityManager())
+                .select(User).orderBy(User.name.asc());
+        Window<UserEntity> firstWindow = scrollQuery.scroll(ScrollPosition.keyset(), 1);
+        require(firstWindow.hasNext(), "keyset scroll should detect the extra row");
+        requireEquals(List.of("name", "id"),
+                new java.util.ArrayList<>(((KeysetScrollPosition) firstWindow.positionAt(0))
+                        .getKeys().keySet()));
+        requireEquals("select qinEntity from AccountUser qinEntity "
+                        + "order by qinEntity.name asc, qinEntity.id asc",
+                scrollFixture.jpql().get());
+        scrollQuery.scroll(firstWindow.positionAt(0), 1);
+        require(scrollFixture.jpql().get().contains("qinEntity.name > :qin_p0"),
+                "keyset continuation should add a lexicographic predicate");
 
         JpaFixture tupleFixture = fixture(List.<Object[]>of(new Object[] { 5L, "Ada" }), 7L, false);
         QinOrmSelect<UserEntity, Object[]> tupleQuery = QinOrm.session(tupleFixture.entityManager())
@@ -218,6 +243,13 @@ public final class QinOrmSmokeTestMain {
             if (method.getName().equals("getAttribute")) {
                 return attribute(UserEntity.class, (String) args[0]);
             }
+            if (method.getName().equals("hasSingleIdAttribute")) {
+                return true;
+            }
+            if (method.getName().equals("getId")) {
+                return proxy(SingularAttribute.class, (target, idMethod, idArgs) ->
+                        idMethod.getName().equals("getName") ? "id" : null);
+            }
             return null;
         });
         EntityType<CustomerEntity> customerEntityType = (EntityType<CustomerEntity>) proxy(EntityType.class,
@@ -227,6 +259,13 @@ public final class QinOrmSmokeTestMain {
                     }
                     if (method.getName().equals("getAttribute")) {
                         return attribute(CustomerEntity.class, (String) args[0]);
+                    }
+                    if (method.getName().equals("hasSingleIdAttribute")) {
+                        return true;
+                    }
+                    if (method.getName().equals("getId")) {
+                        return proxy(SingularAttribute.class, (target, idMethod, idArgs) ->
+                                idMethod.getName().equals("getName") ? "id" : null);
                     }
                     return null;
                 });
@@ -295,6 +334,14 @@ public final class QinOrmSmokeTestMain {
         };
         return proxy(Attribute.class, (instance, method, args) -> switch (method.getName()) {
             case "getJavaType" -> propertyType;
+            case "getPersistentAttributeType" -> Attribute.PersistentAttributeType.BASIC;
+            case "getJavaMember" -> {
+                try {
+                    yield owner.getDeclaredField(name);
+                } catch (NoSuchFieldException error) {
+                    throw new IllegalArgumentException(error);
+                }
+            }
             default -> null;
         });
     }
