@@ -35,6 +35,12 @@ List<Object[]> usersWithCustomers = db.select(User)
         .join(Customer, User.customerId.eq(Customer.id))
         .project(User.name, Customer.name)
         .all();
+
+QinOrmAggregate<UserEntity, Number> total = User.amount.sum();
+List<Object[]> totalsByCustomer = db.select(User, User.customerId, total)
+        .groupBy(User.customerId)
+        .having(total.gt(100L))
+        .all();
 ```
 
 The multi-column query renders a standard JPQL constructor projection when
@@ -81,13 +87,20 @@ Columns support `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `between`, `in`, `like`,
 Spring Data `Sort`/`Pageable` values. Sorting properties from those values are
 validated against the JPA metamodel.
 
+Expressions support `count`, `countDistinct`, `sum`, `avg`, `min`, and `max`.
+`groupBy` accepts scalar expressions and `having` accepts normal typed
+predicates, including comparisons against aggregates. Grouped queries support
+`all`, `one`, `first`, `exists`, and `slice`. `count()` and `page()` reject
+grouped queries because portable JPQL cannot count grouped result rows without
+wrapping the query in a derived table.
+
 ## Current Boundary
 
 The current DSL supports one entity root, one explicit entity join using an
-`ON` predicate, and scalar properties from entities in that query. Multiple
-joins, group/having, aggregate projections, and subqueries are not implemented
-yet. Database-specific JSONB and window-function queries can use a separate
-parameterized native-query API when needed.
+`ON` predicate, scalar and aggregate expressions, and grouping. Multiple
+joins and subqueries are not implemented yet. Database-specific JSONB and
+window-function queries can use a separate parameterized native-query API when
+needed.
 
 Entity and column descriptors are currently declared explicitly. The JPA
 metamodel validates descriptors at execution. Qin compiler-generated

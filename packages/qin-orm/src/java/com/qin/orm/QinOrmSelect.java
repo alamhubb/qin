@@ -26,10 +26,12 @@ public final class QinOrmSelect<E, R> {
     private final EntityManager entityManager;
     private final SelectionKind selectionKind;
     private final Class<R> resultType;
-    private final List<QinOrmColumn<?, ?>> columns;
+    private final List<QinOrmExpression<?, ?>> columns;
     private final QinOrmPredicate<?> predicate;
     private final List<JoinSpec> joins;
     private final List<QinOrmOrder<?>> orders;
+    private final List<QinOrmExpression<?, ?>> groupBy;
+    private final QinOrmPredicate<?> having;
     private final boolean distinct;
     private final int limit;
     private final int offset;
@@ -40,10 +42,12 @@ public final class QinOrmSelect<E, R> {
             EntityManager entityManager,
             SelectionKind selectionKind,
             Class<R> resultType,
-            List<QinOrmColumn<?, ?>> columns,
+            List<QinOrmExpression<?, ?>> columns,
             QinOrmPredicate<?> predicate,
             List<JoinSpec> joins,
             List<QinOrmOrder<?>> orders,
+            List<QinOrmExpression<?, ?>> groupBy,
+            QinOrmPredicate<?> having,
             boolean distinct,
             int limit,
             int offset,
@@ -56,6 +60,8 @@ public final class QinOrmSelect<E, R> {
         this.predicate = predicate;
         this.joins = List.copyOf(joins);
         this.orders = List.copyOf(orders);
+        this.groupBy = List.copyOf(groupBy);
+        this.having = having;
         this.distinct = distinct;
         this.limit = limit;
         this.offset = offset;
@@ -64,43 +70,34 @@ public final class QinOrmSelect<E, R> {
 
     static <E> QinOrmSelect<E, E> entity(QinOrmEntity<E> entity, EntityManager entityManager) {
         return new QinOrmSelect<>(entity, entityManager, SelectionKind.ENTITY, entity.javaType(),
-                List.of(), null, List.of(), List.of(), false, -1, 0, null);
+                List.of(), null, List.of(), List.of(), List.of(), null, false, -1, 0, null);
     }
 
     static <E, V> QinOrmSelect<E, V> scalar(
             QinOrmEntity<E> entity,
             EntityManager entityManager,
-            QinOrmColumn<E, V> column) {
+            QinOrmExpression<E, V> column) {
         requireSameEntity(entity, column);
         return new QinOrmSelect<>(entity, entityManager, SelectionKind.SCALAR, column.propertyType(),
-                List.of(column), null, List.of(), List.of(), false, -1, 0, null);
+                List.of(column), null, List.of(), List.of(), List.of(), null, false, -1, 0, null);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     static <E> QinOrmSelect<E, Object[]> tuple(
             QinOrmEntity<E> entity,
             EntityManager entityManager,
-            QinOrmColumn<E, ?> first,
-            QinOrmColumn<E, ?> second,
-            QinOrmColumn<E, ?>... remaining) {
-        List<QinOrmColumn<?, ?>> columns = new ArrayList<>();
+            QinOrmExpression<?, ?> first,
+            QinOrmExpression<?, ?> second,
+            QinOrmExpression<?, ?>... remaining) {
+        List<QinOrmExpression<?, ?>> columns = new ArrayList<>();
         columns.add(Objects.requireNonNull(first, "first"));
         columns.add(Objects.requireNonNull(second, "second"));
-        for (QinOrmColumn<E, ?> column : remaining) {
-            columns.add(Objects.requireNonNull(column, "column"));
-        }
-        Set<String> selectedNames = new HashSet<>();
-        for (QinOrmColumn<?, ?> column : columns) {
-            if (column.entityClass() != entity.javaType()) {
-                throw new IllegalArgumentException("Selected column belongs to a different entity: "
-                        + column.propertyName());
-            }
-            if (!selectedNames.add(column.propertyName())) {
-                throw new IllegalArgumentException("Duplicate selected entity property: " + column.propertyName());
-            }
+        for (QinOrmExpression<?, ?> expression : remaining) {
+            columns.add(Objects.requireNonNull(expression, "expression"));
         }
         return new QinOrmSelect<>(entity, entityManager, SelectionKind.TUPLE, Object[].class,
-                columns, null, List.of(), List.of(), false, -1, 0, null);
+                columns, null, List.of(), List.of(), List.of(), null, false, -1, 0, null);
     }
 
     public <D> QinOrmSelect<E, D> as(Class<D> dtoType) {
@@ -108,28 +105,28 @@ public final class QinOrmSelect<E, R> {
             throw new IllegalStateException("DTO projection requires at least two selected properties");
         }
         return new QinOrmSelect<>(entity, entityManager, SelectionKind.DTO, dtoType,
-                columns, predicate, joins, orders, distinct, limit, offset,
+                columns, predicate, joins, orders, groupBy, having, distinct, limit, offset,
                 Objects.requireNonNull(dtoType, "dtoType"));
     }
 
     @SafeVarargs
     @SuppressWarnings("varargs")
-    public final QinOrmSelect<E, Object[]> project(QinOrmColumn<?, ?>... selectedColumns) {
-        Objects.requireNonNull(selectedColumns, "selectedColumns");
-        if (selectedColumns.length == 0) {
+    public final QinOrmSelect<E, Object[]> project(QinOrmExpression<?, ?>... selectedExpressions) {
+        Objects.requireNonNull(selectedExpressions, "selectedExpressions");
+        if (selectedExpressions.length == 0) {
             throw new IllegalArgumentException("project requires at least one property");
         }
-        List<QinOrmColumn<?, ?>> nextColumns = new ArrayList<>(selectedColumns.length);
+        List<QinOrmExpression<?, ?>> nextColumns = new ArrayList<>(selectedExpressions.length);
         Set<String> names = new HashSet<>();
-        for (QinOrmColumn<?, ?> column : selectedColumns) {
-            Objects.requireNonNull(column, "column");
-            if (!names.add(column.entityClass().getName() + ":" + column.propertyName())) {
-                throw new IllegalArgumentException("Duplicate selected property: " + column.propertyName());
+        for (QinOrmExpression<?, ?> expression : selectedExpressions) {
+            Objects.requireNonNull(expression, "expression");
+            if (!names.add(expression.signature())) {
+                throw new IllegalArgumentException("Duplicate selected expression: " + expression.signature());
             }
-            nextColumns.add(column);
+            nextColumns.add(expression);
         }
         return new QinOrmSelect<>(entity, entityManager, SelectionKind.TUPLE, Object[].class,
-                nextColumns, predicate, joins, orders, distinct, limit, offset, null);
+                nextColumns, predicate, joins, orders, groupBy, having, distinct, limit, offset, null);
     }
 
     public <T> QinOrmSelect<E, R> join(QinOrmEntity<T> target, QinOrmPredicate<?> onPredicate) {
@@ -170,6 +167,30 @@ public final class QinOrmSelect<E, R> {
 
     public QinOrmSelect<E, R> distinct() {
         return copy(predicate, joins, orders, true, limit, offset);
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public final QinOrmSelect<E, R> groupBy(QinOrmExpression<?, ?>... expressions) {
+        Objects.requireNonNull(expressions, "expressions");
+        if (expressions.length == 0) {
+            throw new IllegalArgumentException("groupBy requires at least one expression");
+        }
+        List<QinOrmExpression<?, ?>> combined = new ArrayList<>(groupBy);
+        for (QinOrmExpression<?, ?> expression : expressions) {
+            Objects.requireNonNull(expression, "expression");
+            if (expression instanceof QinOrmAggregate<?, ?>) {
+                throw new IllegalArgumentException("groupBy cannot contain aggregate expressions");
+            }
+            combined.add(expression);
+        }
+        return copy(predicate, joins, orders, combined, having, distinct, limit, offset);
+    }
+
+    public QinOrmSelect<E, R> having(QinOrmPredicate<?> nextPredicate) {
+        Objects.requireNonNull(nextPredicate, "nextPredicate");
+        QinOrmPredicate<?> combined = having == null ? nextPredicate : having.and(nextPredicate);
+        return copy(predicate, joins, orders, groupBy, combined, distinct, limit, offset);
     }
 
     public QinOrmSelect<E, R> limit(int limit) {
@@ -220,11 +241,14 @@ public final class QinOrmSelect<E, R> {
     }
 
     public long count() {
+        requireUngroupedCount();
         Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         QinOrmJpqlContext context = new QinOrmJpqlContext();
         StringBuilder jpql = new StringBuilder("select count(distinct ").append(ROOT_ALIAS).append(")");
         appendFrom(jpql, jpaEntities, context);
         appendWhere(jpql, context);
+        appendGroupBy(jpql);
+        appendHaving(jpql, context);
         TypedQuery<Long> query = entityManager.createQuery(jpql.toString(), Long.class);
         bind(query, context.parameters());
         return query.getSingleResult();
@@ -236,6 +260,8 @@ public final class QinOrmSelect<E, R> {
         StringBuilder jpql = new StringBuilder("select 1");
         appendFrom(jpql, jpaEntities, context);
         appendWhere(jpql, context);
+        appendGroupBy(jpql);
+        appendHaving(jpql, context);
         TypedQuery<Integer> query = entityManager.createQuery(jpql.toString(), Integer.class).setMaxResults(1);
         bind(query, context.parameters());
         return !query.getResultList().isEmpty();
@@ -243,6 +269,7 @@ public final class QinOrmSelect<E, R> {
 
     public Page<R> page(Pageable pageable) {
         Objects.requireNonNull(pageable, "pageable");
+        requireUngroupedCount();
         Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         if (pageable.isUnpaged()) {
             List<R> content = all();
@@ -284,12 +311,14 @@ public final class QinOrmSelect<E, R> {
         }
         switch (selectionKind) {
             case ENTITY -> jpql.append(aliasFor(entity.javaType()));
-            case SCALAR -> jpql.append(path(columns.get(0)));
+            case SCALAR -> jpql.append(columns.get(0).render(this::aliasFor));
             case TUPLE -> appendColumnSelection(jpql);
             case DTO -> appendDtoSelection(jpql);
         }
         appendFrom(jpql, jpaEntities, context);
         appendWhere(jpql, context);
+        appendGroupBy(jpql);
+        appendHaving(jpql, context);
         appendOrderBy(jpql, queryOrders);
         return new QueryPlan(jpql.toString(), context.parameters());
     }
@@ -313,7 +342,7 @@ public final class QinOrmSelect<E, R> {
             if (index > 0) {
                 jpql.append(", ");
             }
-            jpql.append(path(columns.get(index)));
+            jpql.append(columns.get(index).render(this::aliasFor));
         }
     }
 
@@ -330,6 +359,25 @@ public final class QinOrmSelect<E, R> {
     private void appendWhere(StringBuilder jpql, QinOrmJpqlContext context) {
         if (predicate != null) {
             jpql.append(" where ").append(predicate.render(context, this::aliasFor));
+        }
+    }
+
+    private void appendGroupBy(StringBuilder jpql) {
+        if (groupBy.isEmpty()) {
+            return;
+        }
+        jpql.append(" group by ");
+        for (int index = 0; index < groupBy.size(); index++) {
+            if (index > 0) {
+                jpql.append(", ");
+            }
+            jpql.append(groupBy.get(index).render(this::aliasFor));
+        }
+    }
+
+    private void appendHaving(StringBuilder jpql, QinOrmJpqlContext context) {
+        if (having != null) {
+            jpql.append(" having ").append(having.render(context, this::aliasFor));
         }
     }
 
@@ -397,17 +445,20 @@ public final class QinOrmSelect<E, R> {
                 validateProperty(owner, reference.propertyName());
             }
         }
-        for (QinOrmColumn<?, ?> column : columns) {
-            EntityType<?> owner = requireQueryEntity(jpaEntities, column.entityClass(), column.propertyName());
-            Class<?> mappedType = validateProperty(owner, column.propertyName());
-            if (!mappedType.equals(column.propertyType())) {
-                throw new IllegalArgumentException("Column type mismatch for " + column.propertyName()
-                        + ": mapped type is " + mappedType.getTypeName()
-                        + " but descriptor declares " + column.propertyType().getTypeName());
-            }
+        for (QinOrmExpression<?, ?> expression : columns) {
+            validateExpression(jpaEntities, expression);
         }
         if (predicate != null) {
             for (QinOrmPredicate.PropertyReference reference : predicate.propertyReferences()) {
+                EntityType<?> owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
+                validateProperty(owner, reference.propertyName());
+            }
+        }
+        for (QinOrmExpression<?, ?> expression : groupBy) {
+            validateExpression(jpaEntities, expression);
+        }
+        if (having != null) {
+            for (QinOrmPredicate.PropertyReference reference : having.propertyReferences()) {
                 EntityType<?> owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
                 validateProperty(owner, reference.propertyName());
             }
@@ -417,6 +468,24 @@ public final class QinOrmSelect<E, R> {
             validateProperty(owner, order.propertyName());
         }
         return jpaEntities;
+    }
+
+    private void validateExpression(
+            Map<Class<?>, EntityType<?>> jpaEntities,
+            QinOrmExpression<?, ?> expression) {
+        if (expression instanceof QinOrmAggregate<?, ?> aggregate) {
+            validateExpression(jpaEntities, aggregate.argument());
+            return;
+        }
+        for (QinOrmPredicate.PropertyReference reference : expression.propertyReferences()) {
+            EntityType<?> owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
+            Class<?> mappedType = validateProperty(owner, reference.propertyName());
+            if (expression instanceof QinOrmColumn<?, ?> column && !mappedType.equals(column.propertyType())) {
+                throw new IllegalArgumentException("Column type mismatch for " + column.propertyName()
+                        + ": mapped type is " + mappedType.getTypeName()
+                        + " but descriptor declares " + column.propertyType().getTypeName());
+            }
+        }
     }
 
     private EntityType<?> managedEntity(Class<?> javaType) {
@@ -467,10 +536,6 @@ public final class QinOrmSelect<E, R> {
         throw new IllegalArgumentException("Entity is not joined in this query: " + javaType.getName());
     }
 
-    private String path(QinOrmColumn<?, ?> column) {
-        return aliasFor(column.entityClass()) + "." + column.propertyName();
-    }
-
     private <T> QinOrmSelect<E, R> addJoin(
             QinOrmEntity<T> target,
             QinOrmPredicate<?> onPredicate,
@@ -484,6 +549,12 @@ public final class QinOrmSelect<E, R> {
         return copy(predicate, List.of(join), orders, distinct, limit, offset);
     }
 
+    private void requireUngroupedCount() {
+        if (!groupBy.isEmpty() || having != null) {
+            throw new UnsupportedOperationException("count and Page are not supported for grouped queries");
+        }
+    }
+
     private QinOrmSelect<E, R> copy(
             QinOrmPredicate<?> nextPredicate,
             List<JoinSpec> nextJoins,
@@ -491,15 +562,29 @@ public final class QinOrmSelect<E, R> {
             boolean nextDistinct,
             int nextLimit,
             int nextOffset) {
-        return new QinOrmSelect<>(entity, entityManager, selectionKind, resultType, columns,
-                nextPredicate, nextJoins, nextOrders, nextDistinct, nextLimit, nextOffset, dtoType);
+        return copy(nextPredicate, nextJoins, nextOrders, groupBy, having,
+                nextDistinct, nextLimit, nextOffset);
     }
 
-    private static <E, V> void requireSameEntity(QinOrmEntity<E> entity, QinOrmColumn<E, V> column) {
+    private QinOrmSelect<E, R> copy(
+            QinOrmPredicate<?> nextPredicate,
+            List<JoinSpec> nextJoins,
+            List<QinOrmOrder<?>> nextOrders,
+            List<QinOrmExpression<?, ?>> nextGroupBy,
+            QinOrmPredicate<?> nextHaving,
+            boolean nextDistinct,
+            int nextLimit,
+            int nextOffset) {
+        return new QinOrmSelect<>(entity, entityManager, selectionKind, resultType, columns,
+                nextPredicate, nextJoins, nextOrders, nextGroupBy, nextHaving,
+                nextDistinct, nextLimit, nextOffset, dtoType);
+    }
+
+    private static <E, V> void requireSameEntity(QinOrmEntity<E> entity, QinOrmExpression<E, V> column) {
         Objects.requireNonNull(entity, "entity");
         Objects.requireNonNull(column, "column");
         if (column.entityClass() != entity.javaType()) {
-            throw new IllegalArgumentException("Column belongs to a different entity: " + column.propertyName());
+            throw new IllegalArgumentException("Expression belongs to a different entity: " + column.signature());
         }
     }
 

@@ -96,6 +96,20 @@ public final class QinOrmSmokeTestMain {
         joined.all();
         requireEquals("Ada", joinedFixture.parameters().get().get("qin_p1"));
 
+        QinOrmAggregate<UserEntity, Number> totalAmount = User.amount.sum();
+        JpaFixture groupedFixture = fixture(List.<Object[]>of(new Object[] { 12L, 250L }), 1L, false);
+        QinOrmSelect<UserEntity, Object[]> grouped = QinOrm.session(groupedFixture.entityManager())
+                .select(User, User.customerId, totalAmount)
+                .groupBy(User.customerId)
+                .having(totalAmount.gt(100L));
+        requireEquals("select qinEntity.customerId, sum(qinEntity.amount) from AccountUser qinEntity "
+                        + "group by qinEntity.customerId having sum(qinEntity.amount) > :qin_p0",
+                grouped.toJpql());
+        grouped.all();
+        requireEquals(100L, groupedFixture.parameters().get().get("qin_p0"));
+        expectFailure(UnsupportedOperationException.class,
+                () -> grouped.page(PageRequest.of(0, 10)));
+
         JpaFixture leftJoinFixture = fixture(List.of(new UserEntity()), 1L, false);
         requireEquals("select qinEntity from AccountUser qinEntity left join CustomerEntity qinCustomerEntity "
                         + "on qinEntity.customerId = qinCustomerEntity.id",
@@ -218,6 +232,7 @@ public final class QinOrmSmokeTestMain {
         Class<?> propertyType = switch (name) {
             case "id" -> Long.class;
             case "customerId" -> Long.class;
+            case "amount" -> Long.class;
             case "name" -> String.class;
             default -> throw new IllegalArgumentException("Unknown test attribute: " + name);
         };
@@ -272,6 +287,7 @@ public final class QinOrmSmokeTestMain {
         private Long id;
         private String name;
         private Long customerId;
+        private Long amount;
     }
 
     @Entity
@@ -283,6 +299,7 @@ public final class QinOrmSmokeTestMain {
     private static final class UserModel extends QinOrmEntity<UserEntity> {
         private final QinOrmColumn<UserEntity, Long> id = column("id", Long.class);
         private final QinOrmColumn<UserEntity, Long> customerId = column("customerId", Long.class);
+        private final QinOrmColumn<UserEntity, Long> amount = column("amount", Long.class);
         private final QinOrmColumn<UserEntity, String> name = column("name", String.class);
 
         private UserModel() {

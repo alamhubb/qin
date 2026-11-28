@@ -2,8 +2,10 @@ package com.qin.orm;
 
 import java.util.Objects;
 import java.util.Collection;
+import java.util.Set;
+import java.util.function.Function;
 
-public final class QinOrmColumn<E, V> {
+public final class QinOrmColumn<E, V> implements QinOrmExpression<E, V> {
     private final Class<E> entityClass;
     private final String propertyName;
     private final Class<V> propertyType;
@@ -15,7 +17,8 @@ public final class QinOrmColumn<E, V> {
         this.propertyType = Objects.requireNonNull(propertyType, "propertyType");
     }
 
-    Class<E> entityClass() {
+    @Override
+    public Class<E> entityClass() {
         return entityClass;
     }
 
@@ -23,8 +26,19 @@ public final class QinOrmColumn<E, V> {
         return propertyName;
     }
 
+    @Override
     public Class<V> propertyType() {
         return propertyType;
+    }
+
+    @Override
+    public String render(Function<Class<?>, String> aliasFor) {
+        return aliasFor.apply(entityClass) + "." + propertyName;
+    }
+
+    @Override
+    public Set<QinOrmPredicate.PropertyReference> propertyReferences() {
+        return Set.of(new QinOrmPredicate.PropertyReference(entityClass, propertyName));
     }
 
     public QinOrmPredicate<E> eq(V value) {

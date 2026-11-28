@@ -16,7 +16,7 @@ public final class QinOrmSession {
 
     public <E, V> QinOrmSelect<E, V> select(
             QinOrmEntity<E> entity,
-            QinOrmColumn<E, V> column) {
+            QinOrmExpression<E, V> column) {
         return QinOrmSelect.scalar(entity, entityManager, column);
     }
 
@@ -24,9 +24,9 @@ public final class QinOrmSession {
     @SuppressWarnings("varargs")
     public final <E> QinOrmSelect<E, Object[]> select(
             QinOrmEntity<E> entity,
-            QinOrmColumn<E, ?> first,
-            QinOrmColumn<E, ?> second,
-            QinOrmColumn<E, ?>... remaining) {
+            QinOrmExpression<?, ?> first,
+            QinOrmExpression<?, ?> second,
+            QinOrmExpression<?, ?>... remaining) {
         return QinOrmSelect.tuple(entity, entityManager, first, second, remaining);
     }
 }

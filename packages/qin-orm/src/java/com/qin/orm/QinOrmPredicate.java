@@ -14,6 +14,8 @@ public final class QinOrmPredicate<E> {
     private final String propertyName;
     private final Class<?> comparisonEntityClass;
     private final String comparisonPropertyName;
+    private final QinOrmExpression<?, ?> expression;
+    private final QinOrmExpression<?, ?> comparisonExpression;
     private final String operator;
     private final Object firstValue;
     private final Object secondValue;
@@ -34,6 +36,8 @@ public final class QinOrmPredicate<E> {
         this.propertyName = propertyName;
         this.comparisonEntityClass = comparisonEntityClass;
         this.comparisonPropertyName = comparisonPropertyName;
+        this.expression = null;
+        this.comparisonExpression = null;
         this.operator = operator;
         this.firstValue = firstValue;
         this.secondValue = secondValue;
@@ -52,6 +56,56 @@ public final class QinOrmPredicate<E> {
         Objects.requireNonNull(other, "other");
         return new QinOrmPredicate<>(column.entityClass(), Kind.COMPARE, column.propertyName(),
                 other.entityClass(), other.propertyName(), operator, null, null, List.of());
+    }
+
+    private QinOrmPredicate(
+            Class<E> entityClass,
+            QinOrmExpression<?, ?> expression,
+            String operator,
+            Object value) {
+        this.entityClass = Objects.requireNonNull(entityClass, "entityClass");
+        this.kind = Kind.COMPARE;
+        this.propertyName = null;
+        this.comparisonEntityClass = null;
+        this.comparisonPropertyName = null;
+        this.expression = Objects.requireNonNull(expression, "expression");
+        this.comparisonExpression = null;
+        this.operator = Objects.requireNonNull(operator, "operator");
+        this.firstValue = value;
+        this.secondValue = null;
+        this.children = List.of();
+    }
+
+    private QinOrmPredicate(
+            Class<E> entityClass,
+            QinOrmExpression<?, ?> expression,
+            QinOrmExpression<?, ?> comparisonExpression,
+            String operator) {
+        this.entityClass = Objects.requireNonNull(entityClass, "entityClass");
+        this.kind = Kind.COMPARE;
+        this.propertyName = null;
+        this.comparisonEntityClass = null;
+        this.comparisonPropertyName = null;
+        this.expression = Objects.requireNonNull(expression, "expression");
+        this.comparisonExpression = Objects.requireNonNull(comparisonExpression, "comparisonExpression");
+        this.operator = Objects.requireNonNull(operator, "operator");
+        this.firstValue = null;
+        this.secondValue = null;
+        this.children = List.of();
+    }
+
+    static <E> QinOrmPredicate<E> compareExpression(
+            QinOrmExpression<E, ?> expression,
+            String operator,
+            Object value) {
+        return new QinOrmPredicate<>(expression.entityClass(), expression, operator, value);
+    }
+
+    static <E, T> QinOrmPredicate<E> compareExpressions(
+            QinOrmExpression<E, ?> expression,
+            QinOrmExpression<T, ?> other,
+            String operator) {
+        return new QinOrmPredicate<>(expression.entityClass(), expression, other, operator);
     }
 
     static <E> QinOrmPredicate<E> between(QinOrmColumn<E, ?> column, Object lower, Object upper) {
@@ -108,6 +162,12 @@ public final class QinOrmPredicate<E> {
 
     Set<PropertyReference> propertyReferences() {
         Set<PropertyReference> names = new LinkedHashSet<>();
+        if (expression != null) {
+            names.addAll(expression.propertyReferences());
+        }
+        if (comparisonExpression != null) {
+            names.addAll(comparisonExpression.propertyReferences());
+        }
         if (propertyName != null) {
             names.add(new PropertyReference(entityClass, propertyName));
         }
@@ -121,6 +181,19 @@ public final class QinOrmPredicate<E> {
     }
 
     private String renderComparison(QinOrmJpqlContext context, Function<Class<?>, String> aliasFor) {
+        if (expression != null) {
+            String expressionPath = expression.render(aliasFor);
+            if (comparisonExpression != null) {
+                return expressionPath + " " + operator + " " + comparisonExpression.render(aliasFor);
+            }
+            if (firstValue == null && operator.equals("=")) {
+                return expressionPath + " is null";
+            }
+            if (firstValue == null && operator.equals("<>")) {
+                return expressionPath + " is not null";
+            }
+            return expressionPath + " " + operator + " " + context.bind(firstValue);
+        }
         String path = aliasFor.apply(entityClass) + "." + propertyName;
         if (comparisonPropertyName != null) {
             return path + " " + operator + " " + aliasFor.apply(comparisonEntityClass)
