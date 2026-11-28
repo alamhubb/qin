@@ -42,13 +42,13 @@ Java 标准链路为 `OvsParser / CssTsParser → SubhutiCst → QinOvsCstToAst 
 
 | 阶段 | 权重 | 验收产物 | 状态 |
 |---|---:|---|---|
-| Java OVS CST-to-AST 基础 | 15% | 直接消费 SubhutiCst，复用 Java Slime visitor，转换普通语句、render、props、嵌套控制流 | 进行中。Java visitor 覆盖基础 render、props、view、NoRender、动态 child reactive、side effect、if/else、循环、switch 和 try/catch/finally lowering；新增 nested render/control-flow regression。OVS catalog verifier 已检查 HTML render lowering、命名/default exports 和 implicit component wrapper，尚缺完整 Node output parity |
-| OVS 语法闭包 | 25% | render 表达式/语句、component/view、导入导出、props 方法/spread、NoRender、函数体规则和响应式 lowering | 进行中。render、spread 基础、props 方法、view 基本形态、NoRender block、动态 child reactive、side-effect、if/else、循环、switch 与 try/catch/finally reactive lowering 已开始；完整函数/reactive 语义仍未实现 |
-| CSSTS Java 转换 | 20% | CSS declaration、merge、class/style metadata、atom 收集与生成 | 进行中。OVS 与独立 `.cssts` 标准入口走 Java parser/visitor/generator；动态 TS atom、默认及用户配置的 pseudo atom、classGroup、logical/conditional atom 和 CSS spread 已生成 CSS/atom。20 项上游 `.cssts` 样例全部通过 Java 编译；精确 Node 输出对照和完整 style metadata 行为仍待验收 |
-| Java ESM/style emitter 集成 | 15% | SlimeGenerator、runtime imports、CSS 与 atom 产物及位置映射 | OVS 与 `.cssts` 均调用 Java SlimeGenerator。已验证样式 imports、动态 atom、CSS 与 atom 模块，以及 dev/build ESM 的位置映射 |
-| Qin 单文件/批量标准入口切换 | 10% | QinOvsCompiler 单件和批处理直接走 Java pipeline，缓存指纹覆盖 Java compiler inputs | 进行中。单文件与批量标准入口已调用 `QinOvsJavaCompiler`，移除 `QinOvsCompiler` 内 JS package runner/wrapper；缓存身份含 Java parser/runtime 与 Java OVS compiler 指纹。项目自定义 JS transform 插件暂未迁移 |
-| 全量行为与错误对照 | 10% | 登记 OVS/CSSTS corpus、负例和真实 balance-monitoring project 回归 | 进行中。balance-monitoring 全量构建及 Java 源码映射验证通过。完整 Node 行为和错误诊断对照待验收 |
-| 冷启动性能验收 | 5% | 新 JVM 首次转换，各阶段对比 Node，结果可复现 | 进行中。Qin、CSSTS 和 OVS 的正式 Java Chevrotain 构建已将语法录制移到构建期。两个业务样例首次解析缩短 26%–30%，Node 同输入的阶段对照仍未建立 |
+| Java OVS CST-to-AST 基础 | 15% | 直接消费 SubhutiCst，复用 Java Slime visitor，转换普通语句、render、props、嵌套控制流 | 登记回归通过。Java visitor 直接构造类型化 Slime AST，Parser 与 compiler focused tests、63 份 OVS 编译及独立 Node Vue 行为对照通过 |
+| OVS 语法闭包 | 25% | render 表达式/语句、component/view、导入导出、props 方法/spread、NoRender、函数体规则和响应式 lowering | 登记回归通过。命名/default exports、复杂子块、控制流、事件、props、响应式更新及异常顺序有定向运行验证。保留所选响应式调用计数差异的结构报告 |
+| CSSTS Java 转换 | 20% | CSS declaration、merge、class/style metadata、atom 收集与生成 | 登记回归通过。20 份独立 Node 对照的运行值、CSS 和 atom 一致。配置 pseudo、classGroup、classPrefix、组合与 spread 的 Java 回归通过 |
+| Java ESM/style emitter 集成 | 15% | SlimeGenerator、runtime imports、CSS 与 atom 产物及位置映射 | 登记回归通过。Java SlimeGenerator 发射 ESM，Java 收集 CSS/atom。源码映射回归与实际 dev 返回的内联源码映射通过 |
+| Qin 单文件/批量标准入口切换 | 10% | QinOvsCompiler 单件和批处理直接走 Java pipeline，缓存指纹覆盖 Java compiler inputs | 登记回归通过。仅保留 JDK 的 PATH 时，未缓存的标准 OVS 单文件、批量和 CSSTS 编译通过。工具链、配置与源码变化的缓存失效回归通过 |
+| 全量行为与错误对照 | 10% | 登记 OVS/CSSTS corpus、负例和真实 balance-monitoring project 回归 | 登记回归通过。63 份 OVS 的首次挂载和三次更新、20 份 CSSTS 的运行值及产物、登记负例与 focused diagnostics 通过。balance-monitoring 标准 build、关闭采集的本地 dev、源码映射与热刷新通过 |
+| 冷启动性能验收 | 5% | 新 JVM 首次转换，各阶段对比 Node，结果可复现 | 完成 5 次新进程、零预热的完整编译和同 CST 转换对照。BalancePanel 为 Java/Node 337.20/5580.95 ms，同 CST→AST 为 39.41/22.00 ms。原始数据和计时边界见上节 |
 
 权重之和为 100%。只按上表验收项更新完成度，不按代码行数或局部 smoke 通过率更新。
 
