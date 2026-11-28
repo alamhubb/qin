@@ -3,6 +3,7 @@ package com.qin.lang.module.resolver;
 import com.qin.lang.module.policy.QinImportDescriptor;
 import com.qin.lang.module.policy.QinImportKind;
 import com.qin.lang.module.policy.QinImportParser;
+import com.qin.subhutijson.QinJsonModule;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -135,7 +136,11 @@ public final class QinModuleGraphBuilder {
         if (isBinaryAssetModule(file)) {
             return "";
         }
-        return stripUtf8Bom(Files.readString(file, StandardCharsets.UTF_8));
+        String source = stripUtf8Bom(Files.readString(file, StandardCharsets.UTF_8));
+        if (file.getFileName().toString().toLowerCase().endsWith(".json")) {
+            return QinJsonModule.toEsm(source);
+        }
+        return source;
     }
 
     private boolean isBinaryAssetModule(Path file) {

@@ -4,6 +4,7 @@ export default {
     "description":  "Core runtime orchestration for Qin (JS syntax on Java runtime)",
     "entry":  "src/java/com/qin/runtime/core/QinRuntimeMain.java",
     "dependencies":  {
+                         "com.qin:subhuti-json": "0.1.0",
                          "com.qin:qin-lang-frontend-adapter":  "0.1.0",
                          "com.qin:qin-lang-backend-jvm":  "0.1.0",
                          "com.qin:qin-lang-backend-js":  "0.1.0",

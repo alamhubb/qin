@@ -5,6 +5,7 @@ ESM module-resolution layer for Qin source files.
 ## Responsibility
 
 - Resolve local `.js` module specifiers.
+- Resolve `.json` imports through `subhuti-json`, validate them with its generated Subhuti/Chevrotain parser, and expose the resulting ESM source to the normal module graph.
 - Resolve npm-style bare specifiers from `node_modules`.
   - package entry priority: `exports.import` -> `exports["."]` -> `module` -> `main` -> `index.js`
 - Resolve bare specifiers through the nearest `tsconfig.json` `compilerOptions.paths` mappings, using `baseUrl` and inherited configs.

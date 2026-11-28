@@ -5,6 +5,7 @@ export default {
     "entry":  "src/java/com/qin/lang/module/resolver/ModuleResolverPackageMarker.java",
     "dependencies":  {
                          "com.qin:qin-lang-module-policy":  "0.1.0",
+                         "com.qin:subhuti-json":  "0.1.0",
                          "com.google.code.gson@gson":  "2.10.1"
                      },
     "java":  {

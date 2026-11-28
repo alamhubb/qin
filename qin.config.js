@@ -6,6 +6,7 @@ export default {
     "dependencies":  {
                          "com.qin:qin-conformance":  "0.1.0",
                          "com.qin:qin-web":  "0.1.0",
+                         "com.qin:subhuti-json":  "0.1.0",
                          "com.google.code.gson@gson":  "2.10.1",
                          "io.get-coursier@coursier_2.13":  "2.1.10"
                      },

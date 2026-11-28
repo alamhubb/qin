@@ -998,7 +998,7 @@ public final class QinEsmSpecifierResolver {
         if (fileName.isBlank() || hasSupportedScriptExtension(fileName)) {
             return null;
         }
-        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".cssts", ".mjs", ".ts", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif"};
+        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".cssts", ".mjs", ".ts", ".json", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif"};
         for (String extension : extensions) {
             Path candidate = path.resolveSibling(fileName + extension);
             if (Files.isRegularFile(candidate)) {
@@ -1089,6 +1089,7 @@ public final class QinEsmSpecifierResolver {
         return fileName.endsWith(".js")
                 || fileName.endsWith(".mjs")
                 || fileName.endsWith(".ts")
+                || fileName.endsWith(".json")
                 || fileName.endsWith(".qin")
                 || fileName.endsWith(".vue")
                 || fileName.endsWith(".ovs")

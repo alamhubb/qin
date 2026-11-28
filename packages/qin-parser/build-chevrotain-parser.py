@@ -17,6 +17,7 @@ FRONTEND = JAVA_SLIME / "slime-runtime-slime"
 CANDIDATE = JAVA_SLIME / "slime-chevrotain-candidate"
 BUILD = ROOT / "build"
 SOURCE = ROOT / "src/java/com/qin/parser"
+SUBHUTI_JSON_GRAMMAR = ROOT.parent / "subhuti-json/grammar/com/qin/subhutijson/SubhutiJsonGrammarSource.java"
 IR = ROOT.parent / "qin-lang-ir/build/classes"
 JVM = ["-Xmx1g", "-XX:-UseJVMCICompiler", "-Dfile.encoding=UTF-8",
        "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"]
@@ -94,7 +95,7 @@ def build_lock():
 
 
 def input_hashes():
-    paths = {Path(__file__), ROOT / "qin.config.js"}
+    paths = {Path(__file__), ROOT / "qin.config.js", SUBHUTI_JSON_GRAMMAR}
     for folder, glob in [(SOURCE, "*.java"), (IR, "*.class"),
                          (FRONTEND / "src/compiler/java", "*.java"),
                          (FRONTEND / "tools", "*.py"),
@@ -148,6 +149,25 @@ public class {name} extends {parent} {{
 '''
 
 
+def json_facade(name, generated_name, parent, fingerprint):
+    return f'''package com.qin.subhutijson;
+import com.qin.subhutijson.generated.{generated_name};
+import com.subhuti.struct.SubhutiCst;
+public final class {name} extends {parent} {{
+    public static final String BACKEND_FINGERPRINT = "{fingerprint}";
+    public {name}(String source) {{ super(source); }}
+    @Override protected Backend backend(boolean parameterized) {{ return Holder.BACKEND; }}
+    public SubhutiCst parseJsonDocument() {{ return Program(SourceType.MODULE); }}
+    private static final class Holder {{
+        static final com.slime.chevrotain.StableTokenInput.Vocabulary VOCABULARY =
+            loadVocabulary({name}.class, "/com/qin/subhutijson/generated/{name}.tokens.tsv");
+        static final {generated_name} PARSER = new {generated_name}(VOCABULARY);
+        static final Backend BACKEND = new Backend(VOCABULARY, PARSER, PARSER::parse);
+    }}
+}}
+'''
+
+
 def build(manifest):
     out = Path(tempfile.mkdtemp(prefix="chevrotain-", dir=BUILD))
     print(f"QIN_CHEVROTAIN_BUILD={out}", flush=True)
@@ -164,6 +184,7 @@ def build(manifest):
                and "/cstToAst/" not in path.as_posix() and not path.name.endswith("StaticGrammar.java")]
     authors += [JAVA_SLIME / "subhuti-java/src/main/java/com/subhuti/lookahead/SubhutiTokenLookahead.java"]
     authors += [SOURCE / (name + ".java") for name in ("QinParser", "CssTsParser", "OvsParser")]
+    authors += [SUBHUTI_JSON_GRAMMAR]
     authors_list = out / "authors.list"
     authors_list.write_bytes(("\n".join(path.as_posix() for path in authors) + "\n").encode("utf-8"))
     compiler = out / "compiler"
@@ -190,37 +211,53 @@ def build(manifest):
     runtime_sources = out / "runtime-sources/com/qin/parser"
     runtime_sources.mkdir(parents=True)
     fingerprint = hashlib.sha256(json.dumps(manifest, sort_keys=True).encode("utf-8")).hexdigest()
-    for name, parent in (("QinParser", "com.slime.parser.SlimeParser"), ("CssTsParser", "QinParser"), ("OvsParser", "CssTsParser")):
+    parser_specs = (
+        ("QinParser", "com.slime.parser.SlimeParser", "com.qin.parser.QinParser",
+         "Program(com.slime.parser.SlimeJavascriptParser.SourceType)", "com.qin.parser.generated", False),
+        ("CssTsParser", "QinParser", "com.qin.parser.CssTsParser",
+         "Program(com.slime.parser.SlimeJavascriptParser.SourceType)", "com.qin.parser.generated", False),
+        ("OvsParser", "CssTsParser", "com.qin.parser.OvsParser",
+         "Program(com.slime.parser.SlimeJavascriptParser.SourceType)", "com.qin.parser.generated", False),
+        ("SubhutiJsonParser", "com.qin.parser.QinParser", "com.qin.subhutijson.SubhutiJsonGrammarSource",
+         "JsonDocument", "com.qin.subhutijson.generated", True),
+    )
+    for name, parent, author, entry_rule, generated_package, is_json in parser_specs:
         module = out / (name + "Grammar.java")
-        module_class = "com.qin.parser.generated." + name + "Grammar"
+        module_class = generated_package + "." + name + "Grammar"
         print(f"QIN_CHEVROTAIN_GENERATING={name}", flush=True)
         run(["java", *JVM, "-cp", classpath(compiler, author_classes),
              "com.slime.runtime.slime.compiler.AuthoringCompiler", "--collect-unified-reachable", SLIME,
-             authors_list, author_classes, "com.qin.parser." + name,
-             "Program(com.slime.parser.SlimeJavascriptParser.SourceType)", module_class, module], out, name + "-author")
+             authors_list, author_classes, author,
+             entry_rule, module_class, module], out, name + "-author")
         module_classes = out / (name + "-module")
         compile_java(out, module_classes, [module], classpath(support, author_classes))
         generator_cp = classpath(tools, support, public_jar, module_classes)
-        parser_name = name + "ProgramParser"
+        parser_name = name + ("JsonDocumentParser" if is_json else "ProgramParser")
         source = out / "capture" / (parser_name + ".java")
         command = ["java", *JVM, "-cp", generator_cp, "com.slime.chevrotain.Step05GenerateParserMain",
-                   module, module_class, "com.qin.parser.generated", parser_name]
+                   module, module_class, generated_package, parser_name]
         run([*command, source, "--release-lookahead", "--capture-lookahead"], out, name + "-capture-generate")
         capture_classes = out / (name + "-capture")
         compile_java(out, capture_classes, [source], classpath(tools, public_jar))
-        resources = classes / "com/qin/parser/generated"
+        resources = classes / Path(generated_package.replace(".", "/"))
         resources.mkdir(parents=True, exist_ok=True)
         blueprint = resources / (parser_name + ".lookahead.bin")
         recorded_grammar = resources / (parser_name + ".gast.bin")
         run(["java", *JVM, "-cp", classpath(capture_classes, tools, public_jar),
-             "com.slime.chevrotain.LookaheadBlueprintCaptureMain", "com.qin.parser.generated." + parser_name,
+             "com.slime.chevrotain.LookaheadBlueprintCaptureMain", generated_package + "." + parser_name,
              Path(str(source) + ".tokens.tsv"), blueprint, recorded_grammar], out, name + "-lookahead")
         final_source = out / "generated" / (parser_name + ".java")
         run([*command, final_source, "--release-lookahead", "--precomputed-lookahead", "--recorded-grammar"],
             out, name + "-generate")
         compile_java(out, classes, [final_source], str(classes))
         shutil.copyfile(Path(str(final_source) + ".tokens.tsv"), resources / (name + ".tokens.tsv"))
-        (runtime_sources / (name + ".java")).write_bytes(facade(name, parent, fingerprint).encode("utf-8"))
+        if is_json:
+            json_runtime_sources = out / "runtime-sources/com/qin/subhutijson"
+            json_runtime_sources.mkdir(parents=True, exist_ok=True)
+            (json_runtime_sources / (name + ".java")).write_bytes(
+                json_facade(name, parser_name, parent, fingerprint).encode("utf-8"))
+        else:
+            (runtime_sources / (name + ".java")).write_bytes(facade(name, parent, fingerprint).encode("utf-8"))
     runtime_names = ["QinParserFacade", "QinProgramCstToAst", "QinParsedSource", "QinParserRuntimeNames",
                      "CsstsAtomNames", "OvsSourceScopes", "QinOvsCstToAst"]
     for name in runtime_names:
@@ -247,7 +284,9 @@ def build(manifest):
         JAVA_SLIME / "slime-generator/src/main/java/com/slime/generator/SlimeGenerator.java",
         JAVA_SLIME / "slime-generator/src/main/java/com/slime/generator/EnumConstantValues.java",
     ]
-    compile_java(out, classes, [*shared_sources, *runtime_sources.glob("*.java")], classpath(classes, IR))
+    json_runtime_sources = out / "runtime-sources/com/qin/subhutijson"
+    compile_java(out, classes, [*shared_sources, *runtime_sources.glob("*.java"),
+                                *json_runtime_sources.glob("*.java")], classpath(classes, IR))
     test_names = [
         "OvsParserJavaSmokeTestMain",
         "QinParserFacadeUnifiedEntrySmokeTestMain",

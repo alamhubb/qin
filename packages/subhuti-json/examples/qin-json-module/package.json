@@ -1,0 +1,8 @@
+{
+  "name": "qin-json-module-example",
+  "version": "0.45.4",
+  "enabled": true,
+  "nested": {
+    "count": 3
+  }
+}
