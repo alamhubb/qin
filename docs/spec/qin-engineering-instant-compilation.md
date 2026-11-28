@@ -429,6 +429,12 @@ new output. This preserves the long-lived OVS/Vue/CSSTS compiler state in the
 same way Vite keeps the plugin/module graph warm and esbuild keeps a rebuild
 context alive.
 
+Native OVS and CSSTS edits publish through Qin's dev version and HMR channel.
+Java edits use the backend rebuild, then publish through that same channel.
+These changes do not invoke Vue SFC Vite hot-update hooks, even when the project
+configures the Vue plugin. Verify that saving an OVS file updates a browser
+already connected to the dev server as well as the generated module response.
+
 If the changed file is a backend source, unified `src/app.qin`, config file,
 entry file, new/deleted graph module, or a frontend edit that changes resolved
 imports, Qin must use the standard full rebuild path. That is not a fallback or

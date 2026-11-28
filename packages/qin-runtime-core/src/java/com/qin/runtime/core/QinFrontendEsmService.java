@@ -182,7 +182,13 @@ public final class QinFrontendEsmService {
         if (changedFiles == null || changedFiles.isEmpty() || !(vueSfcCompiler instanceof QinViteVuePluginCompiler compiler)) {
             return List.of();
         }
-        return compiler.collectHotUpdateMessages(projectRoot, changedFiles);
+        List<Path> pluginFiles = changedFiles.stream()
+                .filter(file -> {
+                    String name = file.getFileName().toString();
+                    return !name.endsWith(".ovs") && !name.endsWith(".cssts") && !name.endsWith(".java");
+                })
+                .toList();
+        return compiler.collectHotUpdateMessages(projectRoot, pluginFiles);
     }
 
     synchronized boolean refreshChangedFrontendModules(List<Path> changedFiles) throws IOException {

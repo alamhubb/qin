@@ -16,6 +16,10 @@ public final class QinFrontendHotRefreshReuseSmokeTestMain {
         Files.createDirectories(app);
         Path entry = app.resolve("main.qin");
         Path panel = app.resolve("Panel.ovs");
+        Files.writeString(root.resolve("qin.config.js"), """
+                import vue from '@vitejs/plugin-vue'
+                export default { plugins: [vue()] }
+                """, StandardCharsets.UTF_8);
         Files.writeString(entry, """
                 import Panel from "./Panel.ovs"
 
