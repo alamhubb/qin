@@ -59,6 +59,15 @@ public final class QinOrmSmokeTestMain {
         requireEquals(List.of(5L, 7L), scalarQuery.all());
         requireEquals("Ada", scalarFixture.parameters().get().get("qin_p0"));
 
+        JpaFixture nativeFixture = fixture(List.of(5L, 7L), 2L, false);
+        List<Long> nativeIds = QinOrm.session(nativeFixture.entityManager())
+                .nativeQuery("select id from account_user where status = :status", Long.class)
+                .bind("status", "active")
+                .all();
+        requireEquals(List.of(5L, 7L), nativeIds);
+        requireEquals("select id from account_user where status = :status", nativeFixture.jpql().get());
+        requireEquals("active", nativeFixture.parameters().get().get("status"));
+
         JpaFixture tupleFixture = fixture(List.<Object[]>of(new Object[] { 5L, "Ada" }), 7L, false);
         QinOrmSelect<UserEntity, Object[]> tupleQuery = QinOrm.session(tupleFixture.entityManager())
                 .select(User, User.id, User.name);
@@ -231,7 +240,7 @@ public final class QinOrmSmokeTestMain {
             if (method.getName().equals("getMetamodel")) {
                 return metamodel;
             }
-            if (method.getName().equals("createQuery")) {
+            if (method.getName().equals("createQuery") || method.getName().equals("createNativeQuery")) {
                 jpql.set((String) args[0]);
                 Class<?> resultType = (Class<?>) args[1];
                 AtomicReference<TypedQuery<Object>> queryRef = new AtomicReference<>();
