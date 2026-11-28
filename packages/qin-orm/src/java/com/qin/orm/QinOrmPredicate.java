@@ -16,6 +16,7 @@ public final class QinOrmPredicate<E> {
     private final String comparisonPropertyName;
     private final QinOrmExpression<?, ?> expression;
     private final QinOrmExpression<?, ?> comparisonExpression;
+    private final QinOrmSubquery<?> subquery;
     private final String operator;
     private final Object firstValue;
     private final Object secondValue;
@@ -38,6 +39,7 @@ public final class QinOrmPredicate<E> {
         this.comparisonPropertyName = comparisonPropertyName;
         this.expression = null;
         this.comparisonExpression = null;
+        this.subquery = null;
         this.operator = operator;
         this.firstValue = firstValue;
         this.secondValue = secondValue;
@@ -70,6 +72,7 @@ public final class QinOrmPredicate<E> {
         this.comparisonPropertyName = null;
         this.expression = Objects.requireNonNull(expression, "expression");
         this.comparisonExpression = null;
+        this.subquery = null;
         this.operator = Objects.requireNonNull(operator, "operator");
         this.firstValue = value;
         this.secondValue = null;
@@ -88,7 +91,27 @@ public final class QinOrmPredicate<E> {
         this.comparisonPropertyName = null;
         this.expression = Objects.requireNonNull(expression, "expression");
         this.comparisonExpression = Objects.requireNonNull(comparisonExpression, "comparisonExpression");
+        this.subquery = null;
         this.operator = Objects.requireNonNull(operator, "operator");
+        this.firstValue = null;
+        this.secondValue = null;
+        this.children = List.of();
+    }
+
+    private QinOrmPredicate(
+            Class<E> entityClass,
+            Kind kind,
+            QinOrmExpression<?, ?> expression,
+            QinOrmSubquery<?> subquery) {
+        this.entityClass = Objects.requireNonNull(entityClass, "entityClass");
+        this.kind = Objects.requireNonNull(kind, "kind");
+        this.propertyName = null;
+        this.comparisonEntityClass = null;
+        this.comparisonPropertyName = null;
+        this.expression = expression;
+        this.comparisonExpression = null;
+        this.subquery = Objects.requireNonNull(subquery, "subquery");
+        this.operator = null;
         this.firstValue = null;
         this.secondValue = null;
         this.children = List.of();
@@ -106,6 +129,24 @@ public final class QinOrmPredicate<E> {
             QinOrmExpression<T, ?> other,
             String operator) {
         return new QinOrmPredicate<>(expression.entityClass(), expression, other, operator);
+    }
+
+    static <E> QinOrmPredicate<E> inSubquery(
+            QinOrmExpression<E, ?> expression,
+            QinOrmSubquery<?> subquery) {
+        Objects.requireNonNull(expression, "expression");
+        Objects.requireNonNull(subquery, "subquery");
+        Class<?> leftType = expression.propertyType();
+        Class<?> rightType = subquery.resultType();
+        if (!leftType.isAssignableFrom(rightType) && !rightType.isAssignableFrom(leftType)) {
+            throw new IllegalArgumentException("IN expression and subquery select incompatible types: "
+                    + leftType.getTypeName() + " and " + rightType.getTypeName());
+        }
+        return new QinOrmPredicate<>(expression.entityClass(), Kind.IN_SUBQUERY, expression, subquery);
+    }
+
+    static QinOrmPredicate<Object> exists(QinOrmSubquery<?> subquery) {
+        return new QinOrmPredicate<>(Object.class, Kind.EXISTS, null, subquery);
     }
 
     static <E> QinOrmPredicate<E> between(QinOrmColumn<E, ?> column, Object lower, Object upper) {
@@ -155,6 +196,8 @@ public final class QinOrmPredicate<E> {
             case IN -> aliasFor.apply(entityClass) + "." + propertyName + " in " + context.bind(firstValue);
             case IS_NULL -> aliasFor.apply(entityClass) + "." + propertyName + " is null";
             case IS_NOT_NULL -> aliasFor.apply(entityClass) + "." + propertyName + " is not null";
+            case IN_SUBQUERY -> expression.render(aliasFor) + " in (" + subquery.render(context, aliasFor) + ")";
+            case EXISTS -> "exists (" + subquery.render(context, aliasFor) + ")";
             case AND, OR -> renderChildren(context, aliasFor);
             case NOT -> "not (" + children.get(0).render(context, aliasFor) + ")";
         };
@@ -255,6 +298,8 @@ public final class QinOrmPredicate<E> {
         IN,
         IS_NULL,
         IS_NOT_NULL,
+        IN_SUBQUERY,
+        EXISTS,
         AND,
         OR,
         NOT

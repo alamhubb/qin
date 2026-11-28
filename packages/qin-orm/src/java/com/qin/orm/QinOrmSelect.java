@@ -206,6 +206,37 @@ public final class QinOrmSelect<E, R> {
         return render(resolveQueryEntities(), new QinOrmJpqlContext(), orders).jpql();
     }
 
+    public QinOrmSubquery<R> subquery() {
+        if (!orders.isEmpty() || limit > 0 || offset > 0) {
+            throw new IllegalStateException("JPQL subqueries cannot contain order, limit, or offset clauses");
+        }
+        if (selectionKind == SelectionKind.DTO
+                || (selectionKind == SelectionKind.TUPLE && columns.size() != 1)) {
+            throw new IllegalStateException("JPQL subqueries must select one expression");
+        }
+        return new QinOrmSubquery<>(this);
+    }
+
+    String renderSubquery(
+            QinOrmJpqlContext context,
+            java.util.function.Function<Class<?>, String> parentAliases) {
+        String subqueryRootAlias = context.nextSubqueryAlias();
+        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities(parentAliases);
+        return render(jpaEntities, context, orders, subqueryRootAlias, parentAliases).jpql();
+    }
+
+    Class<R> subqueryResultType() {
+        if (selectionKind == SelectionKind.SCALAR) {
+            return resultType;
+        }
+        if (selectionKind == SelectionKind.TUPLE && columns.size() == 1) {
+            @SuppressWarnings("unchecked")
+            Class<R> singleResultType = (Class<R>) columns.get(0).propertyType();
+            return singleResultType;
+        }
+        throw new IllegalStateException("IN subqueries must select exactly one scalar expression");
+    }
+
     public List<R> all() {
         Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         QueryPlan plan = render(jpaEntities, new QinOrmJpqlContext(), orders);
@@ -319,21 +350,32 @@ public final class QinOrmSelect<E, R> {
             Map<Class<?>, EntityType<?>> jpaEntities,
             QinOrmJpqlContext context,
             List<QinOrmOrder<?>> queryOrders) {
+        return render(jpaEntities, context, queryOrders, ROOT_ALIAS, null);
+    }
+
+    private QueryPlan render(
+            Map<Class<?>, EntityType<?>> jpaEntities,
+            QinOrmJpqlContext context,
+            List<QinOrmOrder<?>> queryOrders,
+            String rootAlias,
+            java.util.function.Function<Class<?>, String> parentAliases) {
+        java.util.function.Function<Class<?>, String> aliasResolver =
+                javaType -> aliasFor(javaType, rootAlias, parentAliases);
         StringBuilder jpql = new StringBuilder("select ");
         if (distinct) {
             jpql.append("distinct ");
         }
         switch (selectionKind) {
-            case ENTITY -> jpql.append(aliasFor(entity.javaType()));
-            case SCALAR -> jpql.append(columns.get(0).render(this::aliasFor));
-            case TUPLE -> appendColumnSelection(jpql);
-            case DTO -> appendDtoSelection(jpql);
+            case ENTITY -> jpql.append(rootAlias);
+            case SCALAR -> jpql.append(columns.get(0).render(aliasResolver));
+            case TUPLE -> appendColumnSelection(jpql, aliasResolver);
+            case DTO -> appendDtoSelection(jpql, aliasResolver);
         }
-        appendFrom(jpql, jpaEntities, context);
-        appendWhere(jpql, context);
-        appendGroupBy(jpql);
-        appendHaving(jpql, context);
-        appendOrderBy(jpql, queryOrders);
+        appendFrom(jpql, jpaEntities, context, rootAlias, aliasResolver);
+        appendWhere(jpql, context, aliasResolver);
+        appendGroupBy(jpql, aliasResolver);
+        appendHaving(jpql, context, aliasResolver);
+        appendOrderBy(jpql, queryOrders, aliasResolver);
         return new QueryPlan(jpql.toString(), context.parameters());
     }
 
@@ -341,42 +383,71 @@ public final class QinOrmSelect<E, R> {
             StringBuilder jpql,
             Map<Class<?>, EntityType<?>> jpaEntities,
             QinOrmJpqlContext context) {
+        appendFrom(jpql, jpaEntities, context, ROOT_ALIAS, this::aliasFor);
+    }
+
+    private void appendFrom(
+            StringBuilder jpql,
+            Map<Class<?>, EntityType<?>> jpaEntities,
+            QinOrmJpqlContext context,
+            String rootAlias,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         jpql.append(" from ").append(jpaEntities.get(entity.javaType()).getName()).append(' ')
-                .append(aliasFor(entity.javaType()));
+                .append(rootAlias);
         for (JoinSpec join : joins) {
             jpql.append(join.kind() == JoinKind.LEFT ? " left join " : " join ");
             jpql.append(jpaEntities.get(join.target().javaType()).getName()).append(' ')
                     .append(join.alias()).append(" on ")
-                    .append(join.onPredicate().render(context, this::aliasFor));
+                    .append(join.onPredicate().render(context, aliasResolver));
         }
     }
 
-    private void appendColumnSelection(StringBuilder jpql) {
+    private void appendColumnSelection(
+            StringBuilder jpql,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         for (int index = 0; index < columns.size(); index++) {
             if (index > 0) {
                 jpql.append(", ");
             }
-            jpql.append(columns.get(index).render(this::aliasFor));
+            jpql.append(columns.get(index).render(aliasResolver));
         }
     }
 
-    private void appendDtoSelection(StringBuilder jpql) {
+    private void appendDtoSelection(
+            StringBuilder jpql,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         String dtoName = dtoType.getCanonicalName();
         if (dtoName == null) {
             throw new IllegalArgumentException("DTO projection type must have a canonical class name");
         }
         jpql.append("new ").append(dtoName).append('(');
-        appendColumnSelection(jpql);
+        appendColumnSelection(jpql, aliasResolver);
         jpql.append(')');
     }
 
-    private void appendWhere(StringBuilder jpql, QinOrmJpqlContext context) {
+    private void appendWhere(
+            StringBuilder jpql,
+            QinOrmJpqlContext context) {
+        appendWhere(jpql, context, this::aliasFor);
+    }
+
+    private void appendWhere(
+            StringBuilder jpql,
+            QinOrmJpqlContext context,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         if (predicate != null) {
-            jpql.append(" where ").append(predicate.render(context, this::aliasFor));
+            jpql.append(" where ").append(predicate.render(context, aliasResolver));
         }
     }
 
-    private void appendGroupBy(StringBuilder jpql) {
+    private void appendGroupBy(
+            StringBuilder jpql) {
+        appendGroupBy(jpql, this::aliasFor);
+    }
+
+    private void appendGroupBy(
+            StringBuilder jpql,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         if (groupBy.isEmpty()) {
             return;
         }
@@ -385,17 +456,35 @@ public final class QinOrmSelect<E, R> {
             if (index > 0) {
                 jpql.append(", ");
             }
-            jpql.append(groupBy.get(index).render(this::aliasFor));
+            jpql.append(groupBy.get(index).render(aliasResolver));
         }
     }
 
-    private void appendHaving(StringBuilder jpql, QinOrmJpqlContext context) {
+    private void appendHaving(
+            StringBuilder jpql,
+            QinOrmJpqlContext context) {
+        appendHaving(jpql, context, this::aliasFor);
+    }
+
+    private void appendHaving(
+            StringBuilder jpql,
+            QinOrmJpqlContext context,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         if (having != null) {
-            jpql.append(" having ").append(having.render(context, this::aliasFor));
+            jpql.append(" having ").append(having.render(context, aliasResolver));
         }
     }
 
-    private void appendOrderBy(StringBuilder jpql, List<QinOrmOrder<?>> queryOrders) {
+    private void appendOrderBy(
+            StringBuilder jpql,
+            List<QinOrmOrder<?>> queryOrders) {
+        appendOrderBy(jpql, queryOrders, this::aliasFor);
+    }
+
+    private void appendOrderBy(
+            StringBuilder jpql,
+            List<QinOrmOrder<?>> queryOrders,
+            java.util.function.Function<Class<?>, String> aliasResolver) {
         if (queryOrders.isEmpty()) {
             return;
         }
@@ -405,7 +494,7 @@ public final class QinOrmSelect<E, R> {
                 jpql.append(", ");
             }
             QinOrmOrder<?> order = queryOrders.get(index);
-            String path = aliasFor(order.entityClass()) + "." + order.propertyName();
+            String path = aliasResolver.apply(order.entityClass()) + "." + order.propertyName();
             jpql.append(order.ignoreCase() ? "lower(" + path + ")" : path)
                     .append(order.ascending() ? " asc" : " desc");
         }
@@ -447,6 +536,11 @@ public final class QinOrmSelect<E, R> {
     }
 
     private Map<Class<?>, EntityType<?>> resolveQueryEntities() {
+        return resolveQueryEntities(null);
+    }
+
+    private Map<Class<?>, EntityType<?>> resolveQueryEntities(
+            java.util.function.Function<Class<?>, String> parentAliases) {
         Map<Class<?>, EntityType<?>> jpaEntities = new LinkedHashMap<>();
         jpaEntities.put(entity.javaType(), managedEntity(entity.javaType()));
         Set<Class<?>> joinedTypes = new HashSet<>();
@@ -458,27 +552,23 @@ public final class QinOrmSelect<E, R> {
             }
             jpaEntities.put(targetType, managedEntity(targetType));
             for (QinOrmPredicate.PropertyReference reference : join.onPredicate().propertyReferences()) {
-                EntityType<?> owner = requireQueryEntity(jpaEntities,
-                        reference.entityType(), reference.propertyName());
-                validateProperty(owner, reference.propertyName());
+                validatePropertyReference(jpaEntities, reference, parentAliases);
             }
         }
         for (QinOrmExpression<?, ?> expression : columns) {
-            validateExpression(jpaEntities, expression);
+            validateExpression(jpaEntities, expression, parentAliases);
         }
         if (predicate != null) {
             for (QinOrmPredicate.PropertyReference reference : predicate.propertyReferences()) {
-                EntityType<?> owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
-                validateProperty(owner, reference.propertyName());
+                validatePropertyReference(jpaEntities, reference, parentAliases);
             }
         }
         for (QinOrmExpression<?, ?> expression : groupBy) {
-            validateExpression(jpaEntities, expression);
+            validateExpression(jpaEntities, expression, parentAliases);
         }
         if (having != null) {
             for (QinOrmPredicate.PropertyReference reference : having.propertyReferences()) {
-                EntityType<?> owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
-                validateProperty(owner, reference.propertyName());
+                validatePropertyReference(jpaEntities, reference, parentAliases);
             }
         }
         for (QinOrmOrder<?> order : orders) {
@@ -491,19 +581,41 @@ public final class QinOrmSelect<E, R> {
     private void validateExpression(
             Map<Class<?>, EntityType<?>> jpaEntities,
             QinOrmExpression<?, ?> expression) {
+        validateExpression(jpaEntities, expression, null);
+    }
+
+    private void validateExpression(
+            Map<Class<?>, EntityType<?>> jpaEntities,
+            QinOrmExpression<?, ?> expression,
+            java.util.function.Function<Class<?>, String> parentAliases) {
         if (expression instanceof QinOrmAggregate<?, ?> aggregate) {
-            validateExpression(jpaEntities, aggregate.argument());
+            validateExpression(jpaEntities, aggregate.argument(), parentAliases);
             return;
         }
         for (QinOrmPredicate.PropertyReference reference : expression.propertyReferences()) {
-            EntityType<?> owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
-            Class<?> mappedType = validateProperty(owner, reference.propertyName());
+            Class<?> mappedType = validatePropertyReference(jpaEntities, reference, parentAliases);
             if (expression instanceof QinOrmColumn<?, ?> column && !mappedType.equals(column.propertyType())) {
                 throw new IllegalArgumentException("Column type mismatch for " + column.propertyName()
                         + ": mapped type is " + mappedType.getTypeName()
                         + " but descriptor declares " + column.propertyType().getTypeName());
             }
         }
+    }
+
+    private Class<?> validatePropertyReference(
+            Map<Class<?>, EntityType<?>> jpaEntities,
+            QinOrmPredicate.PropertyReference reference,
+            java.util.function.Function<Class<?>, String> parentAliases) {
+        EntityType<?> owner = jpaEntities.get(reference.entityType());
+        if (owner == null) {
+            if (parentAliases == null) {
+                owner = requireQueryEntity(jpaEntities, reference.entityType(), reference.propertyName());
+            } else {
+                parentAliases.apply(reference.entityType());
+                owner = managedEntity(reference.entityType());
+            }
+        }
+        return validateProperty(owner, reference.propertyName());
     }
 
     private EntityType<?> managedEntity(Class<?> javaType) {
@@ -551,13 +663,23 @@ public final class QinOrmSelect<E, R> {
     }
 
     private String aliasFor(Class<?> javaType) {
+        return aliasFor(javaType, ROOT_ALIAS, null);
+    }
+
+    private String aliasFor(
+            Class<?> javaType,
+            String rootAlias,
+            java.util.function.Function<Class<?>, String> parentAliases) {
         if (javaType == entity.javaType()) {
-            return ROOT_ALIAS;
+            return rootAlias;
         }
         for (JoinSpec join : joins) {
             if (join.target().javaType() == javaType) {
                 return join.alias();
             }
+        }
+        if (parentAliases != null) {
+            return parentAliases.apply(javaType);
         }
         throw new IllegalArgumentException("Entity is not joined in this query: " + javaType.getName());
     }

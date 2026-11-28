@@ -41,6 +41,13 @@ List<Object[]> totalsByCustomer = db.select(User, User.customerId, total)
         .groupBy(User.customerId)
         .having(total.gt(100L))
         .all();
+
+QinOrmSubquery<Long> customerIds = db.select(Customer, Customer.id)
+        .where(Customer.name.eq("Ada"))
+        .subquery();
+List<UserEntity> users = db.select(User)
+        .where(User.id.in(customerIds))
+        .all();
 ```
 
 The multi-column query renders a standard JPQL constructor projection when
@@ -104,13 +111,18 @@ Spring `Sort.Order.ignoreCase()` is rendered as `lower(property)` after the
 metamodel confirms the property is a string. Explicit null precedence is
 rejected because it is not portable across the supported JPA provider range.
 
+Subqueries support `exists()` and scalar `in(subquery)`. Predicates inside a
+subquery can reference outer query entity descriptors, which are resolved to
+the enclosing aliases and validated through the JPA metamodel. Subqueries use
+separate aliases and share the outer named-parameter context.
+
 ## Current Boundary
 
 The current DSL supports one entity root, one explicit entity join using an
 `ON` predicate, scalar and aggregate expressions, and grouping. Multiple
-joins and subqueries are not implemented yet. Database-specific JSONB and
-window-function queries can use a separate parameterized native-query API when
-needed.
+joins are not implemented yet. Subquery scalar selection is limited to one
+expression, as required by JPQL. Database-specific JSONB and window-function
+queries can use a separate parameterized native-query API when needed.
 
 Entity and column descriptors are currently declared explicitly. The JPA
 metamodel validates descriptors at execution. Qin compiler-generated

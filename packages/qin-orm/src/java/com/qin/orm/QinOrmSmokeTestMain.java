@@ -131,6 +131,26 @@ public final class QinOrmSmokeTestMain {
                 QinOrm.session(leftJoinFixture.entityManager()).select(User)
                         .leftJoin(Customer, User.customerId.eq(Customer.id)).toJpql());
 
+        JpaFixture subqueryFixture = fixture(List.of(new UserEntity()), 1L, false);
+        QinOrmSession subquerySession = QinOrm.session(subqueryFixture.entityManager());
+        QinOrmSubquery<Long> correlatedIds = subquerySession.select(Customer, Customer.id)
+                .where(Customer.id.eq(User.id)).subquery();
+        requireEquals("select qinEntity from AccountUser qinEntity where exists "
+                        + "(select qinSubquery0.id from CustomerEntity qinSubquery0 "
+                        + "where qinSubquery0.id = qinEntity.id)",
+                subquerySession.select(User).where(correlatedIds.exists()).toJpql());
+
+        QinOrmSubquery<Long> customerIds = subquerySession.select(Customer, Customer.id)
+                .where(Customer.name.eq("Ada")).subquery();
+        QinOrmSelect<UserEntity, UserEntity> inSubquery = subquerySession.select(User)
+                .where(User.id.in(customerIds));
+        requireEquals("select qinEntity from AccountUser qinEntity where qinEntity.id in "
+                        + "(select qinSubquery0.id from CustomerEntity qinSubquery0 "
+                        + "where qinSubquery0.name = :qin_p0)",
+                inSubquery.toJpql());
+        inSubquery.all();
+        requireEquals("Ada", subqueryFixture.parameters().get().get("qin_p0"));
+
         require(QinOrm.session(fixture(List.of(1), 0L, true).entityManager()).select(User).exists(),
                 "exists should return true when a row is present");
         require(!QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User).exists(),

@@ -50,6 +50,10 @@ public sealed interface QinOrmExpression<E, V>
         return QinOrmPredicate.compareExpression(this, "<=", Objects.requireNonNull(value, "value"));
     }
 
+    default QinOrmPredicate<E> in(QinOrmSubquery<? extends V> subquery) {
+        return QinOrmPredicate.inSubquery(this, subquery);
+    }
+
     default QinOrmPredicate<E> isNull() {
         return QinOrmPredicate.compareExpression(this, "=", null);
     }
