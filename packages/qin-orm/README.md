@@ -75,9 +75,15 @@ use JPA `@OneToMany` or `@ManyToOne` mappings.
 - `first()` returns the first result or `null`. Add ordering for deterministic
   results.
 - `count()` returns the number of matching entities.
+- `countDistinct(expression)` counts distinct scalar values.
 - `exists()` returns whether any entity matches.
 - `page(Pageable)` returns Spring Data `Page` and runs a count query.
 - `slice(Pageable)` returns Spring Data `Slice` without a count query.
+
+Page totals follow the result shape. Scalar `distinct()` uses
+`count(distinct expression)`. Distinct projections with multiple expressions
+and aggregate projections reject `page()` because JPQL cannot portably count
+those result rows. Use `slice()` for those shapes.
 
 ## Supported Predicates
 
@@ -93,6 +99,10 @@ predicates, including comparisons against aggregates. Grouped queries support
 `all`, `one`, `first`, `exists`, and `slice`. `count()` and `page()` reject
 grouped queries because portable JPQL cannot count grouped result rows without
 wrapping the query in a derived table.
+
+Spring `Sort.Order.ignoreCase()` is rendered as `lower(property)` after the
+metamodel confirms the property is a string. Explicit null precedence is
+rejected because it is not portable across the supported JPA provider range.
 
 ## Current Boundary
 

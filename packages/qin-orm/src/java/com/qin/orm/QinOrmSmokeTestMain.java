@@ -10,6 +10,7 @@ import jakarta.persistence.metamodel.Metamodel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -37,6 +38,15 @@ public final class QinOrmSmokeTestMain {
                 .orderBy(User.name.asc());
         requireEquals("select qinEntity from AccountUser qinEntity where (qinEntity.id = :qin_p0) and (qinEntity.name like :qin_p1) order by qinEntity.name asc",
                 entityQuery.toJpql());
+        requireEquals("select qinEntity from AccountUser qinEntity order by lower(qinEntity.name) asc",
+                QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User)
+                        .orderBy(Sort.by(Sort.Order.asc("name").ignoreCase())).toJpql());
+        expectFailure(IllegalArgumentException.class,
+                () -> QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User)
+                        .orderBy(Sort.by(Sort.Order.asc("amount").ignoreCase())).toJpql());
+        expectFailure(UnsupportedOperationException.class,
+                () -> QinOrm.session(fixture(List.of(), 0L, false).entityManager()).select(User)
+                        .orderBy(Sort.by(Sort.Order.asc("name").nullsFirst())));
         requireEquals(1, entityQuery.all().size());
         requireEquals(Map.of("qin_p0", 12L, "qin_p1", "A%"), entityFixture.parameters().get());
 
@@ -79,6 +89,11 @@ public final class QinOrmSmokeTestMain {
                 .where(User.id.in(List.of(2L, 3L))).count());
         requireEquals("select count(distinct qinEntity) from AccountUser qinEntity where qinEntity.id in :qin_p0",
                 countFixture.jpql().get());
+        JpaFixture distinctCountFixture = fixture(List.of(), 3L, false);
+        requireEquals(3L, QinOrm.session(distinctCountFixture.entityManager()).select(User)
+                .countDistinct(User.name));
+        requireEquals("select count(distinct qinEntity.name) from AccountUser qinEntity",
+                distinctCountFixture.jpql().get());
 
         CustomerModel Customer = new CustomerModel();
         JpaFixture joinedFixture = fixture(List.<Object[]>of(new Object[] { "Ada" }), 1L, false);
@@ -132,6 +147,19 @@ public final class QinOrmSmokeTestMain {
         requireEquals(7L, page.getTotalElements());
         requireEquals(5, pageFixture.maxResults().get());
         requireEquals(5, pageFixture.firstResult().get());
+
+        JpaFixture distinctScalarPageFixture = fixture(List.of("Ada"), 4L, false);
+        Page<String> distinctScalarPage = QinOrm.session(distinctScalarPageFixture.entityManager())
+                .select(User, User.name).distinct().page(PageRequest.of(0, 1));
+        requireEquals(4L, distinctScalarPage.getTotalElements());
+        requireEquals("select count(distinct qinEntity.name) from AccountUser qinEntity",
+                distinctScalarPageFixture.jpql().get());
+
+        JpaFixture distinctTupleFixture = fixture(List.of(), 0L, false);
+        expectFailure(UnsupportedOperationException.class,
+                () -> QinOrm.session(distinctTupleFixture.entityManager()).select(User, User.id, User.name)
+                        .distinct().page(PageRequest.of(0, 5)));
+        requireEquals(-1, distinctTupleFixture.maxResults().get());
 
         JpaFixture sliceFixture = fixture(List.of(new UserEntity(), new UserEntity(), new UserEntity()), 3L, false);
         Slice<UserEntity> slice = QinOrm.session(sliceFixture.entityManager()).select(User)

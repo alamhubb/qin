@@ -157,12 +157,7 @@ public final class QinOrmSelect<E, R> {
 
     public QinOrmSelect<E, R> orderBy(Sort sort) {
         Objects.requireNonNull(sort, "sort");
-        List<QinOrmOrder<?>> combined = new ArrayList<>(orders);
-        for (Sort.Order order : sort) {
-            String property = QinOrmEntity.requireIdentifier(order.getProperty(), "sort property");
-            combined.add(new QinOrmOrder<>(entity.column(property, Object.class), order.isAscending()));
-        }
-        return copy(predicate, joins, combined, distinct, limit, offset);
+        return copy(predicate, joins, ordersForSort(sort), distinct, limit, offset);
     }
 
     public QinOrmSelect<E, R> distinct() {
@@ -254,6 +249,24 @@ public final class QinOrmSelect<E, R> {
         return query.getSingleResult();
     }
 
+    public long countDistinct(QinOrmExpression<?, ?> expression) {
+        Objects.requireNonNull(expression, "expression");
+        requireUngroupedCount();
+        if (expression instanceof QinOrmAggregate<?, ?>) {
+            throw new IllegalArgumentException("countDistinct requires a scalar property expression");
+        }
+        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
+        validateExpression(jpaEntities, expression);
+        QinOrmJpqlContext context = new QinOrmJpqlContext();
+        StringBuilder jpql = new StringBuilder("select count(distinct ")
+                .append(expression.render(this::aliasFor)).append(')');
+        appendFrom(jpql, jpaEntities, context);
+        appendWhere(jpql, context);
+        TypedQuery<Long> query = entityManager.createQuery(jpql.toString(), Long.class);
+        bind(query, context.parameters());
+        return query.getSingleResult();
+    }
+
     public boolean exists() {
         Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
         QinOrmJpqlContext context = new QinOrmJpqlContext();
@@ -275,13 +288,14 @@ public final class QinOrmSelect<E, R> {
             List<R> content = all();
             return new PageImpl<>(content, pageable, content.size());
         }
+        requirePageCountShape();
         List<QinOrmOrder<?>> pageOrders = ordersForSort(pageable.getSort());
         validateOrders(jpaEntities, pageOrders);
         QueryPlan plan = render(jpaEntities, new QinOrmJpqlContext(), pageOrders);
         TypedQuery<R> query = createQuery(plan);
         applyRange(query, pageable.getOffset(), pageable.getPageSize());
         List<R> content = query.getResultList();
-        return new PageImpl<>(content, pageable, count());
+        return new PageImpl<>(content, pageable, countPageRows());
     }
 
     public Slice<R> slice(Pageable pageable) {
@@ -391,7 +405,8 @@ public final class QinOrmSelect<E, R> {
                 jpql.append(", ");
             }
             QinOrmOrder<?> order = queryOrders.get(index);
-            jpql.append(aliasFor(order.entityClass())).append('.').append(order.propertyName())
+            String path = aliasFor(order.entityClass()) + "." + order.propertyName();
+            jpql.append(order.ignoreCase() ? "lower(" + path + ")" : path)
                     .append(order.ascending() ? " asc" : " desc");
         }
     }
@@ -402,8 +417,11 @@ public final class QinOrmSelect<E, R> {
         }
         List<QinOrmOrder<?>> combined = new ArrayList<>(orders);
         for (Sort.Order order : sort) {
+            if (order.getNullHandling() != Sort.NullHandling.NATIVE) {
+                throw new UnsupportedOperationException("Explicit null precedence is not supported");
+            }
             String property = QinOrmEntity.requireIdentifier(order.getProperty(), "sort property");
-            combined.add(new QinOrmOrder<>(entity.javaType(), property, order.isAscending()));
+            combined.add(new QinOrmOrder<>(entity.javaType(), property, order.isAscending(), order.isIgnoreCase()));
         }
         return combined;
     }
@@ -465,7 +483,7 @@ public final class QinOrmSelect<E, R> {
         }
         for (QinOrmOrder<?> order : orders) {
             EntityType<?> owner = requireQueryEntity(jpaEntities, order.entityClass(), order.propertyName());
-            validateProperty(owner, order.propertyName());
+            validateOrder(owner, order);
         }
         return jpaEntities;
     }
@@ -499,7 +517,15 @@ public final class QinOrmSelect<E, R> {
     private void validateOrders(Map<Class<?>, EntityType<?>> jpaEntities, List<QinOrmOrder<?>> queryOrders) {
         for (QinOrmOrder<?> order : queryOrders) {
             EntityType<?> owner = requireQueryEntity(jpaEntities, order.entityClass(), order.propertyName());
-            validateProperty(owner, order.propertyName());
+            validateOrder(owner, order);
+        }
+    }
+
+    private void validateOrder(EntityType<?> owner, QinOrmOrder<?> order) {
+        Class<?> propertyType = validateProperty(owner, order.propertyName());
+        if (order.ignoreCase() && propertyType != String.class) {
+            throw new IllegalArgumentException("ignoreCase sorting requires a string property: "
+                    + order.propertyName());
         }
     }
 
@@ -553,6 +579,35 @@ public final class QinOrmSelect<E, R> {
         if (!groupBy.isEmpty() || having != null) {
             throw new UnsupportedOperationException("count and Page are not supported for grouped queries");
         }
+    }
+
+    private void requirePageCountShape() {
+        if (columns.stream().anyMatch(QinOrmAggregate.class::isInstance)) {
+            throw new UnsupportedOperationException("Page is not supported for aggregate projections; use Slice");
+        }
+        if (distinct && selectionKind != SelectionKind.ENTITY && columns.size() > 1) {
+            throw new UnsupportedOperationException(
+                    "Page is not supported for distinct multi-expression projections; use Slice");
+        }
+    }
+
+    private long countPageRows() {
+        Map<Class<?>, EntityType<?>> jpaEntities = resolveQueryEntities();
+        QinOrmJpqlContext context = new QinOrmJpqlContext();
+        String countExpression;
+        if (selectionKind == SelectionKind.ENTITY && distinct) {
+            countExpression = "count(distinct " + ROOT_ALIAS + ")";
+        } else if (distinct && selectionKind != SelectionKind.ENTITY) {
+            countExpression = "count(distinct " + columns.get(0).render(this::aliasFor) + ")";
+        } else {
+            countExpression = "count(" + ROOT_ALIAS + ")";
+        }
+        StringBuilder jpql = new StringBuilder("select ").append(countExpression);
+        appendFrom(jpql, jpaEntities, context);
+        appendWhere(jpql, context);
+        TypedQuery<Long> query = entityManager.createQuery(jpql.toString(), Long.class);
+        bind(query, context.parameters());
+        return query.getSingleResult();
     }
 
     private QinOrmSelect<E, R> copy(
